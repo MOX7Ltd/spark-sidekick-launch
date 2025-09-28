@@ -65,9 +65,9 @@ const Index = () => {
               </h1>
               
               <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed animate-slide-up">
-                Tell us your idea, we'll handle the hard part. 
-                <strong className="text-foreground"> No overwhelm, no complexity</strong> — 
-                just simple steps from idea to income.
+                We guide you step by step — from idea to storefront to your first sale.
+                <strong className="text-foreground"> No experience needed</strong> — 
+                just bring your idea and we'll do the heavy lifting.
               </p>
 
               <div className="pt-8 animate-slide-up">
@@ -138,7 +138,7 @@ const Index = () => {
           <div className="container mx-auto px-4">
             <div className="text-center space-y-6 mb-16">
               <h2 className="text-3xl md:text-4xl font-bold">
-                Built for the ADHD brain 🧠
+                Built for simplicity, speed, and support ⚡
               </h2>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                 No complicated dashboards, no decision paralysis. 
@@ -223,13 +223,67 @@ const Index = () => {
         </section>
       )}
 
+      {/* Who is SideHive for? Section */}
+      {!showOnboarding && !completedData && (
+        <section className="py-16 md:py-24 bg-muted/30">
+          <div className="container mx-auto px-4">
+            <div className="text-center space-y-6 mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold">
+                Who is SideHive for?
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Whether you're starting fresh or scaling up, we meet you where you are.
+              </p>
+            </div>
+
+            <div className="grid gap-8 md:grid-cols-3 max-w-4xl mx-auto">
+              <Card className="text-center hover:shadow-brand-md transition-smooth">
+                <CardContent className="p-8 space-y-4">
+                  <div className="w-16 h-16 mx-auto bg-gradient-primary rounded-full flex items-center justify-center">
+                    <Brain className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold">Idea People</h3>
+                  <p className="text-muted-foreground">
+                    You've got ideas but don't know where to start. We turn your vision into a real business with clear next steps.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="text-center hover:shadow-brand-md transition-smooth">
+                <CardContent className="p-8 space-y-4">
+                  <div className="w-16 h-16 mx-auto bg-gradient-accent rounded-full flex items-center justify-center">
+                    <Clock className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold">Side Hustlers</h3>
+                  <p className="text-muted-foreground">
+                    You want to turn free time into extra income. Launch fast, start earning, and grow at your own pace.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="text-center hover:shadow-brand-md transition-smooth">
+                <CardContent className="p-8 space-y-4">
+                  <div className="w-16 h-16 mx-auto bg-brand-orange rounded-full flex items-center justify-center">
+                    <Users className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold">Entrepreneurs</h3>
+                  <p className="text-muted-foreground">
+                    You've built before, but want a faster way this time. Skip the setup and focus on what you do best.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Pricing Section */}
       {!showOnboarding && !completedData && (
         <section id="pricing" className="py-16 md:py-24">
           <div className="container mx-auto px-4">
             <div className="text-center space-y-6 mb-16">
               <h2 className="text-3xl md:text-4xl font-bold">
-                Simple, ADHD-friendly pricing
+                Simple, transparent pricing
               </h2>
               <p className="text-xl text-muted-foreground">
                 No monthly subscriptions to forget about. Pay once to launch, upgrade when you're ready to scale.
@@ -390,7 +444,7 @@ const Index = () => {
           </div>
           
           <div className="mt-8 pt-8 border-t text-center text-muted-foreground">
-            <p>© 2024 SideHive. Built for the ADHD entrepreneur. 🧠💙</p>
+            <p>© 2024 SideHive. Built for dreamers with big ideas. ✨💙</p>
           </div>
         </div>
       </footer>
