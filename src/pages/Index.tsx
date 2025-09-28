@@ -54,20 +54,19 @@ const Index = () => {
           <div className="container mx-auto px-4 text-center space-y-12">
             <div className="space-y-6 max-w-4xl mx-auto">
               <Badge variant="secondary" className="px-4 py-2 text-sm font-medium animate-bounce-in">
-                ✨ Turn Ideas Into Income
+                ✨ Got an idea? Let's launch it.
               </Badge>
               
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight animate-fade-in">
-                Your next 
-                <span className="bg-gradient-hero bg-clip-text text-transparent"> side-hustle</span> starts
+                Turn your 
+                <span className="bg-gradient-hero bg-clip-text text-transparent">idea</span> into a
                 <br />
-                <span className="bg-gradient-accent bg-clip-text text-transparent">right here</span>
+                <span className="bg-gradient-accent bg-clip-text text-transparent">business in minutes</span>
               </h1>
               
               <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed animate-slide-up">
-                We guide you step by step — from idea to storefront to your first sale.
-                <strong className="text-foreground"> No experience needed</strong> — 
-                just bring your idea and we'll do the heavy lifting.
+                SideHive gives you a shopfront, products, and campaigns — ready to launch.
+                <strong className="text-foreground"> Perfect for dreamers, doers, and side-hustlers</strong> who want to bring their ideas to life.
               </p>
 
               <div className="pt-8 animate-slide-up">
@@ -78,11 +77,11 @@ const Index = () => {
                   className="text-xl px-12 py-6 h-auto animate-pulse hover:animate-none"
                 >
                   <Sparkles className="mr-3 h-6 w-6" />
-                  Turn My Idea Into a Business
+                  Start My Business
                   <ArrowRight className="ml-3 h-6 w-6" />
                 </Button>
                 <p className="text-sm text-muted-foreground mt-4">
-                  Takes 2 minutes • See instant preview • Launch for $10
+                  See instant preview • Launch today • Only $10
                 </p>
               </div>
             </div>
@@ -138,11 +137,11 @@ const Index = () => {
           <div className="container mx-auto px-4">
             <div className="text-center space-y-6 mb-16">
               <h2 className="text-3xl md:text-4xl font-bold">
-                Built for simplicity, speed, and support ⚡
+                Built for socials, made for results ⚡
               </h2>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                No complicated dashboards, no decision paralysis. 
-                Just simple steps that get you from idea to income.
+                Create campaigns, schedule posts, and track results — all in one place.
+                No complicated dashboards, just simple steps that work.
               </p>
             </div>
 
@@ -154,7 +153,7 @@ const Index = () => {
                   </div>
                   <h3 className="text-xl font-semibold">Instant Preview</h3>
                   <p className="text-muted-foreground">
-                    See your complete business plan in 60 seconds. Names, products, content - all generated from your idea.
+                    See your complete business plan in 60 seconds. Names, products, campaigns - all generated from your idea.
                   </p>
                 </CardContent>
               </Card>
@@ -164,9 +163,9 @@ const Index = () => {
                   <div className="w-12 h-12 mx-auto bg-gradient-accent rounded-full flex items-center justify-center">
                     <Target className="h-6 w-6 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold">Single Focus</h3>
+                  <h3 className="text-xl font-semibold">Ready-to-Post</h3>
                   <p className="text-muted-foreground">
-                    One clear action per screen. No overwhelming menus or decision fatigue. Just what you need, when you need it.
+                    Get hooks, captions, and hashtags that match your voice. Copy-paste or post directly to your socials.
                   </p>
                 </CardContent>
               </Card>
@@ -176,9 +175,9 @@ const Index = () => {
                   <div className="w-12 h-12 mx-auto bg-brand-orange rounded-full flex items-center justify-center">
                     <Rocket className="h-6 w-6 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold">Quick Wins</h3>
+                  <h3 className="text-xl font-semibold">Launch Today</h3>
                   <p className="text-muted-foreground">
-                    Launch in under 5 minutes. Your storefront and first campaigns are ready before you can get distracted.
+                    Your storefront and first campaigns are ready in minutes. Start selling immediately.
                   </p>
                 </CardContent>
               </Card>
@@ -188,9 +187,9 @@ const Index = () => {
                   <div className="w-12 h-12 mx-auto bg-brand-teal rounded-full flex items-center justify-center">
                     <Sparkles className="h-6 w-6 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold">AI Content</h3>
+                  <h3 className="text-xl font-semibold">Smart Content</h3>
                   <p className="text-muted-foreground">
-                    Never stare at a blank page again. Get captions, hooks, and hashtags that match your voice and niche.
+                    Never stare at a blank page again. Get campaign ideas that match your niche and audience.
                   </p>
                 </CardContent>
               </Card>
@@ -200,9 +199,9 @@ const Index = () => {
                   <div className="w-12 h-12 mx-auto bg-brand-navy rounded-full flex items-center justify-center">
                     <TrendingUp className="h-6 w-6 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold">Smart Posting</h3>
+                  <h3 className="text-xl font-semibold">Growth Tools</h3>
                   <p className="text-muted-foreground">
-                    Connect your social accounts and post directly. Or copy content and get reminded when it's the best time to share.
+                    Connect your social accounts, schedule posts, and track what's working. Grow smarter, not harder.
                   </p>
                 </CardContent>
               </Card>
@@ -212,9 +211,9 @@ const Index = () => {
                   <div className="w-12 h-12 mx-auto bg-gradient-hero rounded-full flex items-center justify-center">
                     <DollarSign className="h-6 w-6 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold">Instant Store</h3>
+                  <h3 className="text-xl font-semibold">Start Earning</h3>
                   <p className="text-muted-foreground">
-                    Get a professional storefront with payment processing. Start selling digital products and services immediately.
+                    Professional storefront with payment processing. Sell digital products and services from day one.
                   </p>
                 </CardContent>
               </Card>
@@ -229,10 +228,10 @@ const Index = () => {
           <div className="container mx-auto px-4">
             <div className="text-center space-y-6 mb-16">
               <h2 className="text-3xl md:text-4xl font-bold">
-                Who is SideHive for?
+                Who SideHive is for
               </h2>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Whether you're starting fresh or scaling up, we meet you where you are.
+                Perfect for dreamers, doers, and serial builders who want to launch fast.
               </p>
             </div>
 
@@ -242,9 +241,9 @@ const Index = () => {
                   <div className="w-16 h-16 mx-auto bg-gradient-primary rounded-full flex items-center justify-center">
                     <Brain className="h-8 w-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold">Idea People</h3>
+                  <h3 className="text-xl font-semibold">Dreamers</h3>
                   <p className="text-muted-foreground">
-                    You've got ideas but don't know where to start. We turn your vision into a real business with clear next steps.
+                    You've got ideas but don't know where to start. We'll help you launch and make it real.
                   </p>
                 </CardContent>
               </Card>
@@ -254,9 +253,9 @@ const Index = () => {
                   <div className="w-16 h-16 mx-auto bg-gradient-accent rounded-full flex items-center justify-center">
                     <Clock className="h-8 w-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold">Side Hustlers</h3>
+                  <h3 className="text-xl font-semibold">Side-Hustlers</h3>
                   <p className="text-muted-foreground">
-                    You want to turn free time into extra income. Launch fast, start earning, and grow at your own pace.
+                    Turn spare time into income. Launch fast, start earning, and scale at your own pace.
                   </p>
                 </CardContent>
               </Card>
@@ -268,7 +267,7 @@ const Index = () => {
                   </div>
                   <h3 className="text-xl font-semibold">Entrepreneurs</h3>
                   <p className="text-muted-foreground">
-                    You've built before, but want a faster way this time. Skip the setup and focus on what you do best.
+                    Launch faster, scale smarter. Skip the setup and focus on what you do best.
                   </p>
                 </CardContent>
               </Card>
@@ -283,10 +282,10 @@ const Index = () => {
           <div className="container mx-auto px-4">
             <div className="text-center space-y-6 mb-16">
               <h2 className="text-3xl md:text-4xl font-bold">
-                Simple, transparent pricing
+                Simple, outcome-driven pricing
               </h2>
               <p className="text-xl text-muted-foreground">
-                No monthly subscriptions to forget about. Pay once to launch, upgrade when you're ready to scale.
+                Pay once to launch, upgrade when you're ready to scale. Results guaranteed.
               </p>
             </div>
 
@@ -312,15 +311,15 @@ const Index = () => {
                     </li>
                     <li className="flex items-center space-x-3">
                       <CheckCircle className="h-5 w-5 text-primary" />
-                      <span>Sample content</span>
+                      <span>Sample campaigns</span>
                     </li>
                     <li className="flex items-center space-x-3">
                       <CheckCircle className="h-5 w-5 text-primary" />
                       <span>Positioning statement</span>
                     </li>
                   </ul>
-                  <Button variant="outline" className="w-full" size="lg">
-                    Try Free Preview
+                  <Button variant="outline" className="w-full" size="lg" onClick={handleStartOnboarding}>
+                    Start My Business
                   </Button>
                 </CardContent>
               </Card>
@@ -335,11 +334,14 @@ const Index = () => {
                 <CardContent className="p-8 space-y-6">
                   <div>
                     <h3 className="text-2xl font-bold">Starter Pack</h3>
-                    <p className="text-muted-foreground">Launch your business</p>
+                    <p className="text-muted-foreground">Business live today</p>
                   </div>
                   <div>
                     <span className="text-4xl font-bold text-brand-orange">$10</span>
                     <span className="text-muted-foreground"> one-time</span>
+                  </div>
+                  <div className="text-sm text-brand-orange font-medium mb-4">
+                    = Shopfront + 3 campaigns + 2 products
                   </div>
                   <ul className="space-y-3">
                     <li className="flex items-center space-x-3">
@@ -360,11 +362,11 @@ const Index = () => {
                     </li>
                     <li className="flex items-center space-x-3">
                       <CheckCircle className="h-5 w-5 text-primary" />
-                      <span>Basic analytics</span>
+                      <span>Payment processing</span>
                     </li>
                   </ul>
                   <Button variant="starter" className="w-full" size="lg">
-                    Launch for $10
+                    Start My Business
                   </Button>
                 </CardContent>
               </Card>
@@ -374,11 +376,14 @@ const Index = () => {
                 <CardContent className="p-8 space-y-6">
                   <div>
                     <h3 className="text-2xl font-bold">Premium</h3>
-                    <p className="text-muted-foreground">Scale your success</p>
+                    <p className="text-muted-foreground">Scale faster</p>
                   </div>
                   <div>
                     <span className="text-4xl font-bold">$10</span>
                     <span className="text-muted-foreground">/week</span>
+                  </div>
+                  <div className="text-sm text-foreground font-medium mb-4">
+                    = AI tools + Analytics + Growth features
                   </div>
                   <ul className="space-y-3">
                     <li className="flex items-center space-x-3">
@@ -427,7 +432,7 @@ const Index = () => {
               <span className="font-bold text-lg bg-gradient-hero bg-clip-text text-transparent">
                 SideHive
               </span>
-              <span className="text-muted-foreground">AI Agent Business Platform</span>
+              <span className="text-muted-foreground">Turn ideas into businesses</span>
             </div>
             
             <div className="flex space-x-6">
@@ -444,7 +449,7 @@ const Index = () => {
           </div>
           
           <div className="mt-8 pt-8 border-t text-center text-muted-foreground">
-            <p>© 2024 SideHive. Built for dreamers with big ideas. ✨💙</p>
+            <p>© 2024 SideHive. Built for dreamers with big ideas. ✨</p>
           </div>
         </div>
       </footer>
