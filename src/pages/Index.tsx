@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Header } from '@/components/layout/Header';
-import { IdeaInput, type IdeaFormData } from '@/components/business/IdeaInput';
-import { IdeaPreview } from '@/components/business/IdeaPreview';
+import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,15 +19,29 @@ import {
   Clock
 } from 'lucide-react';
 
-const Index = () => {
-  const [ideaData, setIdeaData] = useState<IdeaFormData | null>(null);
+interface OnboardingData {
+  idea: string;
+  audience: string;
+  namingPreference: string;
+}
 
-  const handleIdeaSubmit = (data: IdeaFormData) => {
-    setIdeaData(data);
+const Index = () => {
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [completedData, setCompletedData] = useState<OnboardingData | null>(null);
+
+  const handleStartOnboarding = () => {
+    setShowOnboarding(true);
   };
 
-  const resetIdea = () => {
-    setIdeaData(null);
+  const handleOnboardingComplete = (data: OnboardingData) => {
+    setCompletedData(data);
+    // In a real app, this would redirect to dashboard or show success
+    console.log('Onboarding completed:', data);
+  };
+
+  const resetOnboarding = () => {
+    setShowOnboarding(false);
+    setCompletedData(null);
   };
 
   return (
@@ -36,31 +49,46 @@ const Index = () => {
       <Header />
       
       {/* Hero Section */}
-      {!ideaData && (
+      {!showOnboarding && !completedData && (
         <section className="py-16 md:py-24">
           <div className="container mx-auto px-4 text-center space-y-12">
             <div className="space-y-6 max-w-4xl mx-auto">
-              <Badge variant="secondary" className="px-4 py-2 text-sm font-medium">
-                🧠 ADHD-Friendly Business Builder
+              <Badge variant="secondary" className="px-4 py-2 text-sm font-medium animate-bounce-in">
+                ✨ Turn Ideas Into Income
               </Badge>
               
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight">
-                Turn your 
-                <span className="bg-gradient-hero bg-clip-text text-transparent"> ideas</span> into
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight animate-fade-in">
+                Your next 
+                <span className="bg-gradient-hero bg-clip-text text-transparent"> side-hustle</span> starts
                 <br />
-                <span className="bg-gradient-accent bg-clip-text text-transparent">income</span> 
-                {" "}in minutes
+                <span className="bg-gradient-accent bg-clip-text text-transparent">right here</span>
               </h1>
               
-              <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                The ADHD-friendly platform that transforms your expertise into a 
-                <strong className="text-foreground"> real business</strong> with instant previews, 
-                ready-made content, and zero overwhelm.
+              <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed animate-slide-up">
+                Tell us your idea, we'll handle the hard part. 
+                <strong className="text-foreground"> No overwhelm, no complexity</strong> — 
+                just simple steps from idea to income.
               </p>
+
+              <div className="pt-8 animate-slide-up">
+                <Button 
+                  variant="hero" 
+                  size="xl"
+                  onClick={handleStartOnboarding}
+                  className="text-xl px-12 py-6 h-auto animate-pulse hover:animate-none"
+                >
+                  <Sparkles className="mr-3 h-6 w-6" />
+                  Turn My Idea Into a Business
+                  <ArrowRight className="ml-3 h-6 w-6" />
+                </Button>
+                <p className="text-sm text-muted-foreground mt-4">
+                  Takes 2 minutes • See instant preview • Launch for $10
+                </p>
+              </div>
             </div>
 
             {/* Quick Stats */}
-            <div className="flex flex-wrap justify-center gap-8 text-center">
+            <div className="flex flex-wrap justify-center gap-8 text-center animate-fade-in">
               <div className="space-y-2">
                 <div className="text-2xl font-bold text-primary">2 mins</div>
                 <div className="text-sm text-muted-foreground">Setup time</div>
@@ -78,30 +106,34 @@ const Index = () => {
         </section>
       )}
 
-      {/* Main Content */}
-      <section className="py-8 md:py-16">
-        <div className="container mx-auto px-4">
-          {!ideaData ? (
-            <IdeaInput onSubmit={handleIdeaSubmit} />
-          ) : (
-            <div className="max-w-5xl mx-auto">
-              <div className="mb-8 text-center">
-                <Button 
-                  variant="ghost" 
-                  onClick={resetIdea}
-                  className="mb-4"
-                >
-                  ← Try a different idea
-                </Button>
-              </div>
-              <IdeaPreview idea={ideaData.idea} />
-            </div>
-          )}
-        </div>
-      </section>
+      {/* Onboarding Flow */}
+      {showOnboarding && (
+        <OnboardingFlow onComplete={handleOnboardingComplete} />
+      )}
 
-      {/* Features Section - Only show when no idea submitted */}
-      {!ideaData && (
+      {/* Success State */}
+      {completedData && (
+        <section className="py-16">
+          <div className="container mx-auto px-4 text-center space-y-8">
+            <div className="animate-bounce-in">
+              <h2 className="text-4xl font-bold mb-4">Welcome to your business! 🎉</h2>
+              <p className="text-xl text-muted-foreground mb-8">
+                You're all set up and ready to start earning. Check your email for next steps.
+              </p>
+              <Button 
+                variant="hero" 
+                size="xl"
+                onClick={resetOnboarding}
+              >
+                Start Another Business
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Features Section - Only show when not in onboarding */}
+      {!showOnboarding && !completedData && (
         <section id="features" className="py-16 md:py-24 bg-background">
           <div className="container mx-auto px-4">
             <div className="text-center space-y-6 mb-16">
@@ -192,7 +224,7 @@ const Index = () => {
       )}
 
       {/* Pricing Section */}
-      {!ideaData && (
+      {!showOnboarding && !completedData && (
         <section id="pricing" className="py-16 md:py-24">
           <div className="container mx-auto px-4">
             <div className="text-center space-y-6 mb-16">
