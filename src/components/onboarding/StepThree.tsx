@@ -1,143 +1,192 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { User, Eye, ArrowRight, UserCheck } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Check, Palette, Sparkles } from 'lucide-react';
+import { LivePreview } from './LivePreview';
 
 interface StepThreeProps {
-  onNext: (namingPreference: string) => void;
+  onNext: (businessIdentity: { name: string; logo: string }) => void;
   onBack: () => void;
-  initialValue?: string;
+  initialValue?: { name?: string; logo?: string };
+  idea?: string;
+  aboutYou?: { firstName: string; expertise: string; style: string };
+  audience?: string;
 }
 
-const namingOptions = [
-  {
-    id: 'with_personal_name',
-    title: 'Put my name on it',
-    description: 'Build your personal brand',
-    example: 'Sarah Chen Coaching',
-    icon: UserCheck,
-    pros: ['Personal connection', 'Trust & credibility', 'You are the brand']
-  },
-  {
-    id: 'anonymous',
-    title: 'Keep it low-key',
-    description: 'Stay behind the scenes',
-    example: 'The Productivity Hub',
-    icon: Eye,
-    pros: ['Privacy & flexibility', 'Scalable business', 'Focus on the value']
-  }
-];
+export const StepThree = ({ onNext, onBack, initialValue, idea, aboutYou, audience }: StepThreeProps) => {
+  // Generate business name suggestions based on previous inputs
+  const generateBusinessNames = () => {
+    if (!idea || !aboutYou) return [];
+    
+    const { firstName, style } = aboutYou;
+    const cleanIdea = idea.toLowerCase();
+    
+    const personalNames = firstName ? [
+      `${firstName}'s ${cleanIdea.includes('guide') ? 'Guide' : 'Hub'}`,
+      `${firstName} ${cleanIdea.includes('coaching') ? 'Coaching' : 'Academy'}`,
+      `${firstName}'s ${style === 'playful' ? 'Creative' : style === 'professional' ? 'Consulting' : 'Community'}`
+    ] : [];
+    
+    const anonymousNames = [
+      `${style === 'playful' ? 'The Creative' : style === 'professional' ? 'The Expert' : 'The Friendly'} ${cleanIdea.includes('parent') ? 'Parent' : cleanIdea.includes('entrepreneur') ? 'Entrepreneur' : 'Learning'} Hub`,
+      `${cleanIdea.includes('productivity') ? 'Productivity' : cleanIdea.includes('health') ? 'Wellness' : 'Success'} Mastery`,
+      `${style === 'playful' ? 'Bright' : style === 'professional' ? 'Smart' : 'Simple'} ${cleanIdea.includes('business') ? 'Business' : cleanIdea.includes('life') ? 'Life' : 'Growth'} Solutions`
+    ];
+    
+    return [...personalNames, ...anonymousNames].filter(Boolean).slice(0, 3);
+  };
 
-export const StepThree = ({ onNext, onBack, initialValue }: StepThreeProps) => {
-  const [selectedNaming, setSelectedNaming] = useState(initialValue || '');
+  const generateLogos = (name: string) => {
+    const colors = [
+      { bg: 'bg-gradient-to-br from-brand-teal to-brand-orange', icon: '🚀' },
+      { bg: 'bg-gradient-to-br from-primary to-accent', icon: '✨' },
+      { bg: 'bg-gradient-to-br from-brand-orange to-brand-teal', icon: '💡' }
+    ];
+    
+    return colors.map((color, idx) => ({
+      id: `logo-${idx}`,
+      ...color,
+      initial: name.charAt(0).toUpperCase()
+    }));
+  };
+
+  const businessNames = generateBusinessNames();
+  const [selectedName, setSelectedName] = useState(initialValue?.name || businessNames[0] || '');
+  const [selectedLogo, setSelectedLogo] = useState(initialValue?.logo || 'logo-0');
+  
+  const logos = generateLogos(selectedName);
 
   const handleSubmit = () => {
-    if (selectedNaming) {
-      onNext(selectedNaming);
+    if (selectedName && selectedLogo) {
+      onNext({ name: selectedName, logo: selectedLogo });
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto animate-slide-up">
+    <div className="max-w-6xl mx-auto animate-fade-in">
       <div className="text-center mb-8">
-        <div className="w-16 h-16 mx-auto mb-4 bg-brand-orange rounded-full flex items-center justify-center animate-bounce-in">
-          <User className="w-8 h-8 text-white" />
+        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-accent rounded-full flex items-center justify-center">
+          <Sparkles className="w-8 h-8 text-white" />
         </div>
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">
-          Your name or stay anonymous? 🤔
-        </h2>
-        <p className="text-lg text-muted-foreground">
-          Both approaches work great - pick what feels right for you
+        <h2 className="text-3xl font-bold mb-3">Choose Your Business Identity</h2>
+        <p className="text-muted-foreground text-lg">
+          Pick your business name and logo — see your full preview instantly!
         </p>
       </div>
 
-      <div className="space-y-6 mb-8">
-        {namingOptions.map((option) => {
-          const IconComponent = option.icon;
-          const isSelected = selectedNaming === option.id;
-          
-          return (
-            <Card 
-              key={option.id}
-              className={`
-                cursor-pointer transition-smooth hover:shadow-brand-md border-2
-                ${isSelected 
-                  ? 'border-primary bg-primary/5 shadow-brand-md scale-[1.02]' 
-                  : 'border-border hover:border-primary/30 hover:scale-[1.01]'
-                }
-              `}
-              onClick={() => setSelectedNaming(option.id)}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center flex-shrink-0">
-                    <IconComponent className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1 space-y-3">
-                    <div>
-                      <h3 className="text-xl font-semibold">{option.title}</h3>
-                      <p className="text-muted-foreground">{option.description}</p>
-                      <p className="text-sm text-primary font-medium mt-1">
-                        Example: {option.example}
-                      </p>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      {option.pros.map((pro, index) => (
-                        <span 
-                          key={index} 
-                          className="text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground"
-                        >
-                          ✓ {pro}
-                        </span>
-                      ))}
+      <div className="grid lg:grid-cols-2 gap-8 items-start">
+        {/* Left Side - Identity Selection */}
+        <div className="space-y-6">
+          {/* Business Name Selection */}
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-xl font-semibold mb-4 flex items-center space-x-2">
+                <Palette className="w-5 h-5 text-primary" />
+                <span>Choose Your Business Name</span>
+              </h3>
+              
+              <div className="space-y-3">
+                {businessNames.map((name, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-4 rounded-lg border cursor-pointer transition-all duration-300 ${
+                      selectedName === name
+                        ? 'ring-2 ring-primary border-primary shadow-brand-md'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                    onClick={() => setSelectedName(name)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-semibold text-lg">{name}</div>
+                        <Badge variant="secondary" className="mt-1">
+                          {name.includes(aboutYou?.firstName || '') ? 'Personal Brand' : 'Business Identity'}
+                        </Badge>
+                      </div>
+                      {selectedName === name && (
+                        <div className="p-1 rounded-full bg-primary">
+                          <Check className="w-4 h-4 text-primary-foreground" />
+                        </div>
+                      )}
                     </div>
                   </div>
-                  
-                  <div className={`
-                    w-6 h-6 rounded-full border-2 flex items-center justify-center transition-smooth
-                    ${isSelected 
-                      ? 'border-primary bg-primary' 
-                      : 'border-muted-foreground'
-                    }
-                  `}>
-                    {isSelected && (
-                      <div className="w-2 h-2 bg-white rounded-full animate-scale-in" />
-                    )}
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Logo Selection */}
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-xl font-semibold mb-4">Choose Your Logo</h3>
+              
+              <div className="grid grid-cols-3 gap-4">
+                {logos.map((logo) => (
+                  <div
+                    key={logo.id}
+                    className={`aspect-square rounded-lg cursor-pointer transition-all duration-300 ${
+                      selectedLogo === logo.id
+                        ? 'ring-4 ring-primary shadow-brand-md scale-105'
+                        : 'hover:scale-105'
+                    }`}
+                    onClick={() => setSelectedLogo(logo.id)}
+                  >
+                    <div className={`w-full h-full ${logo.bg} rounded-lg flex items-center justify-center text-white text-2xl font-bold relative`}>
+                      <span className="text-4xl">{logo.icon}</span>
+                      <div className="absolute bottom-2 right-2 text-lg font-bold">
+                        {logo.initial}
+                      </div>
+                      {selectedLogo === logo.id && (
+                        <div className="absolute -top-2 -right-2 p-1 rounded-full bg-primary">
+                          <Check className="w-4 h-4 text-primary-foreground" />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Side - Live Preview */}
+        <div className="space-y-6">
+          <h3 className="text-xl font-semibold text-center">Your Business Preview</h3>
+          {idea && aboutYou && audience && (
+            <LivePreview
+              idea={idea}
+              aboutYou={aboutYou}
+              audience={audience}
+              businessIdentity={{ name: selectedName, logo: selectedLogo }}
+            />
+          )}
+        </div>
       </div>
 
-      {selectedNaming && (
-        <div className="text-center mb-6 p-4 bg-gradient-subtle rounded-lg animate-fade-in">
-          <p className="font-medium text-primary">
-            Perfect! We'll create names that {selectedNaming === 'with_personal_name' ? 'feature your personal brand' : 'keep you behind the scenes'} ✨
-          </p>
+      {selectedName && selectedLogo && (
+        <div className="mt-8 p-4 rounded-lg bg-primary/10 border border-primary/20 animate-fade-in">
+          <div className="flex items-center justify-center space-x-2 text-primary">
+            <Check className="w-5 h-5" />
+            <span className="font-semibold">Perfect! Your business identity is ready to launch 🚀</span>
+          </div>
         </div>
       )}
 
-      <div className="flex gap-3">
+      <div className="flex space-x-3 mt-8">
         <Button 
           variant="outline" 
-          size="lg" 
           onClick={onBack}
           className="flex-1"
         >
-          Back
+          ← Back
         </Button>
         <Button 
-          size="lg" 
-          className="flex-1 h-14 text-lg font-semibold"
           onClick={handleSubmit}
-          disabled={!selectedNaming}
-          variant="hero"
+          disabled={!selectedName || !selectedLogo}
+          className="flex-1"
         >
-          See my preview
-          <ArrowRight className="ml-2 w-5 h-5" />
+          Launch My Business →
         </Button>
       </div>
     </div>

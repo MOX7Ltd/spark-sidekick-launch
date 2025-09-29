@@ -1,14 +1,23 @@
 import React, { useState } from 'react';
 import { ProgressBar } from './ProgressBar';
 import { StepOne } from './StepOne';
+import { StepAboutYou } from './StepAboutYou';
 import { StepTwo } from './StepTwo';
 import { StepThree } from './StepThree';
 import { StarterPackReveal } from './StarterPackReveal';
 
 interface OnboardingData {
   idea: string;
+  aboutYou: {
+    firstName: string;
+    expertise: string;
+    style: string;
+  };
   audience: string;
-  namingPreference: string;
+  businessIdentity: {
+    name: string;
+    logo: string;
+  };
 }
 
 interface OnboardingFlowProps {
@@ -21,8 +30,9 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
 
   const stepLabels = [
     'Your Idea',
+    'About You',
     'Target Audience', 
-    'Naming Style',
+    'Business Identity',
     'Launch Ready'
   ];
 
@@ -33,23 +43,29 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     setCurrentStep(2);
   };
 
-  const handleStepTwo = (audience: string) => {
-    setFormData(prev => ({ ...prev, audience }));
+  const handleStepAboutYou = (aboutYou: { firstName: string; expertise: string; style: string }) => {
+    setFormData(prev => ({ ...prev, aboutYou }));
     setCurrentStep(3);
   };
 
-  const handleStepThree = (namingPreference: string) => {
-    setFormData(prev => ({ ...prev, namingPreference }));
+  const handleStepTwo = (audience: string) => {
+    setFormData(prev => ({ ...prev, audience }));
     setCurrentStep(4);
+  };
+
+  const handleStepThree = (businessIdentity: { name: string; logo: string }) => {
+    setFormData(prev => ({ ...prev, businessIdentity }));
+    setCurrentStep(5);
   };
 
   const handleUnlock = () => {
     // In a real app, this would trigger Stripe checkout
-    if (onComplete && formData.idea && formData.audience && formData.namingPreference) {
+    if (onComplete && formData.idea && formData.aboutYou && formData.audience && formData.businessIdentity) {
       onComplete({
         idea: formData.idea,
+        aboutYou: formData.aboutYou,
         audience: formData.audience,
-        namingPreference: formData.namingPreference
+        businessIdentity: formData.businessIdentity
       });
     }
     console.log('Triggering Stripe checkout with:', formData);
@@ -64,7 +80,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   return (
     <div className="min-h-[80vh] py-8">
       <div className="container mx-auto px-4">
-        {currentStep < 4 && (
+        {currentStep < 5 && (
           <ProgressBar 
             currentStep={currentStep} 
             totalSteps={totalSteps} 
@@ -81,6 +97,14 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
           )}
           
           {currentStep === 2 && (
+            <StepAboutYou 
+              onNext={handleStepAboutYou}
+              onBack={goBack}
+              initialValue={formData.aboutYou}
+            />
+          )}
+          
+          {currentStep === 3 && (
             <StepTwo 
               onNext={handleStepTwo}
               onBack={goBack}
@@ -88,19 +112,23 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
             />
           )}
           
-          {currentStep === 3 && (
-            <StepThree 
+          {currentStep === 4 && (
+            <StepThree
               onNext={handleStepThree}
               onBack={goBack}
-              initialValue={formData.namingPreference}
+              initialValue={formData.businessIdentity}
+              idea={formData.idea}
+              aboutYou={formData.aboutYou}
+              audience={formData.audience}
             />
           )}
           
-          {currentStep === 4 && formData.idea && formData.audience && formData.namingPreference && (
+          {currentStep === 5 && formData.idea && formData.aboutYou && formData.audience && formData.businessIdentity && (
             <StarterPackReveal
               idea={formData.idea}
+              aboutYou={formData.aboutYou}
               audience={formData.audience}
-              namingPreference={formData.namingPreference}
+              businessIdentity={formData.businessIdentity}
               onUnlock={handleUnlock}
               onBack={goBack}
             />

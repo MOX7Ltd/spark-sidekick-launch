@@ -6,13 +6,21 @@ import { Rocket, Sparkles, CheckCircle, Heart } from 'lucide-react';
 
 interface StarterPackRevealProps {
   idea: string;
+  aboutYou: {
+    firstName: string;
+    expertise: string;
+    style: string;
+  };
   audience: string;
-  namingPreference: string;
+  businessIdentity: {
+    name: string;
+    logo: string;
+  };
   onUnlock: () => void;
   onBack: () => void;
 }
 
-export const StarterPackReveal = ({ idea, audience, namingPreference, onUnlock, onBack }: StarterPackRevealProps) => {
+export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, onUnlock, onBack }: StarterPackRevealProps) => {
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
@@ -47,23 +55,22 @@ export const StarterPackReveal = ({ idea, audience, namingPreference, onUnlock, 
           <Rocket className="w-10 h-10 text-white" />
         </div>
         <h2 className="text-4xl md:text-5xl font-bold mb-4">
-          Your business is ready to launch! 🚀
+          {businessIdentity.name} is ready to launch! 🚀
         </h2>
         <p className="text-xl text-muted-foreground mb-6 max-w-2xl mx-auto">
-          We've created everything you need to start earning. 
-          Unlock your storefront + launch campaigns for just $10.
+          Your complete business identity is live. Publish your storefront and start earning today for just $10.
         </p>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2 items-start">
-        {/* Preview Panel - Blurred */}
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/20 to-background/80 z-10 rounded-lg" />
+        {/* Preview Panel - Full Visibility */}
+        <div>
+          <h3 className="text-2xl font-bold mb-4 text-center">Your Complete Business Preview</h3>
           <LivePreview 
             idea={idea}
+            aboutYou={aboutYou}
             audience={audience}
-            namingPreference={namingPreference}
-            isBlurred={true}
+            businessIdentity={businessIdentity}
           />
         </div>
 
@@ -83,11 +90,11 @@ export const StarterPackReveal = ({ idea, audience, namingPreference, onUnlock, 
 
               <div className="space-y-3 my-6">
                 {[
-                  'Professional storefront with payments',
-                  '2 ready-to-sell products',
-                  '3 launch campaigns with content',
-                  'Social media posting tools',
-                  'Basic analytics & insights'
+                  'Publish your live storefront instantly',
+                  'Own & edit your business identity',
+                  'Post campaigns directly to social media',
+                  'Accept payments & start earning',
+                  'Access to Campaign Builder dashboard'
                 ].map((feature, index) => (
                   <div key={index} className="flex items-center space-x-3">
                     <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
@@ -96,21 +103,21 @@ export const StarterPackReveal = ({ idea, audience, namingPreference, onUnlock, 
                 ))}
               </div>
 
-              <Button 
+                <Button 
                 variant="starter" 
                 size="xl" 
                 className="w-full mb-4"
                 onClick={onUnlock}
               >
                 <Heart className="mr-2 h-5 w-5" />
-                Unlock My Business
+                Publish {businessIdentity.name}
               </Button>
 
               <div className="text-center">
                 <p className="text-xs text-muted-foreground">
-                  ✨ Start earning immediately<br />
+                  🚀 Go live in 60 seconds<br />
                   💳 Secure payment via Stripe<br />
-                  🔒 15% platform fee only when you sell
+                  📈 Start earning immediately
                 </p>
               </div>
             </CardContent>
@@ -126,9 +133,9 @@ export const StarterPackReveal = ({ idea, audience, namingPreference, onUnlock, 
                   ))}
                 </div>
                 <p className="text-sm italic">
-                  "From idea to first sale in 20 minutes. This is exactly what I needed to get started!"
+                  "Seeing my full business preview convinced me instantly. From idea to published storefront in 15 minutes!"
                 </p>
-                <p className="text-xs text-muted-foreground">- Jamie R., Creator</p>
+                <p className="text-xs text-muted-foreground">- Alex M., Entrepreneur</p>
               </div>
             </CardContent>
           </Card>

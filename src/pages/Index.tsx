@@ -21,8 +21,16 @@ import {
 
 interface OnboardingData {
   idea: string;
+  aboutYou: {
+    firstName: string;
+    expertise: string;
+    style: string;
+  };
   audience: string;
-  namingPreference: string;
+  businessIdentity: {
+    name: string;
+    logo: string;
+  };
 }
 
 const Index = () => {

@@ -5,118 +5,154 @@ import { Lightbulb, Target, DollarSign, TrendingUp, Lock } from 'lucide-react';
 
 interface LivePreviewProps {
   idea: string;
+  aboutYou?: {
+    firstName: string;
+    expertise: string;
+    style: string;
+  };
   audience?: string;
-  namingPreference?: string;
-  isBlurred?: boolean;
+  businessIdentity?: {
+    name: string;
+    logo: string;
+  };
 }
 
 interface BusinessPreview {
-  names: { name: string; type: string }[];
-  positioning: string;
+  storefront: {
+    name: string;
+    logo: string;
+    tagline: string;
+    bio: string;
+    colors: string;
+  };
   products: { title: string; type: string; price: string }[];
-  samplePost: {
+  introPost: {
     hook: string;
     caption: string;
     hashtags: string[];
   };
 }
 
-export const LivePreview = ({ idea, audience, namingPreference, isBlurred = false }: LivePreviewProps) => {
+export const LivePreview = ({ idea, aboutYou, audience, businessIdentity }: LivePreviewProps) => {
   // Generate preview based on inputs
   const generatePreview = (): BusinessPreview => {
-    const baseNames = [
-      "Productivity Mastery Hub",
-      "Focus Flow Academy", 
-      "The Clarity Collective"
-    ];
+    const businessName = businessIdentity?.name || "Your Business";
+    const firstName = aboutYou?.firstName || "Owner";
+    const expertise = aboutYou?.expertise || "helping others succeed";
+    const style = aboutYou?.style || "friendly";
     
-    const personalNames = [
-      "Sarah Chen Coaching",
-      "Alex Thompson's Guide", 
-      "Jamie Rivera Consulting"
-    ];
-    
-    return {
-      names: namingPreference === 'with_personal_name' 
-        ? [
-            { name: personalNames[0], type: "Personal Brand" },
-            { name: personalNames[1], type: "Professional" },
-            { name: baseNames[0], type: "Alternative" }
-          ]
-        : [
-            { name: baseNames[0], type: "Professional" },
-            { name: baseNames[1], type: "Creative" },
-            { name: personalNames[0], type: "Personal Option" }
-          ],
-      positioning: audience 
-        ? `I help ${audience.replace('_', ' ')} transform chaos into clarity with simple, proven systems that actually work.`
-        : "Transform your ideas into actionable results with proven systems.",
-      products: [
-        { title: "5-Minute Focus Guide", type: "Digital Guide", price: "$29" },
-        { title: "Productivity Templates", type: "Checklist Pack", price: "$19" },
-        { title: "1:1 Strategy Session", type: "Service", price: "$149" }
-      ],
-      samplePost: {
-        hook: "Stop trying to fix your brain with systems that don't work 🧠",
-        caption: `Here's the truth: Generic productivity advice doesn't work for everyone. Your brain is unique, and your systems should be too.\n\nTry this instead:\n✅ Work with your natural rhythms\n✅ Set up visual progress cues\n✅ Celebrate small wins immediately\n\nWhat's one productivity hack that actually works for you? 👇`,
-        hashtags: ["#Productivity", "#Focus", "#LifeHacks", "#Mindset", "#Success"]
+    // Generate personalized bio
+    const generateBio = () => {
+      const greeting = style === 'playful' ? `Hey there! I'm ${firstName} 👋` : 
+                      style === 'professional' ? `Hi, I'm ${firstName}.` : 
+                      `Hello! I'm ${firstName} 🙂`;
+      
+      const mission = audience ? 
+        `I've been ${expertise.replace(/I've been |I have been |I'm |I am /gi, '')}, and now I help ${audience.replace('_', ' ')} achieve similar success.` :
+        `I've been ${expertise.replace(/I've been |I have been |I'm |I am /gi, '')}, and I'm passionate about sharing what I've learned.`;
+      
+      return `${greeting} ${mission}`;
+    };
+
+    // Generate tagline
+    const generateTagline = () => {
+      const audienceMap: { [key: string]: string } = {
+        'busy_parents': 'making family life easier',
+        'entrepreneurs': 'turning ideas into success',
+        'learners': 'accelerating your growth',
+        'other': 'transforming your approach'
+      };
+      
+      return audienceMap[audience || 'other'] || 'helping you succeed';
+    };
+
+    // Generate products based on idea and audience
+    const generateProducts = () => {
+      const ideaLower = idea.toLowerCase();
+      const isGuideIdea = ideaLower.includes('guide') || ideaLower.includes('course');
+      const isCoachingIdea = ideaLower.includes('coaching') || ideaLower.includes('consulting');
+      
+      if (isGuideIdea) {
+        return [
+          { title: "Complete Starter Guide", type: "Digital Guide", price: "$47" },
+          { title: "Quick Reference Templates", type: "Template Pack", price: "$27" }
+        ];
+      } else if (isCoachingIdea) {
+        return [
+          { title: "1:1 Strategy Session", type: "Consultation", price: "$149" },
+          { title: "Group Coaching Program", type: "Course", price: "$297" }
+        ];
+      } else {
+        return [
+          { title: "Getting Started Blueprint", type: "Digital Guide", price: "$39" },
+          { title: "Done-For-You Templates", type: "Template Pack", price: "$29" }
+        ];
       }
+    };
+
+    // Generate intro post
+    const generateIntroPost = () => {
+      const hooks = {
+        'busy_parents': "Being a parent is hard enough without...",
+        'entrepreneurs': "Most entrepreneurs fail because they...",
+        'learners': "The biggest learning mistake I see is...",
+        'other': "Here's what nobody tells you about..."
+      };
+      
+      const hook = hooks[audience as keyof typeof hooks] || hooks.other;
+      
+      const caption = `${generateBio()}\n\nI started ${businessName} because I noticed ${audience ? audience.replace('_', ' ') : 'people'} struggling with the same challenges I once faced.\n\nMy approach is simple: ${style === 'playful' ? 'make it fun and doable' : style === 'professional' ? 'proven strategies that work' : 'friendly support every step of the way'}.\n\nExcited to share this journey with you! 🚀`;
+      
+      return {
+        hook,
+        caption,
+        hashtags: audience === 'busy_parents' ? ["#ParentLife", "#MomHacks", "#DadTips", "#FamilyFirst"] :
+                 audience === 'entrepreneurs' ? ["#Entrepreneur", "#StartupLife", "#BusinessTips", "#Success"] :
+                 audience === 'learners' ? ["#Learning", "#GrowthMindset", "#SkillBuilding", "#PersonalDevelopment"] :
+                 ["#NewBusiness", "#Passion", "#Community", "#Growth"]
+      };
+    };
+
+    return {
+      storefront: {
+        name: businessName,
+        logo: businessIdentity?.logo || 'logo-0',
+        tagline: generateTagline(),
+        bio: generateBio(),
+        colors: 'from-brand-teal to-brand-orange'
+      },
+      products: generateProducts(),
+      introPost: generateIntroPost()
     };
   };
 
   const preview = generatePreview();
 
   return (
-    <div className={`space-y-6 ${isBlurred ? 'blur-sm pointer-events-none' : ''} animate-fade-in`}>
-      {/* Header with Lock Overlay */}
-      <div className="relative">
-        <div className="text-center space-y-2">
-          <h3 className="text-2xl font-bold">Your business preview 🎉</h3>
-          <p className="text-muted-foreground">Here's what we're building for you...</p>
-        </div>
-        
-        {isBlurred && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="bg-background/90 backdrop-blur-sm rounded-lg p-4 border shadow-brand-md">
-              <Lock className="w-8 h-8 text-primary mx-auto mb-2" />
-              <p className="font-semibold text-center">Almost there!</p>
+    <div className="space-y-6 animate-fade-in">
+      {/* Storefront Preview */}
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
+          {/* Header with Logo */}
+          <div className={`bg-gradient-to-r ${preview.storefront.colors} p-6 text-white`}>
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
+                {preview.storefront.logo === 'logo-0' ? '🚀' : 
+                 preview.storefront.logo === 'logo-1' ? '✨' : '💡'}
+                {preview.storefront.name.charAt(0)}
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold">{preview.storefront.name}</h3>
+                <p className="text-white/90">{preview.storefront.tagline}</p>
+              </div>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Business Names */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center space-x-2 text-lg">
-            <Lightbulb className="h-5 w-5 text-accent" />
-            <span>Business Names</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3">
-            {preview.names.map((name, idx) => (
-              <div key={idx} className="p-3 rounded-lg border bg-background/50">
-                <div className="font-semibold">{name.name}</div>
-                <Badge variant="secondary" className="mt-1 text-xs">{name.type}</Badge>
-              </div>
-            ))}
+          
+          {/* Bio */}
+          <div className="p-6">
+            <p className="text-lg leading-relaxed mb-4">{preview.storefront.bio}</p>
+            <Badge variant="secondary" className="mb-4">Live Business Preview</Badge>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Positioning */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center space-x-2 text-lg">
-            <Target className="h-5 w-5 text-primary" />
-            <span>Your Positioning</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-foreground italic leading-relaxed">
-            "{preview.positioning}"
-          </p>
         </CardContent>
       </Card>
 
@@ -125,17 +161,17 @@ export const LivePreview = ({ idea, audience, namingPreference, isBlurred = fals
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center space-x-2 text-lg">
             <DollarSign className="h-5 w-5 text-brand-orange" />
-            <span>Starter Products</span>
+            <span>Your Products</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-3">
             {preview.products.map((product, idx) => (
-              <div key={idx} className="p-3 rounded-lg border">
-                <h4 className="font-semibold">{product.title}</h4>
-                <div className="flex items-center justify-between mt-2">
-                  <Badge variant="outline" className="text-xs">{product.type}</Badge>
-                  <span className="font-bold text-brand-orange">{product.price}</span>
+              <div key={idx} className="p-4 rounded-lg border bg-gradient-subtle">
+                <h4 className="font-semibold text-lg">{product.title}</h4>
+                <div className="flex items-center justify-between mt-3">
+                  <Badge variant="outline">{product.type}</Badge>
+                  <span className="font-bold text-xl text-brand-orange">{product.price}</span>
                 </div>
               </div>
             ))}
@@ -143,34 +179,38 @@ export const LivePreview = ({ idea, audience, namingPreference, isBlurred = fals
         </CardContent>
       </Card>
 
-      {/* Sample Post */}
+      {/* Intro Campaign */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center space-x-2 text-lg">
             <TrendingUp className="h-5 w-5 text-brand-teal" />
-            <span>Sample Content</span>
+            <span>Your Intro Campaign</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Hook</h5>
-            <p className="font-semibold">{preview.samplePost.hook}</p>
+        <CardContent className="space-y-4">
+          <div className="p-4 rounded-lg border bg-background/50">
+            <h5 className="text-sm font-semibold text-muted-foreground mb-2">HOOK</h5>
+            <p className="font-semibold text-lg">{preview.introPost.hook}</p>
           </div>
           
-          <div>
-            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Caption</h5>
-            <p className="text-sm leading-relaxed whitespace-pre-line">{preview.samplePost.caption}</p>
+          <div className="p-4 rounded-lg border bg-background/50">
+            <h5 className="text-sm font-semibold text-muted-foreground mb-2">CAPTION</h5>
+            <p className="leading-relaxed whitespace-pre-line">{preview.introPost.caption}</p>
           </div>
           
-          <div>
-            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Hashtags</h5>
-            <div className="flex flex-wrap gap-1">
-              {preview.samplePost.hashtags.map((tag, idx) => (
-                <Badge key={idx} variant="secondary" className="text-xs">
+          <div className="p-4 rounded-lg border bg-background/50">
+            <h5 className="text-sm font-semibold text-muted-foreground mb-2">HASHTAGS</h5>
+            <div className="flex flex-wrap gap-2">
+              {preview.introPost.hashtags.map((tag, idx) => (
+                <Badge key={idx} variant="secondary" className="text-sm">
                   {tag}
                 </Badge>
               ))}
             </div>
+          </div>
+          
+          <div className="text-center pt-2">
+            <p className="text-sm text-muted-foreground">Ready to post • Created with SideHive</p>
           </div>
         </CardContent>
       </Card>
