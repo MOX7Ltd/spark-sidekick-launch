@@ -1,21 +1,180 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Palette, Sparkles } from 'lucide-react';
+import { Check, Palette, Sparkles, Eye, Lightbulb } from 'lucide-react';
 import { LivePreview } from './LivePreview';
 
 interface StepThreeProps {
-  onNext: (businessIdentity: { name: string; logo: string }) => void;
+  onNext: (businessIdentity: { 
+    name: string; 
+    logo: string; 
+    tagline: string; 
+    bio: string; 
+    colors: string[]; 
+    logoSVG: string; 
+    nameOptions: string[] 
+  }) => void;
   onBack: () => void;
-  initialValue?: { name?: string; logo?: string };
-  idea?: string;
-  aboutYou?: { firstName: string; expertise: string; style: string };
-  audience?: string;
+  initialValue?: { 
+    name: string; 
+    logo: string; 
+    tagline?: string; 
+    bio?: string; 
+    colors?: string[]; 
+    logoSVG?: string; 
+    nameOptions?: string[] 
+  };
+  idea: string;
+  aboutYou: {
+    firstName: string;
+    expertise: string;
+    style: string;
+  };
+  audience: string;
 }
 
 export const StepThree = ({ onNext, onBack, initialValue, idea, aboutYou, audience }: StepThreeProps) => {
-  // Generate business name suggestions based on previous inputs
+  const [selectedName, setSelectedName] = useState(initialValue?.name || '');
+  const [selectedLogo, setSelectedLogo] = useState(initialValue?.logo || 'logo-0');
+
+  // If we have AI-generated data, use it
+  if (initialValue?.nameOptions && initialValue.tagline && initialValue.bio) {
+    const handleSubmit = () => {
+      onNext({
+        name: selectedName || initialValue.nameOptions![0],
+        logo: selectedLogo,
+        tagline: initialValue.tagline!,
+        bio: initialValue.bio!,
+        colors: initialValue.colors || ['#2563eb', '#1d4ed8', '#1e40af'],
+        logoSVG: initialValue.logoSVG || '',
+        nameOptions: initialValue.nameOptions!
+      });
+    };
+
+    const generateLogos = () => {
+      return [
+        { id: 'logo-0', name: 'Dynamic', gradient: 'from-blue-500 to-purple-500', icon: Sparkles },
+        { id: 'logo-1', name: 'Professional', gradient: 'from-gray-600 to-gray-800', icon: Lightbulb },
+        { id: 'logo-2', name: 'Creative', gradient: 'from-orange-400 to-pink-500', icon: Palette }
+      ];
+    };
+
+    return (
+      <div className="w-full max-w-4xl mx-auto px-4">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold mb-3">Perfect! Choose Your Business Identity</h2>
+          <p className="text-muted-foreground text-lg">
+            Your AI-generated business identity is ready. You can customize it or use it as-is.
+          </p>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Left side - Identity Selection */}
+          <div className="space-y-6">
+            {/* Business Name Selection */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-primary" />
+                  Choose Your Business Name
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {initialValue.nameOptions!.map((name, index) => (
+                  <div
+                    key={index}
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:border-primary/50 ${
+                      selectedName === name ? 'border-primary bg-primary/5' : 'border-border'
+                    }`}
+                    onClick={() => setSelectedName(name)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-lg">{name}</span>
+                      {selectedName === name && (
+                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                          <Check className="h-4 w-4 text-primary-foreground" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Logo Selection */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="h-5 w-5 text-primary" />
+                  Choose Your Logo Style
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-3">
+                  {generateLogos().map((logo, index) => (
+                    <div
+                      key={index}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:border-primary/50 ${
+                        selectedLogo === logo.id ? 'border-primary bg-primary/5' : 'border-border'
+                      }`}
+                      onClick={() => setSelectedLogo(logo.id)}
+                    >
+                      <div
+                        className={`w-full h-16 rounded-lg bg-gradient-to-br ${logo.gradient} flex items-center justify-center mb-3`}
+                      >
+                        <logo.icon className="h-8 w-8 text-white" />
+                      </div>
+                      <p className="text-sm font-medium text-center">{logo.name}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right side - Live Preview */}
+          <div className="lg:sticky lg:top-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5 text-primary" />
+                  Live Preview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <LivePreview
+                  idea={idea}
+                  aboutYou={aboutYou}
+                  audience={audience}
+                  businessIdentity={{
+                    name: selectedName || initialValue.nameOptions![0],
+                    logo: selectedLogo,
+                    tagline: initialValue.tagline,
+                    bio: initialValue.bio,
+                    colors: initialValue.colors,
+                    logoSVG: initialValue.logoSVG,
+                    nameOptions: initialValue.nameOptions
+                  }}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        <div className="flex justify-between mt-8">
+          <Button onClick={onBack} variant="outline" className="px-8">
+            Back
+          </Button>
+          <Button onClick={handleSubmit} className="px-8">
+            Continue to Launch →
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback to original logic if no AI data
   const generateBusinessNames = () => {
     if (!idea || !aboutYou) return [];
     
@@ -52,14 +211,20 @@ export const StepThree = ({ onNext, onBack, initialValue, idea, aboutYou, audien
   };
 
   const businessNames = generateBusinessNames();
-  const [selectedName, setSelectedName] = useState(initialValue?.name || businessNames[0] || '');
-  const [selectedLogo, setSelectedLogo] = useState(initialValue?.logo || 'logo-0');
-  
-  const logos = generateLogos(selectedName);
+  const fallbackSelectedName = selectedName || businessNames[0] || '';
+  const logos = generateLogos(fallbackSelectedName);
 
   const handleSubmit = () => {
-    if (selectedName && selectedLogo) {
-      onNext({ name: selectedName, logo: selectedLogo });
+    if (fallbackSelectedName && selectedLogo) {
+      onNext({ 
+        name: fallbackSelectedName, 
+        logo: selectedLogo,
+        tagline: '',
+        bio: '',
+        colors: ['#2563eb'],
+        logoSVG: '',
+        nameOptions: businessNames
+      });
     }
   };
 
@@ -91,7 +256,7 @@ export const StepThree = ({ onNext, onBack, initialValue, idea, aboutYou, audien
                   <div
                     key={idx}
                     className={`p-4 rounded-lg border cursor-pointer transition-all duration-300 ${
-                      selectedName === name
+                      fallbackSelectedName === name
                         ? 'ring-2 ring-primary border-primary shadow-brand-md'
                         : 'border-border hover:border-primary/50'
                     }`}
@@ -104,7 +269,7 @@ export const StepThree = ({ onNext, onBack, initialValue, idea, aboutYou, audien
                           {name.includes(aboutYou?.firstName || '') ? 'Personal Brand' : 'Business Identity'}
                         </Badge>
                       </div>
-                      {selectedName === name && (
+                      {fallbackSelectedName === name && (
                         <div className="p-1 rounded-full bg-primary">
                           <Check className="w-4 h-4 text-primary-foreground" />
                         </div>
@@ -153,18 +318,16 @@ export const StepThree = ({ onNext, onBack, initialValue, idea, aboutYou, audien
         {/* Right Side - Live Preview */}
         <div className="space-y-6">
           <h3 className="text-xl font-semibold text-center">Your Business Preview</h3>
-          {idea && aboutYou && audience && (
-            <LivePreview
-              idea={idea}
-              aboutYou={aboutYou}
-              audience={audience}
-              businessIdentity={{ name: selectedName, logo: selectedLogo }}
-            />
-          )}
+          <LivePreview
+            idea={idea}
+            aboutYou={aboutYou}
+            audience={audience}
+            businessIdentity={{ name: fallbackSelectedName, logo: selectedLogo }}
+          />
         </div>
       </div>
 
-      {selectedName && selectedLogo && (
+      {fallbackSelectedName && selectedLogo && (
         <div className="mt-8 p-4 rounded-lg bg-primary/10 border border-primary/20 animate-fade-in">
           <div className="flex items-center justify-center space-x-2 text-primary">
             <Check className="w-5 h-5" />
@@ -183,7 +346,7 @@ export const StepThree = ({ onNext, onBack, initialValue, idea, aboutYou, audien
         </Button>
         <Button 
           onClick={handleSubmit}
-          disabled={!selectedName || !selectedLogo}
+          disabled={!fallbackSelectedName || !selectedLogo}
           className="flex-1"
         >
           Launch My Business →

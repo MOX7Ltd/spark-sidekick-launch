@@ -14,6 +14,11 @@ interface LivePreviewProps {
   businessIdentity?: {
     name: string;
     logo: string;
+    tagline?: string;
+    bio?: string;
+    colors?: string[];
+    logoSVG?: string;
+    nameOptions?: string[];
   };
 }
 
@@ -41,8 +46,11 @@ export const LivePreview = ({ idea, aboutYou, audience, businessIdentity }: Live
     const expertise = aboutYou?.expertise || "helping others succeed";
     const style = aboutYou?.style || "friendly";
     
-    // Generate personalized bio
-    const generateBio = () => {
+    // Use AI-generated content if available, otherwise fallback to generated content
+    const bio = businessIdentity?.bio || generateBio();
+    const tagline = businessIdentity?.tagline || generateTagline();
+    // Generate personalized bio fallback
+    function generateBio() {
       const greeting = style === 'playful' ? `Hey there! I'm ${firstName} 👋` : 
                       style === 'professional' ? `Hi, I'm ${firstName}.` : 
                       `Hello! I'm ${firstName} 🙂`;
@@ -52,10 +60,10 @@ export const LivePreview = ({ idea, aboutYou, audience, businessIdentity }: Live
         `I've been ${expertise.replace(/I've been |I have been |I'm |I am /gi, '')}, and I'm passionate about sharing what I've learned.`;
       
       return `${greeting} ${mission}`;
-    };
+    }
 
-    // Generate tagline
-    const generateTagline = () => {
+    // Generate tagline fallback
+    function generateTagline() {
       const audienceMap: { [key: string]: string } = {
         'busy_parents': 'making family life easier',
         'entrepreneurs': 'turning ideas into success',
@@ -113,40 +121,47 @@ export const LivePreview = ({ idea, aboutYou, audience, businessIdentity }: Live
       };
     };
 
-    return {
-      storefront: {
-        name: businessName,
-        logo: businessIdentity?.logo || 'logo-0',
-        tagline: generateTagline(),
-        bio: generateBio(),
-        colors: 'from-brand-teal to-brand-orange'
-      },
-      products: generateProducts(),
-      introPost: generateIntroPost()
+      return {
+        storefront: {
+          name: businessName,
+          logo: businessIdentity?.logo || 'logo-0',
+          tagline: tagline,
+          bio: bio,
+          colors: businessIdentity?.colors?.[0] ? `from-[${businessIdentity.colors[0]}] to-[${businessIdentity.colors[1] || businessIdentity.colors[0]}]` : 'from-brand-teal to-brand-orange'
+        },
+        products: generateProducts(),
+        introPost: generateIntroPost()
+      };
     };
-  };
 
-  const preview = generatePreview();
+    const preview = generatePreview();
 
-  return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Storefront Preview */}
-      <Card className="overflow-hidden">
-        <CardContent className="p-0">
-          {/* Header with Logo */}
-          <div className={`bg-gradient-to-r ${preview.storefront.colors} p-6 text-white`}>
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
-                {preview.storefront.logo === 'logo-0' ? '🚀' : 
-                 preview.storefront.logo === 'logo-1' ? '✨' : '💡'}
-                {preview.storefront.name.charAt(0)}
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold">{preview.storefront.name}</h3>
-                <p className="text-white/90">{preview.storefront.tagline}</p>
+    return (
+      <div className="space-y-6 animate-fade-in">
+        {/* Storefront Preview */}
+        <Card className="overflow-hidden">
+          <CardContent className="p-0">
+            {/* Header with Logo */}
+            <div className={`bg-gradient-to-r ${preview.storefront.colors} p-6 text-white`}>
+              <div className="flex items-center space-x-4">
+                {businessIdentity?.logoSVG ? (
+                  <div 
+                    className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center overflow-hidden"
+                    dangerouslySetInnerHTML={{ __html: businessIdentity.logoSVG }}
+                  />
+                ) : (
+                  <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
+                    {preview.storefront.logo === 'logo-0' ? '🚀' : 
+                     preview.storefront.logo === 'logo-1' ? '✨' : '💡'}
+                    {preview.storefront.name.charAt(0)}
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-2xl font-bold">{preview.storefront.name}</h3>
+                  <p className="text-white/90">{preview.storefront.tagline}</p>
+                </div>
               </div>
             </div>
-          </div>
           
           {/* Bio */}
           <div className="p-6">

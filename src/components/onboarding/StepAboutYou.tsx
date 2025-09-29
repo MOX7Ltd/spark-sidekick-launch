@@ -11,9 +11,10 @@ interface StepAboutYouProps {
   onNext: (data: { firstName: string; expertise: string; style: string }) => void;
   onBack: () => void;
   initialValue?: { firstName?: string; expertise?: string; style?: string };
+  isLoading?: boolean;
 }
 
-export const StepAboutYou = ({ onNext, onBack, initialValue }: StepAboutYouProps) => {
+export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAboutYouProps) => {
   const [firstName, setFirstName] = useState(initialValue?.firstName || '');
   const [expertise, setExpertise] = useState(initialValue?.expertise || '');
   const [style, setStyle] = useState(initialValue?.style || '');
@@ -131,10 +132,10 @@ export const StepAboutYou = ({ onNext, onBack, initialValue }: StepAboutYouProps
             </Button>
             <Button 
               type="submit" 
-              disabled={!isValid}
+              disabled={!isValid || isLoading}
               className="flex-1"
             >
-              Next Step →
+              {isLoading ? 'Generating...' : 'Next Step →'}
             </Button>
           </div>
         </form>

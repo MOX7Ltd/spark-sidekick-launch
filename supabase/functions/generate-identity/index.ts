@@ -1,0 +1,227 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
+
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// SVG sanitization function
+function sanitizeSVG(svgString: string): string {
+  // Basic SVG sanitization - allow only safe tags and attributes
+  const allowedTags = ['svg', 'g', 'path', 'rect', 'circle', 'text', 'defs', 'linearGradient', 'stop'];
+  const allowedAttrs = ['viewBox', 'width', 'height', 'fill', 'stroke', 'stroke-width', 'd', 'x', 'y', 'rx', 'ry', 'cx', 'cy', 'r', 'font-family', 'font-size', 'text-anchor', 'id', 'x1', 'y1', 'x2', 'y2', 'offset', 'stop-color'];
+  
+  // Remove script tags, event handlers, and external references
+  const cleaned = svgString
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/on\w+="[^"]*"/gi, '')
+    .replace(/javascript:/gi, '')
+    .replace(/data:/gi, '')
+    .replace(/href="[^"]*"/gi, '');
+  
+  // Fallback to simple text logo if sanitization fails
+  if (!cleaned.includes('<svg') || cleaned.length > 20000) {
+    return `<svg viewBox="0 0 320 80" width="320" height="80" xmlns="http://www.w3.org/2000/svg">
+      <rect width="320" height="80" fill="#2563eb"/>
+      <text x="160" y="45" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="24" font-weight="bold">LOGO</text>
+    </svg>`;
+  }
+  
+  return cleaned;
+}
+
+// Rate limiting function
+async function checkRateLimit(userId: string): Promise<boolean> {
+  const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
+  
+  const { count } = await supabase
+    .from('ai_usage')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('kind', 'identity')
+    .gte('created_at', oneMinuteAgo);
+  
+  return (count || 0) < 4; // Max 4 requests per minute
+}
+
+async function logUsage(userId: string) {
+  await supabase
+    .from('ai_usage')
+    .insert({ user_id: userId, kind: 'identity' });
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Get user from auth header
+    const { data: { user }, error: authError } = await supabase.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
+
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check rate limit
+    const canProceed = await checkRateLimit(user.id);
+    if (!canProceed) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please wait before trying again.' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { idea, audience, experience, namingPreference, firstName, tone } = await req.json();
+
+    if (!idea || !audience) {
+      return new Response(JSON.stringify({ error: 'Missing required fields: idea, audience' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Create OpenAI prompt
+    const systemPrompt = `You are a brand strategist. Return strict JSON matching this exact schema:
+{
+  "nameOptions": ["Name 1", "Name 2", "Name 3"],
+  "tagline": "tagline here",
+  "bio": "bio here", 
+  "colors": ["#color1", "#color2", "#color3"],
+  "logoSVG": "<svg>...</svg>"
+}
+
+Keep names unique, modern, and relevant to the idea and audience. Bio must sound human and specific (2-3 sentences). Logo must be a minimal, monochrome SVG wordmark with optional simple icon, viewBox="0 0 320 80", using only safe tags (svg, g, path, rect, circle, text). No scripts, no external references.`;
+
+    const userPrompt = `Generate a business identity for:
+- Idea: ${idea}
+- Target audience: ${audience}
+- Experience/background: ${experience || 'Not specified'}
+- Naming preference: ${namingPreference || 'anonymous'}
+- First name: ${firstName || 'Not provided'}
+- Tone: ${tone || 'professional'}
+
+Provide 3-6 name options, one compelling tagline (max 80 chars), a personalized bio using first name and experience if provided, 3 brand colors, and a clean SVG logo.`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.7,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('OpenAI API error:', await response.text());
+      return new Response(JSON.stringify({ error: 'AI generation failed' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const data = await response.json();
+    const content = data.choices[0].message.content;
+
+    let generatedData;
+    try {
+      generatedData = JSON.parse(content);
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', content);
+      return new Response(JSON.stringify({ error: 'Invalid AI response format' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Sanitize SVG
+    generatedData.logoSVG = sanitizeSVG(generatedData.logoSVG);
+
+    // Ensure user profile exists
+    await supabase
+      .from('profiles')
+      .upsert({ 
+        user_id: user.id,
+        display_name: firstName || user.user_metadata?.full_name || null,
+        email: user.email 
+      });
+
+    // Create or update business record
+    const { data: business, error: businessError } = await supabase
+      .from('businesses')
+      .upsert({
+        owner_id: user.id,
+        idea,
+        audience,
+        experience,
+        naming_preference: namingPreference,
+        business_name: generatedData.nameOptions[0],
+        tagline: generatedData.tagline,
+        bio: generatedData.bio,
+        brand_colors: generatedData.colors,
+        logo_svg: generatedData.logoSVG,
+        updated_at: new Date().toISOString()
+      }, { 
+        onConflict: 'owner_id'
+      })
+      .select()
+      .single();
+
+    if (businessError) {
+      console.error('Database error:', businessError);
+      return new Response(JSON.stringify({ error: 'Failed to save business data' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Log usage
+    await logUsage(user.id);
+
+    return new Response(JSON.stringify({
+      business,
+      nameOptions: generatedData.nameOptions,
+      tagline: generatedData.tagline,
+      bio: generatedData.bio,
+      colors: generatedData.colors,
+      logoSVG: generatedData.logoSVG
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error in generate-identity function:', error);
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
