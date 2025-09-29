@@ -52,22 +52,37 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     setCurrentStep(2);
   };
 
-  const handleStepAboutYou = async (aboutYou: { firstName: string; expertise: string; style: string }) => {
-    if (!formData.idea) return;
-    
+  const handleStepAboutYou = (aboutYou: { firstName: string; expertise: string; style: string }) => {
     setFormData(prev => ({ ...prev, aboutYou }));
+    setCurrentStep(3);
+  };
+
+  const handleStepTwo = async (audience: string) => {
+    if (!formData.idea || !formData.aboutYou) return;
+    
+    setFormData(prev => ({ ...prev, audience }));
     setIsGenerating(true);
     
     try {
-      // Generate business identity using AI
+      console.log('Generating business identity with data:', {
+        idea: formData.idea,
+        audience,
+        experience: formData.aboutYou.expertise,
+        firstName: formData.aboutYou.firstName,
+        style: formData.aboutYou.style
+      });
+
+      // Generate business identity using AI after all data is collected
       const identityData = await generateBusinessIdentity({
         idea: formData.idea,
-        audience: formData.audience || 'General audience',
-        experience: aboutYou.expertise,
-        firstName: aboutYou.firstName,
-        tone: aboutYou.style.toLowerCase() as 'professional' | 'friendly' | 'playful',
+        audience,
+        experience: formData.aboutYou.expertise,
+        firstName: formData.aboutYou.firstName,
+        tone: formData.aboutYou.style.toLowerCase() as 'professional' | 'friendly' | 'playful',
         namingPreference: 'anonymous'
       });
+
+      console.log('Generated identity data:', identityData);
 
       // Update form data with generated identity
       setFormData(prev => ({
@@ -83,22 +98,17 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
         }
       }));
       
-      setCurrentStep(3);
+      setCurrentStep(4);
     } catch (error) {
       console.error('Error generating business identity:', error);
       toast({
         title: "Generation Failed",
-        description: "Failed to generate business identity. Please try again.",
+        description: `Failed to generate business identity: ${error.message || 'Please try again.'}`,
         variant: "destructive"
       });
     } finally {
       setIsGenerating(false);
     }
-  };
-
-  const handleStepTwo = (audience: string) => {
-    setFormData(prev => ({ ...prev, audience }));
-    setCurrentStep(4);
   };
 
   const handleStepThree = (businessIdentity: { name: string; logo: string; tagline: string; bio: string; colors: string[]; logoSVG: string; nameOptions: string[] }) => {
@@ -149,7 +159,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
               onNext={handleStepAboutYou}
               onBack={goBack}
               initialValue={formData.aboutYou}
-              isLoading={isGenerating}
+              isLoading={false}
             />
           )}
           
@@ -158,6 +168,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
               onNext={handleStepTwo}
               onBack={goBack}
               initialValue={formData.audience}
+              isLoading={isGenerating}
             />
           )}
           

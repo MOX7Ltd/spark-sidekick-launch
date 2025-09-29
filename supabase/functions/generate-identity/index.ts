@@ -64,8 +64,11 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Edge function called with headers:', req.headers.get('authorization') ? 'Authorization present' : 'No authorization');
+    
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
+      console.error('No authorization header provided');
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -73,31 +76,48 @@ serve(async (req) => {
     }
 
     // Get user from auth header
+    console.log('Verifying user authentication...');
     const { data: { user }, error: authError } = await supabase.auth.getUser(
       authHeader.replace('Bearer ', '')
     );
 
     if (authError || !user) {
+      console.error('Authentication failed:', authError);
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    console.log('User authenticated successfully:', user.id);
+
     // Check rate limit
     const canProceed = await checkRateLimit(user.id);
     if (!canProceed) {
+      console.error('Rate limit exceeded for user:', user.id);
       return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please wait before trying again.' }), {
         status: 429,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const { idea, audience, experience, namingPreference, firstName, tone } = await req.json();
+    const requestBody = await req.json();
+    console.log('Request body received:', requestBody);
+    
+    const { idea, audience, experience, namingPreference, firstName, tone } = requestBody;
 
     if (!idea || !audience) {
+      console.error('Missing required fields:', { idea: !!idea, audience: !!audience });
       return new Response(JSON.stringify({ error: 'Missing required fields: idea, audience' }), {
         status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!openAIApiKey) {
+      console.error('OpenAI API key not configured');
+      return new Response(JSON.stringify({ error: 'AI service unavailable' }), {
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -124,6 +144,7 @@ Keep names unique, modern, and relevant to the idea and audience. Bio must sound
 
 Provide 3-6 name options, one compelling tagline (max 80 chars), a personalized bio using first name and experience if provided, 3 brand colors, and a clean SVG logo.`;
 
+    console.log('Calling OpenAI API...');
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -140,15 +161,18 @@ Provide 3-6 name options, one compelling tagline (max 80 chars), a personalized 
       }),
     });
 
+    console.log('OpenAI response status:', response.status);
     if (!response.ok) {
-      console.error('OpenAI API error:', await response.text());
-      return new Response(JSON.stringify({ error: 'AI generation failed' }), {
+      const errorText = await response.text();
+      console.error('OpenAI API error:', response.status, errorText);
+      return new Response(JSON.stringify({ error: `AI generation failed: ${response.status} ${response.statusText}` }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const data = await response.json();
+    console.log('OpenAI response received successfully');
     const content = data.choices[0].message.content;
 
     let generatedData;

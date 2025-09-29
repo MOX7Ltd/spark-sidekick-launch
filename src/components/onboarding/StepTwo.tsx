@@ -7,6 +7,7 @@ interface StepTwoProps {
   onNext: (audience: string) => void;
   onBack: () => void;
   initialValue?: string;
+  isLoading?: boolean;
 }
 
 const audienceOptions = [
@@ -47,7 +48,7 @@ const audienceOptions = [
   }
 ];
 
-export const StepTwo = ({ onNext, onBack, initialValue }: StepTwoProps) => {
+export const StepTwo = ({ onNext, onBack, initialValue, isLoading = false }: StepTwoProps) => {
   const [selectedAudience, setSelectedAudience] = useState(initialValue || '');
 
   const handleSubmit = () => {
@@ -130,6 +131,7 @@ export const StepTwo = ({ onNext, onBack, initialValue }: StepTwoProps) => {
           size="lg" 
           onClick={onBack}
           className="flex-1"
+          disabled={isLoading}
         >
           Back
         </Button>
@@ -137,10 +139,10 @@ export const StepTwo = ({ onNext, onBack, initialValue }: StepTwoProps) => {
           size="lg" 
           className="flex-1 h-14 text-lg font-semibold"
           onClick={handleSubmit}
-          disabled={!selectedAudience}
+          disabled={!selectedAudience || isLoading}
           variant="hero"
         >
-          Next step
+          {isLoading ? "Generating identity..." : "Next step"}
           <ArrowRight className="ml-2 w-5 h-5" />
         </Button>
       </div>
