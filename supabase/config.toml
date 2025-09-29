@@ -1,1 +1,4 @@
 project_id = "hfrsaqfflwvdbywgixxv"
+
+[functions.generate-identity]
+verify_jwt = false

@@ -66,39 +66,42 @@ serve(async (req) => {
   try {
     console.log('Edge function called with headers:', req.headers.get('authorization') ? 'Authorization present' : 'No authorization');
     
+    // Try to authenticate, but allow anonymous users
+    let user = null;
     const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      console.error('No authorization header provided');
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    
+    if (authHeader) {
+      console.log('Attempting to verify user authentication...');
+      try {
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(
+          authHeader.replace('Bearer ', '')
+        );
+        
+        if (!authError && authUser) {
+          user = authUser;
+          console.log('User authenticated successfully:', user.id);
+        } else {
+          console.log('Authentication failed, proceeding as anonymous user:', authError?.message);
+        }
+      } catch (authException) {
+        console.log('Authentication exception, proceeding as anonymous user:', String(authException));
+      }
+    } else {
+      console.log('No authorization header, proceeding as anonymous user');
     }
 
-    // Get user from auth header
-    console.log('Verifying user authentication...');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
-
-    if (authError || !user) {
-      console.error('Authentication failed:', authError);
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log('User authenticated successfully:', user.id);
-
-    // Check rate limit
-    const canProceed = await checkRateLimit(user.id);
-    if (!canProceed) {
-      console.error('Rate limit exceeded for user:', user.id);
-      return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please wait before trying again.' }), {
-        status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    // Check rate limit only for authenticated users
+    if (user) {
+      const canProceed = await checkRateLimit(user.id);
+      if (!canProceed) {
+        console.error('Rate limit exceeded for user:', user.id);
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please wait before trying again.' }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } else {
+      console.log('Skipping rate limit check for anonymous user');
     }
 
     const requestBody = await req.json();
@@ -189,46 +192,56 @@ Provide 3-6 name options, one compelling tagline (max 80 chars), a personalized 
     // Sanitize SVG
     generatedData.logoSVG = sanitizeSVG(generatedData.logoSVG);
 
-    // Ensure user profile exists
-    await supabase
-      .from('profiles')
-      .upsert({ 
-        user_id: user.id,
-        display_name: firstName || user.user_metadata?.full_name || null,
-        email: user.email 
-      });
+    // Only save to database if user is authenticated
+    let business = null;
+    if (user) {
+      console.log('Saving data for authenticated user...');
+      
+      // Ensure user profile exists
+      await supabase
+        .from('profiles')
+        .upsert({ 
+          user_id: user.id,
+          display_name: firstName || user.user_metadata?.full_name || null,
+          email: user.email 
+        });
 
-    // Create or update business record
-    const { data: business, error: businessError } = await supabase
-      .from('businesses')
-      .upsert({
-        owner_id: user.id,
-        idea,
-        audience,
-        experience,
-        naming_preference: namingPreference,
-        business_name: generatedData.nameOptions[0],
-        tagline: generatedData.tagline,
-        bio: generatedData.bio,
-        brand_colors: generatedData.colors,
-        logo_svg: generatedData.logoSVG,
-        updated_at: new Date().toISOString()
-      }, { 
-        onConflict: 'owner_id'
-      })
-      .select()
-      .single();
+      // Create or update business record
+      const { data: businessData, error: businessError } = await supabase
+        .from('businesses')
+        .upsert({
+          owner_id: user.id,
+          idea,
+          audience,
+          experience,
+          naming_preference: namingPreference,
+          business_name: generatedData.nameOptions[0],
+          tagline: generatedData.tagline,
+          bio: generatedData.bio,
+          brand_colors: generatedData.colors,
+          logo_svg: generatedData.logoSVG,
+          updated_at: new Date().toISOString()
+        }, { 
+          onConflict: 'owner_id'
+        })
+        .select()
+        .single();
 
-    if (businessError) {
-      console.error('Database error:', businessError);
-      return new Response(JSON.stringify({ error: 'Failed to save business data' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      if (businessError) {
+        console.error('Database error:', businessError);
+        return new Response(JSON.stringify({ error: 'Failed to save business data' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      business = businessData;
+      
+      // Log usage
+      await logUsage(user.id);
+    } else {
+      console.log('Skipping database operations for anonymous user');
     }
-
-    // Log usage
-    await logUsage(user.id);
 
     return new Response(JSON.stringify({
       business,
