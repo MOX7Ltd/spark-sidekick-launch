@@ -115,6 +115,8 @@ serve(async (req) => {
       namingPreference, 
       firstName, 
       lastName,
+      includeFirstName = false,
+      includeLastName = false,
       tone, 
       styleCategory,
       regenerateNamesOnly,
@@ -170,11 +172,16 @@ serve(async (req) => {
       const archetypes = ['Professional & Trustworthy', 'Creative & Visionary', 'Playful & Memorable', 'Personalized'];
       const randomArchetype = archetypes[Math.floor(Math.random() * archetypes.length)];
       
-      const nameGuidelines = namingPreference === 'with_personal_name'
-        ? `For Professional tone: Use "${lastName || firstName}" + descriptor (e.g., "${lastName || firstName} Advisory", "${lastName || firstName} Partners")
-For Playful/Friendly tone: Use "${firstName}" + descriptor (e.g., "${firstName}'s Corner", "${firstName} Lab")
-Avoid awkward combinations and possessive forms unless absolutely natural.`
-        : 'Create unique, brandable names without personal names.';
+      let nameGuidelines = 'Create unique, brandable names without personal names.';
+      if (namingPreference === 'with_personal_name') {
+        if (includeFirstName && includeLastName) {
+          nameGuidelines = `Use BOTH "${firstName}" AND "${lastName}" in creative ways (e.g., "${firstName} ${lastName} Advisory", "${lastName} & ${firstName} Studio"). Avoid using only one name.`;
+        } else if (includeLastName) {
+          nameGuidelines = `Use ONLY "${lastName}" (surname) + descriptor (e.g., "${lastName} Advisory", "${lastName} Partners", "${lastName} Studio"). DO NOT use "${firstName}".`;
+        } else if (includeFirstName) {
+          nameGuidelines = `Use ONLY "${firstName}" (first name) + descriptor (e.g., "${firstName}'s Studio", "${firstName} Lab", "${firstName} Coaching"). DO NOT use "${lastName}".`;
+        }
+      }
 
       systemPrompt = `You are an expert branding consultant. Generate ONE unique business name from the "${randomArchetype}" archetype.
 
@@ -202,25 +209,50 @@ Return ONLY a JSON object:
   "tagline": "5-8 word tagline that reflects the archetype and outcome focus"
 }`;
 
+      let personalNameInfo = '';
+      if (namingPreference === 'with_personal_name') {
+        if (includeFirstName && includeLastName) {
+          personalNameInfo = `Personal Names: First="${firstName}", Last="${lastName}" (Use BOTH)`;
+        } else if (includeLastName) {
+          personalNameInfo = `Surname ONLY: "${lastName}" (DO NOT use "${firstName}")`;
+        } else if (includeFirstName) {
+          personalNameInfo = `First Name ONLY: "${firstName}" (DO NOT use "${lastName}")`;
+        }
+      }
+
       userPrompt = `Generate 1 fresh business name from the "${randomArchetype}" archetype:
 
 Business Concept: ${idea}
 Target Audience: ${audience}
-${namingPreference === 'with_personal_name' ? `Personal Name: ${firstName}${lastName ? ' ' + lastName : ''}` : ''}
+${personalNameInfo}
 ${motivation ? `Founder Motivation: ${motivation}` : ''}
 Tone: ${tone}
 
 Make it COMPLETELY DIFFERENT from the rejected names. Focus on the "${randomArchetype}" archetype qualities.`;
 
     } else if (regenerateNamesOnly) {
-      const nameGuidelines = namingPreference === 'with_personal_name'
-        ? `PERSONAL NAME USAGE RULES:
-- For Professional & Trustworthy: Use "${lastName || firstName}" + descriptor (e.g., "${lastName || firstName} Advisory", "${lastName || firstName} Partners")
-- For Creative & Visionary: Can use either "${firstName}" or "${lastName}" + creative descriptor (e.g., "${firstName} Studio", "${lastName} Lab")
-- For Playful & Memorable: Use "${firstName}" + friendly descriptor (e.g., "${firstName}'s Corner", "${firstName} Hub")
-- AVOID awkward combinations, obscure words, and unnecessary possessive forms
-- At least 2-3 names should NOT include personal name for variety`
-        : 'Create unique, brandable names across all archetypes without personal names.';
+      let nameGuidelines = 'Create unique, brandable names across all archetypes without personal names.';
+      if (namingPreference === 'with_personal_name') {
+        if (includeFirstName && includeLastName) {
+          nameGuidelines = `PERSONAL NAME USAGE RULES:
+- Use BOTH "${firstName}" AND "${lastName}" in creative combinations
+- Examples: "${firstName} ${lastName} Advisory", "${lastName} & ${firstName} Co."
+- At least 4-5 names should include BOTH names
+- DO NOT use only one name in isolation`;
+        } else if (includeLastName) {
+          nameGuidelines = `PERSONAL NAME USAGE RULES:
+- Use ONLY the surname "${lastName}" (e.g., "${lastName} Advisory", "${lastName} Partners", "${lastName} Studio")
+- STRICTLY FORBIDDEN: Do NOT use the first name "${firstName}"
+- At least 5-6 names should include "${lastName}"
+- 2-3 names can be without personal name for variety`;
+        } else if (includeFirstName) {
+          nameGuidelines = `PERSONAL NAME USAGE RULES:
+- Use ONLY the first name "${firstName}" (e.g., "${firstName}'s Studio", "${firstName} Lab", "${firstName} Coaching")
+- STRICTLY FORBIDDEN: Do NOT use the last name "${lastName}"
+- At least 5-6 names should include "${firstName}"
+- 2-3 names can be without personal name for variety`;
+        }
+      }
 
       systemPrompt = `You are an expert branding consultant. Generate 8 SHORT, brandable business names across 4 distinct BRAND ARCHETYPES.
 
@@ -255,11 +287,22 @@ Return ONLY a JSON object with this structure:
   ]
 }`;
 
+      let personalNameInfo = '';
+      if (namingPreference === 'with_personal_name') {
+        if (includeFirstName && includeLastName) {
+          personalNameInfo = `Founder Names: First="${firstName}", Last="${lastName}" (Use BOTH names)`;
+        } else if (includeLastName) {
+          personalNameInfo = `Surname ONLY: "${lastName}" (NEVER use "${firstName}")`;
+        } else if (includeFirstName) {
+          personalNameInfo = `First Name ONLY: "${firstName}" (NEVER use "${lastName}")`;
+        }
+      }
+
       userPrompt = `Generate 8 business name options with MAXIMUM VARIETY across all 4 brand archetypes:
 
 Business Concept: ${idea}
 Target Audience: ${audience}
-${namingPreference === 'with_personal_name' ? `Founder Name: ${firstName}${lastName ? ' ' + lastName : ''} (Surname: ${lastName || 'N/A'})` : ''}
+${personalNameInfo}
 ${motivation ? `Founder Motivation: ${motivation}` : ''}
 Tone: ${tone}
 
@@ -271,13 +314,24 @@ IMPORTANT:
 - Taglines should reflect the archetype and outcome focus
 - Make names that feel professional and memorable, never clunky or laughable`;
     } else {
-      const nameGuidelines = namingPreference === 'with_personal_name'
-        ? `PERSONAL NAME USAGE:
-- For Professional style: Use "${lastName || firstName}" + descriptor (e.g., "${lastName || firstName} Advisory")
-- For Playful style: Use "${firstName}" + descriptor (e.g., "${firstName}'s Studio")
-- Include 1-2 names with personal name, rest without for variety
-- AVOID awkward or overly possessive formats`
-        : 'Create diverse brandable names across different archetypes.';
+      let nameGuidelines = 'Create diverse brandable names across different archetypes.';
+      if (namingPreference === 'with_personal_name') {
+        if (includeFirstName && includeLastName) {
+          nameGuidelines = `PERSONAL NAME USAGE:
+- Use BOTH "${firstName}" AND "${lastName}" together
+- Include 2-3 names with both names, rest without for variety`;
+        } else if (includeLastName) {
+          nameGuidelines = `PERSONAL NAME USAGE:
+- Use ONLY "${lastName}" (e.g., "${lastName} Advisory", "${lastName} Studio")
+- NEVER use "${firstName}"
+- Include 1-2 names with "${lastName}", rest without for variety`;
+        } else if (includeFirstName) {
+          nameGuidelines = `PERSONAL NAME USAGE:
+- Use ONLY "${firstName}" (e.g., "${firstName}'s Studio", "${firstName} Lab")
+- NEVER use "${lastName}"
+- Include 1-2 names with "${firstName}", rest without for variety`;
+        }
+      }
 
       systemPrompt = `You are an expert business identity generator. Create compelling, unique business identities using BRAND ARCHETYPES that feel authentic and avoid generic corporate clichés.
 
@@ -318,13 +372,24 @@ Return ONLY valid JSON with this structure:
   "logoSVG": "Clean, simple SVG logo that matches the style"
 }`;
 
+      let personalNameInfo = '';
+      if (firstName || lastName) {
+        if (includeFirstName && includeLastName) {
+          personalNameInfo = `Founder Names: First="${firstName}", Last="${lastName}" (Use BOTH)`;
+        } else if (includeLastName) {
+          personalNameInfo = `Surname ONLY: "${lastName}" (DO NOT use "${firstName}")`;
+        } else if (includeFirstName) {
+          personalNameInfo = `First Name ONLY: "${firstName}" (DO NOT use "${lastName}")`;
+        }
+      }
+
       userPrompt = `Generate a complete business identity with diverse name options across brand archetypes:
 
 Business Concept: ${idea}
 Target Audience: ${audience}
 Founder Background: ${experience}
 ${motivation ? `Founder Motivation: ${motivation}` : ''}
-${firstName ? `Founder Name: ${firstName}${lastName ? ' ' + lastName : ''} (Surname: ${lastName || 'N/A'})` : ''}
+${personalNameInfo}
 Style Category: ${styleCategory || 'professional'}
 Tone: ${tone}
 

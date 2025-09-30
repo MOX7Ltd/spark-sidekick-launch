@@ -121,6 +121,8 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
         motivation: formData.aboutYou.motivation,
         firstName: formData.aboutYou.firstName,
         lastName: formData.aboutYou.lastName,
+        includeFirstName: formData.aboutYou.includeFirstName,
+        includeLastName: formData.aboutYou.includeLastName,
         tone: formData.aboutYou.styles.join(', '),
         styleCategory,
         namingPreference

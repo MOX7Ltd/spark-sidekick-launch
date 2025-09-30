@@ -8,6 +8,8 @@ export interface GenerateIdentityRequest {
   namingPreference?: 'with_personal_name' | 'anonymous' | 'custom';
   firstName?: string;
   lastName?: string;
+  includeFirstName?: boolean;
+  includeLastName?: boolean;
   tone?: string;
   styleCategory?: string;
   bannedWords?: string[];
