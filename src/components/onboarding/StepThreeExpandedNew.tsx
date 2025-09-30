@@ -80,10 +80,17 @@ export const StepThreeExpandedNew = ({ onNext, onBack, initialValue, idea, about
         experience: aboutYou.expertise,
         firstName: aboutYou.firstName,
         tone: aboutYou.style.toLowerCase() as 'professional' | 'friendly' | 'playful',
-        namingPreference: (aboutYou.includeFirstName || aboutYou.includeLastName) ? 'with_personal_name' : 'anonymous'
+        namingPreference: (aboutYou.includeFirstName || aboutYou.includeLastName) ? 'with_personal_name' : 'anonymous',
+        bannedWords,
+        rejectedNames
       });
       
-      setNameOptions(newNames);
+      // Deduplicate names
+      const uniqueNames = newNames.filter((name, index, self) => 
+        index === self.findIndex(n => n.name === name.name)
+      );
+      
+      setNameOptions(uniqueNames);
       toast({
         title: "✨ Fresh ideas just for you!",
         description: "New name suggestions generated"
@@ -114,40 +121,62 @@ export const StepThreeExpandedNew = ({ onNext, onBack, initialValue, idea, about
       return newSet;
     });
     
-    // Generate replacement
+    // Generate replacement with retry logic for duplicates
     setRegeneratingIndex(index);
-    try {
-      const newName = await regenerateSingleName({
-        idea,
-        audience,
-        experience: aboutYou.expertise,
-        firstName: aboutYou.firstName,
-        tone: aboutYou.style.toLowerCase() as 'professional' | 'friendly' | 'playful',
-        namingPreference: (aboutYou.includeFirstName || aboutYou.includeLastName) ? 'with_personal_name' : 'anonymous',
-        bannedWords: [...bannedWords, ...wordsInName],
-        rejectedNames: [...rejectedNames, rejectedOption.name]
-      });
-      
-      // Replace the rejected name
-      setNameOptions(prev => {
-        const updated = [...prev];
-        updated[index] = newName;
-        return updated;
-      });
-      
-      toast({
-        title: "✨ Fresh name generated!",
-        description: "Let us know if you like this one better"
-      });
-    } catch (error) {
-      toast({
-        title: "Failed to generate replacement",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setRegeneratingIndex(null);
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    while (attempts < maxAttempts) {
+      try {
+        const existingNames = nameOptions.map(opt => opt.name).filter((_, i) => i !== index);
+        
+        const newName = await regenerateSingleName({
+          idea,
+          audience,
+          experience: aboutYou.expertise,
+          firstName: aboutYou.firstName,
+          tone: aboutYou.style.toLowerCase() as 'professional' | 'friendly' | 'playful',
+          namingPreference: (aboutYou.includeFirstName || aboutYou.includeLastName) ? 'with_personal_name' : 'anonymous',
+          bannedWords: [...bannedWords, ...wordsInName],
+          rejectedNames: [...rejectedNames, rejectedOption.name, ...existingNames]
+        });
+        
+        // Check if the new name is unique
+        if (!existingNames.includes(newName.name)) {
+          // Replace the rejected name
+          setNameOptions(prev => {
+            const updated = [...prev];
+            updated[index] = newName;
+            return updated;
+          });
+          
+          toast({
+            title: "✨ Fresh name generated!",
+            description: "Let us know if you like this one better"
+          });
+          break;
+        } else {
+          // Name is duplicate, try again
+          attempts++;
+          if (attempts >= maxAttempts) {
+            toast({
+              title: "Please try the refresh button",
+              description: "Having trouble generating a unique name",
+              variant: "destructive"
+            });
+          }
+        }
+      } catch (error) {
+        toast({
+          title: "Failed to generate replacement",
+          description: error.message,
+          variant: "destructive"
+        });
+        break;
+      }
     }
+    
+    setRegeneratingIndex(null);
   };
 
   const handleLikeName = (name: string) => {
