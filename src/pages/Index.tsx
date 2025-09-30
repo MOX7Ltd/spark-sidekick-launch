@@ -40,7 +40,7 @@ interface OnboardingData {
     bio: string;
     colors: string[];
     logoSVG: string;
-    nameOptions: string[];
+    nameOptions: Array<{name: string; style: string; tagline: string}>;
   };
   introCampaign?: {
     hook: string;

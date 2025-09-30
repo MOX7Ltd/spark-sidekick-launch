@@ -117,7 +117,10 @@ serve(async (req) => {
       tone, 
       styleWord,
       styleCategory,
-      regenerateNamesOnly 
+      regenerateNamesOnly,
+      regenerateSingleName,
+      bannedWords = [],
+      rejectedNames = []
     } = requestBody;
 
     if (!idea || !audience) {
@@ -140,44 +143,95 @@ serve(async (req) => {
     let systemPrompt: string;
     let userPrompt: string;
 
-    if (regenerateNamesOnly) {
-      systemPrompt = `You are an expert branding consultant specializing in business naming. Generate ${namingPreference === 'with_personal_name' ? 'name variations that incorporate the personal name naturally' : `${styleCategory || 'brandable'} business names`}.
+    // Build comprehensive banned words list
+    const baseBannedWords = [
+      'Magic', 'Haven', 'Corner', 'Solutions', 'Group', 'Hub', 'Studio', 
+      'Edge', 'Peak', 'Core', 'Nexus', 'Spark', 'Sphere', 'Venture', 
+      'Genesis', 'Blueprint', 'Capital', 'Pro', 'Plus', 'Global', 'Elite'
+    ];
+    const allBannedWords = [...new Set([...baseBannedWords, ...bannedWords])];
+    const bannedWordsStr = allBannedWords.join(', ');
+    const rejectedNamesStr = rejectedNames.length > 0 ? rejectedNames.join(', ') : '';
+
+    if (regenerateSingleName) {
+      // Generate just one replacement name
+      systemPrompt = `You are an expert branding consultant. Generate ONE unique business name that avoids all previously rejected names and banned words.
+
+CRITICAL NAMING RULES:
+- Name MUST be SHORT (1-3 words max)
+- Name MUST be MEMORABLE and BRANDABLE
+- STRICTLY AVOID these words: ${bannedWordsStr}
+${rejectedNamesStr ? `- DO NOT suggest any of these previously rejected names: ${rejectedNamesStr}` : ''}
+- Be SPECIFIC to the business idea, not generic
+- ${namingPreference === 'with_personal_name' ? 'Naturally incorporate the personal name if possible' : 'Create a unique brandable name'}
+
+Return ONLY a JSON object:
+{
+  "name": "BusinessName",
+  "style": "one of: Playful, Professional, Minimalist, Visionary, Invented, Compound, Metaphorical, Action-driven",
+  "tagline": "Short 5-8 word tagline"
+}`;
+
+      userPrompt = `Generate 1 fresh business name option:
+
+Business Concept: ${idea}
+Target Audience: ${audience}
+${namingPreference === 'with_personal_name' ? `Personal Name: ${firstName}${lastName ? ' ' + lastName : ''}` : ''}
+Tone: ${tone}
+
+Make it COMPLETELY DIFFERENT from the rejected names. Avoid all banned words.`;
+
+    } else if (regenerateNamesOnly) {
+      systemPrompt = `You are an expert branding consultant specializing in business naming. Generate 7 SHORT, brandable business names across diverse styles.
 
 CRITICAL NAMING RULES:
 - Names MUST be SHORT (1-3 words max)
 - Names MUST be MEMORABLE and BRANDABLE
-- STRICTLY AVOID these overused words: Magic, Haven, Corner, Solutions, Group, Hub, Studio, Edge, Peak, Core, Nexus, Spark
+- STRICTLY AVOID these overused words: ${bannedWordsStr}
+${rejectedNamesStr ? `- DO NOT suggest any of these previously rejected names: ${rejectedNamesStr}` : ''}
 - Be SPECIFIC to the business idea, not generic
-- Match the style: ${styleCategory || 'professional'}
-- ${styleWord ? `Incorporate this style essence: ${styleWord}` : ''}
+- ${namingPreference === 'with_personal_name' ? 'Can naturally incorporate personal name where it fits' : 'Create unique brandable names'}
 
-Style Guidelines:
-- Professional: Clear, authoritative, trust-building (e.g., "Meridian Advisory", "Anchor Partners")
-- Playful: Fun, memorable, friendly (e.g., "Wiggle Room", "Bumble Bee Coaching")
-- Minimalist: Clean, simple, modern (e.g., "Base", "Form Collective")
-- Visionary: Bold, forward-thinking (e.g., "Horizon Labs", "Frontier Guild")
+REQUIRED STYLE DIVERSITY - Generate exactly 7 names across these categories:
+1. Playful / Quirky - Fun, memorable, friendly
+2. Professional / Corporate - Clear, authoritative, trust-building  
+3. Minimalist / Modern - Clean, simple, 1-2 words
+4. Visionary / Inspirational - Bold, forward-thinking
+5. Invented Word - Made-up but pronounceable word (e.g., "Zyra", "Novatra")
+6. Compound Blend - Two words merged creatively (e.g., "HiveMind", "SkillForge")
+7. Metaphorical - Uses imagery/symbolism (e.g., "Sparkline", "Northstar")
 
 Return ONLY a JSON object with this structure:
 {
-  "nameOptions": ["Name1", "Name2", "Name3", "Name4", "Name5", "Name6"]
+  "nameOptions": [
+    {"name": "Name1", "style": "Playful", "tagline": "Short tagline"},
+    {"name": "Name2", "style": "Professional", "tagline": "Short tagline"},
+    {"name": "Name3", "style": "Minimalist", "tagline": "Short tagline"},
+    {"name": "Name4", "style": "Visionary", "tagline": "Short tagline"},
+    {"name": "Name5", "style": "Invented", "tagline": "Short tagline"},
+    {"name": "Name6", "style": "Compound", "tagline": "Short tagline"},
+    {"name": "Name7", "style": "Metaphorical", "tagline": "Short tagline"}
+  ]
 }`;
 
       const nameInstruction = namingPreference === 'with_personal_name' 
-        ? `Create variations using "${firstName}${lastName ? ' ' + lastName : ''}" (e.g., "${firstName} ${idea.split(' ')[0]}", "${lastName || firstName} Advisory")`
-        : 'Create unique, brandable names';
+        ? `Can incorporate "${firstName}${lastName ? ' ' + lastName : ''}" naturally where appropriate, but prioritize diversity across all 7 styles`
+        : 'Create 7 unique, brandable names across all required styles';
 
-      userPrompt = `Generate 6 ${styleCategory || 'brandable'} business name options:
+      userPrompt = `Generate 7 business name options with MAXIMUM DIVERSITY:
 
 Business Concept: ${idea}
 Target Audience: ${audience}
-Style Category: ${styleCategory || 'professional'}
-${styleWord ? `Style Word: ${styleWord}` : ''}
-${namingPreference === 'with_personal_name' ? `Personal Name to Incorporate: ${firstName}${lastName ? ' ' + lastName : ''}` : ''}
+${namingPreference === 'with_personal_name' ? `Personal Name (optional use): ${firstName}${lastName ? ' ' + lastName : ''}` : ''}
 Tone: ${tone}
 
 ${nameInstruction}
 
-Remember: Avoid all generic/overused terms. Be specific, memorable, and match the ${styleCategory || 'professional'} style.`;
+Remember: 
+- Avoid ALL generic/overused terms and banned words
+- Each name must represent a DIFFERENT style category
+- Be specific, memorable, and unique
+- Keep taglines to 5-8 words max`;
     } else {
       systemPrompt = `You are an expert business identity generator. Create compelling, unique business identities that feel authentic and avoid generic corporate clichés.
 
@@ -190,14 +244,19 @@ CRITICAL NAMING RULES:
 - ${styleWord ? `Embody this style essence: ${styleWord}` : ''}
 
 Style Guidelines:
-- Professional: Trustworthy, established, clear (e.g., "Momentum Consulting", "Blueprint Advisory")
+- Professional: Trustworthy, established, clear (e.g., "Momentum Consulting", "Anchor Partners")
 - Playful: Fun, approachable, memorable (e.g., "Happy Trails", "Sunshine Coaching")  
 - Minimalist: Clean, simple, modern (e.g., "Base", "Form", "Clear Path")
 - Visionary: Bold, disruptive, forward-thinking (e.g., "Frontier Group", "Vanguard Labs")
 
 Return ONLY valid JSON with this structure:
 {
-  "nameOptions": ["Name1", "Name2", "Name3", "Name4"],
+  "nameOptions": [
+    {"name": "Name1", "style": "Professional", "tagline": "Short tagline"},
+    {"name": "Name2", "style": "Playful", "tagline": "Short tagline"},
+    {"name": "Name3", "style": "Minimalist", "tagline": "Short tagline"},
+    {"name": "Name4", "style": "Visionary", "tagline": "Short tagline"}
+  ],
   "tagline": "Compelling 5-10 word tagline (max 80 chars)",
   "bio": "2-3 sentence personalized bio using founder's background and name",
   "colors": ["#hexcolor1", "#hexcolor2", "#hexcolor3"],
@@ -205,10 +264,10 @@ Return ONLY valid JSON with this structure:
 }`;
 
       const nameInstruction = namingPreference === 'with_personal_name'
-        ? `Generate names that naturally incorporate "${firstName}${lastName ? ' ' + lastName : ''}" (e.g., "${firstName} ${idea.split(' ')[0]}", "${lastName || firstName} ${styleCategory === 'professional' ? 'Advisory' : styleCategory === 'playful' ? 'Studio' : 'Co'}")`
-        : `Generate ${styleCategory || 'professional'} names for the business`;
+        ? `Generate diverse name styles that can naturally incorporate "${firstName}${lastName ? ' ' + lastName : ''}" where appropriate`
+        : `Generate diverse ${styleCategory || 'professional'} name styles for the business`;
 
-      userPrompt = `Generate a complete business identity:
+      userPrompt = `Generate a complete business identity with diverse name options:
 
 Business Concept: ${idea}
 Target Audience: ${audience}
@@ -220,9 +279,9 @@ Tone: ${tone}
 
 ${nameInstruction}
 
-Provide 4-6 ${styleCategory || 'professional'} name options, one compelling tagline (max 80 chars), a personalized bio (use "${firstName}" and reference their background: "${experience}"), 3 complementary brand colors that match the ${styleCategory || 'professional'} style, and a clean SVG logo.
+Provide 4-6 name options with style diversity, one compelling tagline (max 80 chars), a personalized bio (use "${firstName}" and reference their background: "${experience}"), 3 complementary brand colors that match the ${styleCategory || 'professional'} style, and a clean SVG logo.
 
-REMEMBER: Avoid ALL generic/overused business terms. Be specific and match the ${styleCategory || 'professional'} aesthetic.`;
+REMEMBER: Avoid ALL generic/overused business terms (${bannedWordsStr}). Be specific and provide variety across different naming styles.`;
     }
 
     console.log('Calling Lovable AI API...');
@@ -273,6 +332,16 @@ REMEMBER: Avoid ALL generic/overused business terms. Be specific and match the $
       });
     }
 
+    // For single name regeneration
+    if (regenerateSingleName) {
+      console.log('Returning single regenerated name');
+      return new Response(JSON.stringify({
+        nameOption: generatedData
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // For name regeneration, skip everything else and just return names
     if (regenerateNamesOnly) {
       console.log('Returning regenerated names only');
@@ -301,6 +370,11 @@ REMEMBER: Avoid ALL generic/overused business terms. Be specific and match the $
         });
 
       // Create or update business record
+      // Extract first name from nameOptions (handle both formats)
+      const firstNameOption = typeof generatedData.nameOptions[0] === 'string' 
+        ? generatedData.nameOptions[0] 
+        : generatedData.nameOptions[0].name;
+
       const { data: businessData, error: businessError } = await supabase
         .from('businesses')
         .upsert({
@@ -309,7 +383,7 @@ REMEMBER: Avoid ALL generic/overused business terms. Be specific and match the $
           audience,
           experience,
           naming_preference: namingPreference,
-          business_name: generatedData.nameOptions[0],
+          business_name: firstNameOption,
           tagline: generatedData.tagline,
           bio: generatedData.bio,
           brand_colors: generatedData.colors,

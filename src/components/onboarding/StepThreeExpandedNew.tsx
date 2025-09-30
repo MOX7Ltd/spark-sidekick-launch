@@ -3,10 +3,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Check, Palette, Eye, Lightbulb, Sparkles, Zap, Target, Heart, Star, Hexagon, RefreshCw, Loader2 } from 'lucide-react';
+import { Check, Palette, Eye, Lightbulb, Sparkles, Zap, Target, Heart, Star, Hexagon, RefreshCw, Loader2, ThumbsUp, ThumbsDown, BadgeInfo } from 'lucide-react';
 import { CustomerStorefront } from './CustomerStorefront';
-import { regenerateBusinessNames, generateLogos } from '@/lib/api';
+import { regenerateBusinessNames, regenerateSingleName, generateLogos, type NameSuggestion as ApiNameSuggestion } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+
+interface NameSuggestion {
+  name: string;
+  style: string;
+  tagline: string;
+}
 
 interface StepThreeExpandedNewProps {
   onNext: (businessIdentity: { 
@@ -16,7 +22,7 @@ interface StepThreeExpandedNewProps {
     bio: string; 
     colors: string[]; 
     logoSVG: string; 
-    nameOptions: string[] 
+    nameOptions: NameSuggestion[] 
   }) => void;
   onBack: () => void;
   initialValue?: { 
@@ -26,7 +32,7 @@ interface StepThreeExpandedNewProps {
     bio?: string; 
     colors?: string[]; 
     logoSVG?: string; 
-    nameOptions?: string[] 
+    nameOptions?: NameSuggestion[] 
   };
   idea: string;
   aboutYou: {
@@ -53,12 +59,16 @@ const logoStyles = [
 export const StepThreeExpandedNew = ({ onNext, onBack, initialValue, idea, aboutYou, audience }: StepThreeExpandedNewProps) => {
   const [selectedName, setSelectedName] = useState(initialValue?.name || '');
   const [customName, setCustomName] = useState('');
-  const [nameOptions, setNameOptions] = useState(initialValue?.nameOptions || []);
+  const [nameOptions, setNameOptions] = useState<NameSuggestion[]>(initialValue?.nameOptions || []);
   const [selectedLogoStyle, setSelectedLogoStyle] = useState(initialValue?.logo || 'modern');
   const [generatedLogos, setGeneratedLogos] = useState<string[]>([]);
   const [selectedLogoIndex, setSelectedLogoIndex] = useState(0);
   const [isRegeneratingNames, setIsRegeneratingNames] = useState(false);
   const [isGeneratingLogos, setIsGeneratingLogos] = useState(false);
+  const [rejectedNames, setRejectedNames] = useState<string[]>([]);
+  const [bannedWords, setBannedWords] = useState<string[]>([]);
+  const [likedNames, setLikedNames] = useState<Set<string>>(new Set());
+  const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
   const { toast } = useToast();
 
   const handleRegenerateNames = async () => {
@@ -89,8 +99,71 @@ export const StepThreeExpandedNew = ({ onNext, onBack, initialValue, idea, about
     }
   };
 
+  const handleRejectName = async (index: number) => {
+    const rejectedOption = nameOptions[index];
+    const wordsInName = rejectedOption.name.split(/\s+/);
+    
+    // Add rejected name and its words to banned lists
+    setRejectedNames(prev => [...prev, rejectedOption.name]);
+    setBannedWords(prev => [...new Set([...prev, ...wordsInName])]);
+    
+    // Remove from liked if it was liked
+    setLikedNames(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(rejectedOption.name);
+      return newSet;
+    });
+    
+    // Generate replacement
+    setRegeneratingIndex(index);
+    try {
+      const newName = await regenerateSingleName({
+        idea,
+        audience,
+        experience: aboutYou.expertise,
+        firstName: aboutYou.firstName,
+        tone: aboutYou.style.toLowerCase() as 'professional' | 'friendly' | 'playful',
+        namingPreference: (aboutYou.includeFirstName || aboutYou.includeLastName) ? 'with_personal_name' : 'anonymous',
+        bannedWords: [...bannedWords, ...wordsInName],
+        rejectedNames: [...rejectedNames, rejectedOption.name]
+      });
+      
+      // Replace the rejected name
+      setNameOptions(prev => {
+        const updated = [...prev];
+        updated[index] = newName;
+        return updated;
+      });
+      
+      toast({
+        title: "✨ Fresh name generated!",
+        description: "Let us know if you like this one better"
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to generate replacement",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setRegeneratingIndex(null);
+    }
+  };
+
+  const handleLikeName = (name: string) => {
+    setLikedNames(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(name)) {
+        newSet.delete(name);
+      } else {
+        newSet.add(name);
+      }
+      return newSet;
+    });
+  };
+
   const handleGenerateLogos = async () => {
-    const nameToUse = customName || selectedName || nameOptions[0];
+    const nameToUse = customName || selectedName || nameOptions[0]?.name;
     if (!nameToUse) {
       toast({
         title: "Please select a name first",
@@ -120,7 +193,7 @@ export const StepThreeExpandedNew = ({ onNext, onBack, initialValue, idea, about
   };
 
   const handleSubmit = () => {
-    const finalName = customName || selectedName || nameOptions[0];
+    const finalName = customName || selectedName || nameOptions[0]?.name;
     const finalLogo = generatedLogos[selectedLogoIndex] || initialValue?.logoSVG || '';
     
     onNext({
@@ -134,7 +207,7 @@ export const StepThreeExpandedNew = ({ onNext, onBack, initialValue, idea, about
     });
   };
 
-  const displayName = customName || selectedName || nameOptions[0] || 'Your Business';
+  const displayName = customName || selectedName || nameOptions[0]?.name || 'Your Business';
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 animate-fade-in">
@@ -176,24 +249,66 @@ export const StepThreeExpandedNew = ({ onNext, onBack, initialValue, idea, about
               </div>
             </CardHeader>
             <CardContent className="space-y-2">
-              {nameOptions.map((name, index) => (
+              {nameOptions.map((option, index) => (
                 <div
                   key={index}
-                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all hover:border-primary/50 ${
-                    selectedName === name && !customName ? 'border-primary bg-primary/5' : 'border-border'
-                  }`}
-                  onClick={() => {
-                    setSelectedName(name);
-                    setCustomName('');
-                  }}
+                  className={`p-3 rounded-lg border-2 transition-all relative ${
+                    selectedName === option.name && !customName ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
+                  } ${regeneratingIndex === index ? 'opacity-50 pointer-events-none' : ''}`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-base">{name}</span>
-                    {selectedName === name && !customName && (
-                      <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                        <Check className="h-3 w-3 text-primary-foreground" />
+                  {regeneratingIndex === index && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-lg">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    </div>
+                  )}
+                  <div 
+                    className="cursor-pointer"
+                    onClick={() => {
+                      setSelectedName(option.name);
+                      setCustomName('');
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-base">{option.name}</span>
+                          {selectedName === option.name && !customName && (
+                            <div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                              <Check className="h-2.5 w-2.5 text-primary-foreground" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <BadgeInfo className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">{option.style}</span>
+                        </div>
                       </div>
-                    )}
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`h-7 w-7 p-0 ${likedNames.has(option.name) ? 'text-green-600 bg-green-50 hover:bg-green-100' : 'text-muted-foreground hover:text-green-600'}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLikeName(option.name);
+                          }}
+                        >
+                          <ThumbsUp className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRejectName(index);
+                          }}
+                        >
+                          <ThumbsDown className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground italic mt-1">{option.tagline}</p>
                   </div>
                 </div>
               ))}

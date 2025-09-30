@@ -30,7 +30,7 @@ interface OnboardingData {
     bio: string;
     colors: string[];
     logoSVG: string;
-    nameOptions: string[];
+    nameOptions: Array<{name: string; style: string; tagline: string}>;
   };
   introCampaign?: {
     hook: string;
@@ -126,7 +126,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
       setFormData(prev => ({
         ...prev,
         businessIdentity: {
-          name: identityData.nameOptions[0],
+          name: identityData.nameOptions[0].name,
           logo: identityData.logoSVG,
           tagline: identityData.tagline,
           bio: identityData.bio,
@@ -149,9 +149,9 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     }
   };
 
-  const handleStepThree = (businessIdentity: { name: string; logo: string; tagline: string; bio: string; colors: string[]; logoSVG: string; nameOptions: string[] }) => {
+  const handleStepThree = (businessIdentity: { name: string; logo: string; tagline: string; bio: string; colors: string[]; logoSVG: string; nameOptions: Array<{name: string; style: string; tagline: string}> }) => {
     setFormData(prev => ({ ...prev, businessIdentity }));
-    setCurrentStep(5);
+    setCurrentStep(6);
   };
 
   const handleUnlock = () => {

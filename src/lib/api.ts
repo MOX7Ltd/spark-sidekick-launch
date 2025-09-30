@@ -10,11 +10,19 @@ export interface GenerateIdentityRequest {
   tone?: 'professional' | 'friendly' | 'playful';
   styleWord?: string;
   styleCategory?: string;
+  bannedWords?: string[];
+  rejectedNames?: string[];
+}
+
+export interface NameSuggestion {
+  name: string;
+  style: string;
+  tagline: string;
 }
 
 export interface GenerateIdentityResponse {
   business: any;
-  nameOptions: string[];
+  nameOptions: NameSuggestion[];
   tagline: string;
   bio: string;
   colors: string[];
@@ -58,7 +66,7 @@ export async function generateCampaign(request: GenerateCampaignRequest): Promis
   return data;
 }
 
-export async function regenerateBusinessNames(request: GenerateIdentityRequest): Promise<string[]> {
+export async function regenerateBusinessNames(request: GenerateIdentityRequest): Promise<NameSuggestion[]> {
   const { data, error } = await supabase.functions.invoke('generate-identity', {
     body: { ...request, regenerateNamesOnly: true }
   });
@@ -69,6 +77,19 @@ export async function regenerateBusinessNames(request: GenerateIdentityRequest):
   }
 
   return data.nameOptions;
+}
+
+export async function regenerateSingleName(request: GenerateIdentityRequest): Promise<NameSuggestion> {
+  const { data, error } = await supabase.functions.invoke('generate-identity', {
+    body: { ...request, regenerateSingleName: true }
+  });
+
+  if (error) {
+    console.error('Error regenerating single name:', error);
+    throw new Error(error.message || 'Failed to regenerate name');
+  }
+
+  return data.nameOption;
 }
 
 export async function generateLogos(businessName: string, style: string): Promise<string[]> {
