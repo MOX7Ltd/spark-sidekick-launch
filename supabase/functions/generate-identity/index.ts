@@ -125,6 +125,15 @@ serve(async (req) => {
       rejectedNames = []
     } = requestBody;
 
+    // Debug logging for name inclusion parameters
+    console.log('===== NAME PARAMETERS DEBUG =====');
+    console.log('namingPreference:', namingPreference);
+    console.log('firstName:', firstName);
+    console.log('lastName:', lastName);
+    console.log('includeFirstName:', includeFirstName);
+    console.log('includeLastName:', includeLastName);
+    console.log('================================');
+
     if (!idea || !audience) {
       console.error('Missing required fields:', { idea: !!idea, audience: !!audience });
       return new Response(JSON.stringify({ error: 'Missing required fields: idea, audience' }), {
@@ -182,6 +191,8 @@ serve(async (req) => {
           nameGuidelines = `Use ONLY "${firstName}" (first name) + descriptor (e.g., "${firstName}'s Studio", "${firstName} Lab", "${firstName} Coaching"). DO NOT use "${lastName}".`;
         }
       }
+      
+      console.log('[SINGLE NAME] Name guidelines being used:', nameGuidelines);
 
       systemPrompt = `You are an expert branding consultant. Generate ONE unique business name from the "${randomArchetype}" archetype.
 
@@ -231,6 +242,7 @@ Tone: ${tone}
 Make it COMPLETELY DIFFERENT from the rejected names. Focus on the "${randomArchetype}" archetype qualities.`;
 
     } else if (regenerateNamesOnly) {
+      console.log('[REGENERATE NAMES] Starting name regeneration...');
       let nameGuidelines = 'Create unique, brandable names across all archetypes without personal names.';
       if (namingPreference === 'with_personal_name') {
         if (includeFirstName && includeLastName) {
@@ -314,6 +326,7 @@ IMPORTANT:
 - Taglines should reflect the archetype and outcome focus
 - Make names that feel professional and memorable, never clunky or laughable`;
     } else {
+      console.log('[FULL IDENTITY] Starting full identity generation...');
       let nameGuidelines = 'Create diverse brandable names across different archetypes.';
       if (namingPreference === 'with_personal_name') {
         if (includeFirstName && includeLastName) {
@@ -332,6 +345,8 @@ IMPORTANT:
 - Include 1-2 names with "${firstName}", rest without for variety`;
         }
       }
+      
+      console.log('[FULL IDENTITY] Name guidelines being used:', nameGuidelines);
 
       systemPrompt = `You are an expert business identity generator. Create compelling, unique business identities using BRAND ARCHETYPES that feel authentic and avoid generic corporate clichés.
 
