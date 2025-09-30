@@ -10,7 +10,8 @@ interface StarterPackRevealProps {
     firstName: string;
     lastName: string;
     expertise: string;
-    style: string;
+    motivation: string;
+    styles: string[];
   };
   audience: string;
   businessIdentity: {

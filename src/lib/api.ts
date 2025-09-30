@@ -4,14 +4,16 @@ export interface GenerateIdentityRequest {
   idea: string;
   audience: string;
   experience?: string;
+  motivation?: string;
   namingPreference?: 'with_personal_name' | 'anonymous' | 'custom';
   firstName?: string;
   lastName?: string;
-  tone?: 'professional' | 'friendly' | 'playful';
-  styleWord?: string;
+  tone?: string;
   styleCategory?: string;
   bannedWords?: string[];
   rejectedNames?: string[];
+  regenerateNamesOnly?: boolean;
+  regenerateSingleName?: boolean;
 }
 
 export interface NameSuggestion {

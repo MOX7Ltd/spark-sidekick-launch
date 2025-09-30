@@ -25,8 +25,8 @@ interface OnboardingData {
     firstName: string;
     lastName: string;
     expertise: string;
-    style: string;
-    styleWord: string;
+    motivation: string;
+    styles: string[];
     profilePicture?: string;
     includeFirstName: boolean;
     includeLastName: boolean;

@@ -111,11 +111,11 @@ serve(async (req) => {
       idea, 
       audience, 
       experience, 
+      motivation,
       namingPreference, 
       firstName, 
       lastName,
       tone, 
-      styleWord,
       styleCategory,
       regenerateNamesOnly,
       regenerateSingleName,
@@ -177,6 +177,7 @@ Return ONLY a JSON object:
 Business Concept: ${idea}
 Target Audience: ${audience}
 ${namingPreference === 'with_personal_name' ? `Personal Name: ${firstName}${lastName ? ' ' + lastName : ''}` : ''}
+${motivation ? `Founder Motivation: ${motivation}` : ''}
 Tone: ${tone}
 
 Make it COMPLETELY DIFFERENT from the rejected names. Avoid all banned words.`;
@@ -223,6 +224,7 @@ Return ONLY a JSON object with this structure:
 Business Concept: ${idea}
 Target Audience: ${audience}
 ${namingPreference === 'with_personal_name' ? `Personal Name (optional use): ${firstName}${lastName ? ' ' + lastName : ''}` : ''}
+${motivation ? `Founder Motivation: ${motivation}` : ''}
 Tone: ${tone}
 
 ${nameInstruction}
@@ -237,17 +239,24 @@ Remember:
 
 CRITICAL NAMING RULES:
 - Business names MUST be SHORT (1-3 words max)
-- STRICTLY AVOID: Magic, Haven, Corner, Solutions, Group, Hub, Studio, Edge, Peak, Core, Nexus, Spark, Sphere
+- STRICTLY AVOID: Magic, Haven, Corner, Solutions, Group, Hub, Studio, Edge, Peak, Core, Nexus, Spark, Sphere, Venture, Genesis, Blueprint, Capital
 - Be SPECIFIC to the business concept and style category
 - Make names MEMORABLE and BRANDABLE
 - Match the requested style: ${styleCategory || 'professional'}
-- ${styleWord ? `Embody this style essence: ${styleWord}` : ''}
 
-Style Guidelines:
+Style Guidelines based on tone:
 - Professional: Trustworthy, established, clear (e.g., "Momentum Consulting", "Anchor Partners")
 - Playful: Fun, approachable, memorable (e.g., "Happy Trails", "Sunshine Coaching")  
 - Minimalist: Clean, simple, modern (e.g., "Base", "Form", "Clear Path")
 - Visionary: Bold, disruptive, forward-thinking (e.g., "Frontier Group", "Vanguard Labs")
+- Educational: Clear, informative, helpful (e.g., "Learn Path", "Guide House")
+
+BIO GUIDELINES:
+- Length: 2-3 sentences
+- Tone: Warm, approachable, aligned with user's style
+- Must feel authentic and personal, not corporate or robotic
+- Include a hint of the user's "why" from their motivation if provided
+- Write in first person if founder name is provided
 
 Return ONLY valid JSON with this structure:
 {
@@ -258,7 +267,7 @@ Return ONLY valid JSON with this structure:
     {"name": "Name4", "style": "Visionary", "tagline": "Short tagline"}
   ],
   "tagline": "Compelling 5-10 word tagline (max 80 chars)",
-  "bio": "2-3 sentence personalized bio using founder's background and name",
+  "bio": "2-3 sentence personalized bio using founder's background and motivation",
   "colors": ["#hexcolor1", "#hexcolor2", "#hexcolor3"],
   "logoSVG": "Clean, simple SVG logo that matches the style"
 }`;
@@ -272,9 +281,9 @@ Return ONLY valid JSON with this structure:
 Business Concept: ${idea}
 Target Audience: ${audience}
 Founder Background: ${experience}
+${motivation ? `Founder Motivation: ${motivation}` : ''}
 ${firstName ? `Founder Name: ${firstName}${lastName ? ' ' + lastName : ''}` : ''}
 Style Category: ${styleCategory || 'professional'}
-${styleWord ? `Style Word: ${styleWord}` : ''}
 Tone: ${tone}
 
 ${nameInstruction}

@@ -15,8 +15,8 @@ interface OnboardingData {
     firstName: string;
     lastName: string;
     expertise: string;
-    style: string;
-    styleWord: string;
+    motivation: string;
+    styles: string[];
     profilePicture?: string;
     includeFirstName: boolean;
     includeLastName: boolean;
@@ -68,9 +68,9 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   const handleStepAboutYou = (aboutYou: { 
     firstName: string; 
     lastName: string;
-    expertise: string; 
-    style: string;
-    styleWord: string;
+    expertise: string;
+    motivation: string;
+    styles: string[];
     profilePicture?: string;
     includeFirstName: boolean;
     includeLastName: boolean;
@@ -95,9 +95,9 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
         idea: formData.idea,
         audiences: formData.audiences,
         experience: formData.aboutYou.expertise,
+        motivation: formData.aboutYou.motivation,
         firstName: formData.aboutYou.firstName,
-        style: formData.aboutYou.style,
-        styleWord: formData.aboutYou.styleWord,
+        styles: formData.aboutYou.styles,
         styleCategory
       });
 
@@ -112,10 +112,10 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
         idea: formData.idea,
         audience: formData.audiences?.join(', ') || '',
         experience: formData.aboutYou.expertise,
+        motivation: formData.aboutYou.motivation,
         firstName: formData.aboutYou.firstName,
         lastName: formData.aboutYou.lastName,
-        tone: formData.aboutYou.style.toLowerCase() as 'professional' | 'friendly' | 'playful',
-        styleWord: formData.aboutYou.styleWord,
+        tone: formData.aboutYou.styles.join(', '),
         styleCategory,
         namingPreference
       });

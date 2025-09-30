@@ -39,7 +39,8 @@ interface StepThreeExpandedNewProps {
     firstName: string;
     lastName: string;
     expertise: string;
-    style: string;
+    motivation: string;
+    styles: string[];
     includeFirstName: boolean;
     includeLastName: boolean;
   };
@@ -78,8 +79,9 @@ export const StepThreeExpandedNew = ({ onNext, onBack, initialValue, idea, about
         idea,
         audience,
         experience: aboutYou.expertise,
+        motivation: aboutYou.motivation,
         firstName: aboutYou.firstName,
-        tone: aboutYou.style.toLowerCase() as 'professional' | 'friendly' | 'playful',
+        tone: aboutYou.styles.join(', '),
         namingPreference: (aboutYou.includeFirstName || aboutYou.includeLastName) ? 'with_personal_name' : 'anonymous',
         bannedWords,
         rejectedNames
@@ -134,8 +136,9 @@ export const StepThreeExpandedNew = ({ onNext, onBack, initialValue, idea, about
           idea,
           audience,
           experience: aboutYou.expertise,
+          motivation: aboutYou.motivation,
           firstName: aboutYou.firstName,
-          tone: aboutYou.style.toLowerCase() as 'professional' | 'friendly' | 'playful',
+          tone: aboutYou.styles.join(', '),
           namingPreference: (aboutYou.includeFirstName || aboutYou.includeLastName) ? 'with_personal_name' : 'anonymous',
           bannedWords: [...bannedWords, ...wordsInName],
           rejectedNames: [...rejectedNames, rejectedOption.name, ...existingNames]

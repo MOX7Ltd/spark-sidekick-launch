@@ -10,9 +10,9 @@ interface StepAboutYouProps {
   onNext: (data: { 
     firstName: string; 
     lastName: string;
-    expertise: string; 
-    style: string;
-    styleWord: string;
+    expertise: string;
+    motivation: string;
+    styles: string[];
     profilePicture?: string;
     includeFirstName: boolean;
     includeLastName: boolean;
@@ -21,9 +21,9 @@ interface StepAboutYouProps {
   initialValue?: { 
     firstName?: string; 
     lastName?: string;
-    expertise?: string; 
-    style?: string;
-    styleWord?: string;
+    expertise?: string;
+    motivation?: string;
+    styles?: string[];
     profilePicture?: string;
     includeFirstName?: boolean;
     includeLastName?: boolean;
@@ -32,23 +32,24 @@ interface StepAboutYouProps {
 }
 
 const styleOptions = [
-  { value: 'Professional', label: 'Professional', icon: Target, description: 'Clear, authoritative' },
-  { value: 'Friendly', label: 'Friendly', icon: Heart, description: 'Warm, approachable' },
-  { value: 'Playful', label: 'Playful', icon: Sparkles, description: 'Fun, energetic' },
-  { value: 'Inspirational', label: 'Inspirational', icon: TrendingUp, description: 'Motivational, visionary' },
-  { value: 'Bold', label: 'Bold & Direct', icon: Zap, description: 'High-energy, "hustle" tone' },
-  { value: 'Educational', label: 'Educational', icon: BookOpen, description: 'Step-by-step, teacher-like' },
+  { value: 'Professional', label: 'Professional', icon: Target, description: 'Clear, authoritative, business-focused' },
+  { value: 'Friendly', label: 'Friendly', icon: Heart, description: 'Warm, approachable, conversational' },
+  { value: 'Playful', label: 'Playful', icon: Sparkles, description: 'Fun, energetic, lighthearted' },
+  { value: 'Inspirational', label: 'Inspirational', icon: TrendingUp, description: 'Motivational, visionary, uplifting' },
+  { value: 'Bold', label: 'Bold & Direct', icon: Zap, description: 'High-energy, confident, action-driven' },
+  { value: 'Educational', label: 'Educational', icon: BookOpen, description: 'Informative, teaching-oriented, helpful' },
 ];
 
 export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAboutYouProps) => {
   const [firstName, setFirstName] = useState(initialValue?.firstName || '');
   const [lastName, setLastName] = useState(initialValue?.lastName || '');
   const [expertise, setExpertise] = useState(initialValue?.expertise || '');
-  const [style, setStyle] = useState(initialValue?.style || '');
-  const [styleWord, setStyleWord] = useState(initialValue?.styleWord || '');
+  const [motivation, setMotivation] = useState(initialValue?.motivation || '');
+  const [styles, setStyles] = useState<string[]>(initialValue?.styles || []);
   const [profilePicture, setProfilePicture] = useState<string | undefined>(initialValue?.profilePicture);
   const [includeFirstName, setIncludeFirstName] = useState(initialValue?.includeFirstName ?? false);
   const [includeLastName, setIncludeLastName] = useState(initialValue?.includeLastName ?? false);
+  const [isListening, setIsListening] = useState(false);
 
   const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -61,12 +62,48 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onNext({ firstName, lastName, expertise, style, styleWord, profilePicture, includeFirstName, includeLastName });
+  const startVoiceInput = (field: 'expertise' | 'motivation') => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert('Voice input is not supported in your browser. Please use Chrome or Edge.');
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      if (field === 'expertise') {
+        setExpertise(prev => prev ? `${prev} ${transcript}` : transcript);
+      } else {
+        setMotivation(prev => prev ? `${prev} ${transcript}` : transcript);
+      }
+    };
+
+    recognition.start();
   };
 
-  const isValid = expertise.length >= 5 && style && styleWord.length >= 3;
+  const toggleStyle = (value: string) => {
+    setStyles(prev => 
+      prev.includes(value) 
+        ? prev.filter(s => s !== value)
+        : [...prev, value]
+    );
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onNext({ firstName, lastName, expertise, motivation, styles, profilePicture, includeFirstName, includeLastName });
+  };
+
+  const isValid = expertise.length >= 10 && styles.length > 0;
 
   return (
     <div className="max-w-2xl mx-auto animate-fade-in">
@@ -162,56 +199,102 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
 
           <div className="space-y-2">
             <Label htmlFor="expertise" className="text-base font-medium">
-              Your Background / Expertise
+              Tell us a little about your experience or skills
             </Label>
-            <Textarea
-              id="expertise"
-              value={expertise}
-              onChange={(e) => setExpertise(e.target.value)}
-              placeholder="e.g., I've been running businesses for over 30 years"
-              className="min-h-[90px] text-base resize-none"
-            />
-            <p className="text-sm text-muted-foreground">
-              {expertise.length >= 5 ? '✓ Perfect!' : 'At least 5 characters'}
-            </p>
+            <div className="relative">
+              <Textarea
+                id="expertise"
+                value={expertise}
+                onChange={(e) => setExpertise(e.target.value)}
+                placeholder="1-2 sentences about what you do or what you're good at"
+                className="min-h-[90px] text-base resize-none pr-12"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="absolute top-2 right-2"
+                onClick={() => startVoiceInput('expertise')}
+                disabled={isListening}
+              >
+                {isListening ? '🎤 Listening...' : '🎤'}
+              </Button>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">
+                💡 Examples:
+              </p>
+              <p className="text-xs text-muted-foreground pl-4">
+                • "I've been helping friends set up websites for years."
+              </p>
+              <p className="text-xs text-muted-foreground pl-4">
+                • "I love crafts and want to turn that into income."
+              </p>
+            </div>
+            {expertise.length >= 10 && (
+              <p className="text-sm text-primary font-medium animate-fade-in">
+                ✨ Perfect, this will help make your business unique!
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="styleWord" className="text-base font-medium">
-              One word that describes your style
+            <Label htmlFor="motivation" className="text-base font-medium">
+              Why do you want to start this business? <span className="text-muted-foreground font-normal">(Optional)</span>
             </Label>
-            <Input
-              id="styleWord"
-              value={styleWord}
-              onChange={(e) => setStyleWord(e.target.value)}
-              placeholder="e.g., Bold, Elegant, Innovative"
-              className="h-11 text-base"
-            />
-            <p className="text-sm text-muted-foreground">
-              {styleWord.length >= 3 ? '✓ Great!' : 'At least 3 characters'}
-            </p>
+            <div className="relative">
+              <Textarea
+                id="motivation"
+                value={motivation}
+                onChange={(e) => setMotivation(e.target.value)}
+                placeholder="Share your 'why' if you'd like..."
+                className="min-h-[90px] text-base resize-none pr-12"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="absolute top-2 right-2"
+                onClick={() => startVoiceInput('motivation')}
+                disabled={isListening}
+              >
+                {isListening ? '🎤 Listening...' : '🎤'}
+              </Button>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">
+                💡 Examples:
+              </p>
+              <p className="text-xs text-muted-foreground pl-4">
+                • "I've always dreamed of turning my passion into income."
+              </p>
+              <p className="text-xs text-muted-foreground pl-4">
+                • "I need more freedom and flexibility in life."
+              </p>
+            </div>
           </div>
 
           <div className="space-y-3">
             <Label className="text-base font-medium">
-              Preferred Tone / Style
+              Tone & Style <span className="text-muted-foreground text-sm font-normal">(Select all that apply)</span>
             </Label>
             <div className="grid grid-cols-2 gap-3">
               {styleOptions.map((option) => {
                 const Icon = option.icon;
+                const isSelected = styles.includes(option.value);
                 return (
                   <Card 
                     key={option.value}
                     className={`cursor-pointer transition-all hover:scale-[1.02] ${
-                      style === option.value 
+                      isSelected
                         ? 'border-primary ring-2 ring-primary/20 bg-primary/5' 
                         : 'border-border hover:border-primary/50'
                     }`}
-                    onClick={() => setStyle(option.value)}
+                    onClick={() => toggleStyle(option.value)}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
-                        <Icon className={`h-5 w-5 mt-0.5 ${style === option.value ? 'text-primary' : 'text-muted-foreground'}`} />
+                        <Icon className={`h-5 w-5 mt-0.5 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
                         <div className="flex-1 space-y-1">
                           <div className="font-semibold text-sm">{option.label}</div>
                           <div className="text-xs text-muted-foreground">{option.description}</div>
@@ -222,9 +305,9 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
                 );
               })}
             </div>
-            {style && styleWord.length >= 3 && (
+            {styles.length > 0 && expertise.length >= 10 && (
               <p className="text-sm text-primary font-medium animate-fade-in">
-                🔥 Perfect! Your personality is shining through
+                🔥 Great choices! We're getting to know you
               </p>
             )}
           </div>

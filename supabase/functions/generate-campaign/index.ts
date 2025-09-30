@@ -68,7 +68,7 @@ serve(async (req) => {
       });
     }
 
-    const { businessId, type, platforms } = await req.json();
+    const { businessId, type, platforms, background, motivation, tone } = await req.json();
 
     if (!businessId || !type || !platforms?.length) {
       return new Response(JSON.stringify({ error: 'Missing required fields: businessId, type, platforms' }), {
@@ -99,7 +99,48 @@ serve(async (req) => {
       conversion: 'clear value proposition with specific offer and direct CTA to your storefront or product'
     };
 
-    const systemPrompt = `You are a social media copywriter. Return strict JSON with this schema:
+    let systemPrompt: string;
+    let userPrompt: string;
+
+    if (type === 'intro') {
+      systemPrompt = `You are writing an introductory social media post for a new business.
+
+CRITICAL RULES:
+- Write in the first person ("I" / "my")
+- Length: 120–150 characters
+- Must sound human, authentic, and a little vulnerable
+- Avoid corporate jargon, robotic phrasing, or clichés
+- Include exactly 2–3 natural hashtags
+- Keep grammar clean but conversational
+- Add an emoji if the tone is Friendly or Playful
+
+Return strict JSON with this schema:
+{
+  "campaigns": [
+    {
+      "platform": "platform_name",
+      "hook": "First sentence (engaging, personal)",
+      "caption": "Full intro post text (120-150 chars)", 
+      "hashtags": ["#hashtag1", "#hashtag2"]
+    }
+  ]
+}`;
+
+      userPrompt = `Write an introductory social media post for a new business launch:
+
+- Business Name: ${business.business_name}
+- Background/Expertise: ${background || business.bio}
+${motivation ? `- Motivation: ${motivation}` : ''}
+- Tone/Style: ${tone || 'friendly'}
+- Platforms: ${platforms.join(', ')}
+
+Examples of good intro posts:
+1. "Big news 🎉 I'm finally starting my journey with CreateBright. It's been a dream for years — let's make it real! #NewBeginnings #SideHustle"
+2. "After years helping friends with their side hustles, I'm launching my own 🚀 Excited to share my story and see where it goes. #Hustle #Community"
+
+Generate authentic, human-sounding intro posts for each platform.`;
+    } else {
+      systemPrompt = `You are a social media copywriter. Return strict JSON with this schema:
 {
   "campaigns": [
     {
@@ -113,7 +154,7 @@ serve(async (req) => {
 
 Hooks are punchy (<100 chars). Captions 120-220 chars. Hashtags must be niche-specific; avoid generic #success/#motivation.`;
 
-    const userPrompt = `Create ${type} campaign posts for ${business.business_name}:
+      userPrompt = `Create ${type} campaign posts for ${business.business_name}:
 - Business: ${business.business_name}
 - Audience: ${business.audience}
 - Bio: ${business.bio}
@@ -122,6 +163,7 @@ Hooks are punchy (<100 chars). Captions 120-220 chars. Hashtags must be niche-sp
 - Type: ${campaignTemplates[type as keyof typeof campaignTemplates]}
 
 Generate platform-optimized content for each platform that uses the business name and speaks directly to the target audience.`;
+    }
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',

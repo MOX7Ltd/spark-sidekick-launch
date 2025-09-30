@@ -10,7 +10,7 @@ interface CustomerStorefrontProps {
     firstName: string;
     lastName: string;
     expertise: string;
-    style: string;
+    styles?: string[];
     profilePicture?: string;
   };
   audience: string;
