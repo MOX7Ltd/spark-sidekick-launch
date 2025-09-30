@@ -46,6 +46,9 @@ export interface GenerateCampaignRequest {
   businessId: string;
   type: 'intro' | 'quick_win' | 'conversion' | 'custom';
   platforms: string[];
+  background?: string;
+  motivation?: string;
+  tone?: string;
 }
 
 export interface GenerateCampaignResponse {

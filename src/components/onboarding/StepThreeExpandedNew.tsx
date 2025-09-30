@@ -46,6 +46,15 @@ interface StepThreeExpandedNewProps {
     includeLastName: boolean;
   };
   audience: string;
+  introCampaign?: {
+    shortPost: {
+      caption: string;
+      hashtags: string[];
+    };
+    longPost: {
+      caption: string;
+    };
+  };
 }
 
 const logoStyles = [
@@ -58,7 +67,7 @@ const logoStyles = [
   { id: 'gradient', name: 'Dynamic Gradient', gradient: 'from-violet-500 via-purple-500 to-pink-500', icon: Hexagon },
 ];
 
-export const StepThreeExpandedNew = ({ onNext, onBack, initialValue, idea, aboutYou, audience }: StepThreeExpandedNewProps) => {
+export const StepThreeExpandedNew = ({ onNext, onBack, initialValue, idea, aboutYou, audience, introCampaign }: StepThreeExpandedNewProps) => {
   const [selectedName, setSelectedName] = useState(initialValue?.name || '');
   const [customName, setCustomName] = useState('');
   const [nameOptions, setNameOptions] = useState<NameSuggestion[]>(initialValue?.nameOptions || []);
@@ -480,15 +489,7 @@ export const StepThreeExpandedNew = ({ onNext, onBack, initialValue, idea, about
                   colors: initialValue?.colors,
                   logoSVG: generatedLogos[selectedLogoIndex] || initialValue?.logoSVG
                 }}
-                introCampaign={{
-                  shortPost: {
-                    caption: `🚀 Big moment! After years of ${aboutYou.expertise}, I'm officially launching ${displayName}. Can't wait to share this journey with you all! Let's build something amazing together.`,
-                    hashtags: ['#NewBusiness', '#Entrepreneur', '#Launch']
-                  },
-                  longPost: {
-                    caption: `I've spent years working in ${aboutYou.expertise}, and one thing has always stood out to me: ${idea}. That's why I created ${displayName}. I'm not going to pretend this is easy or that I have all the answers. But I'm committed to learning, growing, and building something meaningful. I'd love your feedback and support as I take this leap. What challenges have you faced in this space?`
-                  }
-                }}
+                introCampaign={introCampaign}
               />
             </CardContent>
           </Card>

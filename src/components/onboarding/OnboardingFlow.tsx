@@ -6,7 +6,7 @@ import { StepTwoMultiSelect } from './StepTwoMultiSelect';
 import { StepStyleSelect } from './StepStyleSelect';
 import { StepThreeExpandedNew } from './StepThreeExpandedNew';
 import { StarterPackReveal } from './StarterPackReveal';
-import { generateBusinessIdentity } from '@/lib/api';
+import { generateBusinessIdentity, generateCampaign } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 interface OnboardingData {
@@ -139,7 +139,20 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
 
       console.log('Generated identity data:', identityData);
 
-      // Update form data with generated identity
+      // Generate intro campaign with the business identity
+      console.log('Generating intro campaign...');
+      const campaignData = await generateCampaign({
+        businessId: 'temp-id', // This will be replaced when we save to DB
+        type: 'intro',
+        platforms: ['instagram', 'linkedin'],
+        background: `${formData.aboutYou.expertise}. ${formData.aboutYou.motivation}`,
+        motivation: formData.aboutYou.motivation,
+        tone: formData.aboutYou.styles.join(', ')
+      });
+
+      console.log('Generated campaign data:', campaignData);
+
+      // Update form data with generated identity and campaign
       setFormData(prev => ({
         ...prev,
         businessIdentity: {
@@ -151,7 +164,16 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
           logoSVG: identityData.logoSVG,
           nameOptions: identityData.nameOptions
         },
-        products: identityData.products
+        products: identityData.products,
+        introCampaign: {
+          shortPost: {
+            caption: campaignData.items.find(item => item.platform === 'instagram')?.caption || '',
+            hashtags: campaignData.items.find(item => item.platform === 'instagram')?.hashtags || []
+          },
+          longPost: {
+            caption: campaignData.items.find(item => item.platform === 'linkedin')?.caption || ''
+          }
+        }
       }));
       
       setCurrentStep(5);
@@ -240,6 +262,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
               idea={formData.idea}
               aboutYou={formData.aboutYou}
               audience={formData.audiences?.[0] || ''}
+              introCampaign={formData.introCampaign}
             />
           )}
           
