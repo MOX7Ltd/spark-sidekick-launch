@@ -18,7 +18,8 @@ export interface GenerateIdentityRequest {
 
 export interface NameSuggestion {
   name: string;
-  style: string;
+  style?: string;
+  archetype?: string;
   tagline: string;
 }
 

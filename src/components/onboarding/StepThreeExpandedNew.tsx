@@ -10,7 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 
 interface NameSuggestion {
   name: string;
-  style: string;
+  style?: string;
+  archetype?: string;
   tagline: string;
 }
 
@@ -312,7 +313,7 @@ export const StepThreeExpandedNew = ({ onNext, onBack, initialValue, idea, about
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                           <BadgeInfo className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">{option.style}</span>
+                          <span className="text-xs text-muted-foreground">{option.style || option.archetype}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">

@@ -143,36 +143,66 @@ serve(async (req) => {
     let systemPrompt: string;
     let userPrompt: string;
 
-    // Build comprehensive banned words list
+    // Build comprehensive banned words list - includes awkward and obscure words
     const baseBannedWords = [
       'Magic', 'Haven', 'Corner', 'Solutions', 'Group', 'Hub', 'Studio', 
       'Edge', 'Peak', 'Core', 'Nexus', 'Spark', 'Sphere', 'Venture', 
-      'Genesis', 'Blueprint', 'Capital', 'Pro', 'Plus', 'Global', 'Elite'
+      'Genesis', 'Blueprint', 'Capital', 'Pro', 'Plus', 'Global', 'Elite',
+      // Awkward/obscure words to avoid
+      'Pylon', 'Pith', 'Apex', 'Zenith', 'Paradigm', 'Synergy', 'Leverage',
+      'Pivot', 'Disrupt', 'Quantum', 'Matrix', 'Vortex', 'Cipher', 'Prism'
     ];
     const allBannedWords = [...new Set([...baseBannedWords, ...bannedWords])];
     const bannedWordsStr = allBannedWords.join(', ');
     const rejectedNamesStr = rejectedNames.length > 0 ? rejectedNames.join(', ') : '';
+    
+    // Analyze rejected patterns to learn from feedback
+    const rejectedPatterns: string[] = [];
+    rejectedNames.forEach((name: string) => {
+      if (typeof name === 'string') {
+        if (name.includes("'s")) rejectedPatterns.push("possessive format");
+        if (name.split(' ').length > 2) rejectedPatterns.push("too many words");
+      }
+    });
 
     if (regenerateSingleName) {
-      // Generate just one replacement name
-      systemPrompt = `You are an expert branding consultant. Generate ONE unique business name that avoids all previously rejected names and banned words.
+      // Determine archetype diversity based on existing names
+      const archetypes = ['Professional & Trustworthy', 'Creative & Visionary', 'Playful & Memorable', 'Personalized'];
+      const randomArchetype = archetypes[Math.floor(Math.random() * archetypes.length)];
+      
+      const nameGuidelines = namingPreference === 'with_personal_name'
+        ? `For Professional tone: Use "${lastName || firstName}" + descriptor (e.g., "${lastName || firstName} Advisory", "${lastName || firstName} Partners")
+For Playful/Friendly tone: Use "${firstName}" + descriptor (e.g., "${firstName}'s Corner", "${firstName} Lab")
+Avoid awkward combinations and possessive forms unless absolutely natural.`
+        : 'Create unique, brandable names without personal names.';
+
+      systemPrompt = `You are an expert branding consultant. Generate ONE unique business name from the "${randomArchetype}" archetype.
+
+BRAND ARCHETYPES:
+1. Professional & Trustworthy - Clear, authoritative, established (e.g., "Morris Advisory", "Anchor Partners")
+2. Creative & Visionary - Innovative, forward-thinking, bold (e.g., "BrightForge", "Launchpad Studio")
+3. Playful & Memorable - Fun, approachable, friendly (e.g., "SideHustle Spark", "BizNest")
+4. Personalized - Incorporates founder name naturally (e.g., "Morris Ventures", "Sarah's Studio")
 
 CRITICAL NAMING RULES:
 - Name MUST be SHORT (1-3 words max)
 - Name MUST be MEMORABLE and BRANDABLE
 - STRICTLY AVOID these words: ${bannedWordsStr}
+- AVOID awkward, obscure, archaic, or overly technical words
+- DO NOT use possessive formats ("___'s ___") unless extremely natural
 ${rejectedNamesStr ? `- DO NOT suggest any of these previously rejected names: ${rejectedNamesStr}` : ''}
+${rejectedPatterns.length > 0 ? `- Avoid these patterns: ${rejectedPatterns.join(', ')}` : ''}
 - Be SPECIFIC to the business idea, not generic
-- ${namingPreference === 'with_personal_name' ? 'Naturally incorporate the personal name if possible' : 'Create a unique brandable name'}
+- ${nameGuidelines}
 
 Return ONLY a JSON object:
 {
   "name": "BusinessName",
-  "style": "one of: Playful, Professional, Minimalist, Visionary, Invented, Compound, Metaphorical, Action-driven",
-  "tagline": "Short 5-8 word tagline"
+  "archetype": "${randomArchetype}",
+  "tagline": "5-8 word tagline that reflects the archetype and outcome focus"
 }`;
 
-      userPrompt = `Generate 1 fresh business name option:
+      userPrompt = `Generate 1 fresh business name from the "${randomArchetype}" archetype:
 
 Business Concept: ${idea}
 Target Audience: ${audience}
@@ -180,76 +210,92 @@ ${namingPreference === 'with_personal_name' ? `Personal Name: ${firstName}${last
 ${motivation ? `Founder Motivation: ${motivation}` : ''}
 Tone: ${tone}
 
-Make it COMPLETELY DIFFERENT from the rejected names. Avoid all banned words.`;
+Make it COMPLETELY DIFFERENT from the rejected names. Focus on the "${randomArchetype}" archetype qualities.`;
 
     } else if (regenerateNamesOnly) {
-      systemPrompt = `You are an expert branding consultant specializing in business naming. Generate 7 SHORT, brandable business names across diverse styles.
+      const nameGuidelines = namingPreference === 'with_personal_name'
+        ? `PERSONAL NAME USAGE RULES:
+- For Professional & Trustworthy: Use "${lastName || firstName}" + descriptor (e.g., "${lastName || firstName} Advisory", "${lastName || firstName} Partners")
+- For Creative & Visionary: Can use either "${firstName}" or "${lastName}" + creative descriptor (e.g., "${firstName} Studio", "${lastName} Lab")
+- For Playful & Memorable: Use "${firstName}" + friendly descriptor (e.g., "${firstName}'s Corner", "${firstName} Hub")
+- AVOID awkward combinations, obscure words, and unnecessary possessive forms
+- At least 2-3 names should NOT include personal name for variety`
+        : 'Create unique, brandable names across all archetypes without personal names.';
+
+      systemPrompt = `You are an expert branding consultant. Generate 8 SHORT, brandable business names across 4 distinct BRAND ARCHETYPES.
+
+BRAND ARCHETYPES (Generate 2 names per archetype):
+1. Professional & Trustworthy - Clear, authoritative, established (e.g., "Morris Advisory", "Anchor Partners", "Blueprint Co.")
+2. Creative & Visionary - Innovative, forward-thinking, bold (e.g., "BrightForge", "Launchpad Studio", "Momentum Lab")
+3. Playful & Memorable - Fun, approachable, friendly (e.g., "SideHustle Spark", "BizNest", "Happy Trails")
+4. Personalized (if applicable) - Incorporates founder name naturally (e.g., "Morris Ventures", "Sarah's Studio")
 
 CRITICAL NAMING RULES:
 - Names MUST be SHORT (1-3 words max)
 - Names MUST be MEMORABLE and BRANDABLE
-- STRICTLY AVOID these overused words: ${bannedWordsStr}
+- STRICTLY AVOID these overused/awkward words: ${bannedWordsStr}
+- AVOID obscure, archaic, overly technical, or awkward word combinations
+- DO NOT repeat the same structural pattern (e.g., multiple "___'s ___" names)
 ${rejectedNamesStr ? `- DO NOT suggest any of these previously rejected names: ${rejectedNamesStr}` : ''}
-- Be SPECIFIC to the business idea, not generic
-- ${namingPreference === 'with_personal_name' ? 'Can naturally incorporate personal name where it fits' : 'Create unique brandable names'}
-
-REQUIRED STYLE DIVERSITY - Generate exactly 7 names across these categories:
-1. Playful / Quirky - Fun, memorable, friendly
-2. Professional / Corporate - Clear, authoritative, trust-building  
-3. Minimalist / Modern - Clean, simple, 1-2 words
-4. Visionary / Inspirational - Bold, forward-thinking
-5. Invented Word - Made-up but pronounceable word (e.g., "Zyra", "Novatra")
-6. Compound Blend - Two words merged creatively (e.g., "HiveMind", "SkillForge")
-7. Metaphorical - Uses imagery/symbolism (e.g., "Sparkline", "Northstar")
+${rejectedPatterns.length > 0 ? `- Avoid these patterns that were rejected: ${rejectedPatterns.join(', ')}` : ''}
+- Ensure VARIETY in tone, length, and memorability
+- ${nameGuidelines}
 
 Return ONLY a JSON object with this structure:
 {
   "nameOptions": [
-    {"name": "Name1", "style": "Playful", "tagline": "Short tagline"},
-    {"name": "Name2", "style": "Professional", "tagline": "Short tagline"},
-    {"name": "Name3", "style": "Minimalist", "tagline": "Short tagline"},
-    {"name": "Name4", "style": "Visionary", "tagline": "Short tagline"},
-    {"name": "Name5", "style": "Invented", "tagline": "Short tagline"},
-    {"name": "Name6", "style": "Compound", "tagline": "Short tagline"},
-    {"name": "Name7", "style": "Metaphorical", "tagline": "Short tagline"}
+    {"name": "Name1", "archetype": "Professional & Trustworthy", "tagline": "Outcome-focused tagline (5-8 words)"},
+    {"name": "Name2", "archetype": "Professional & Trustworthy", "tagline": "Outcome-focused tagline (5-8 words)"},
+    {"name": "Name3", "archetype": "Creative & Visionary", "tagline": "Outcome-focused tagline (5-8 words)"},
+    {"name": "Name4", "archetype": "Creative & Visionary", "tagline": "Outcome-focused tagline (5-8 words)"},
+    {"name": "Name5", "archetype": "Playful & Memorable", "tagline": "Outcome-focused tagline (5-8 words)"},
+    {"name": "Name6", "archetype": "Playful & Memorable", "tagline": "Outcome-focused tagline (5-8 words)"},
+    {"name": "Name7", "archetype": "Personalized", "tagline": "Outcome-focused tagline (5-8 words)"},
+    {"name": "Name8", "archetype": "Personalized", "tagline": "Outcome-focused tagline (5-8 words)"}
   ]
 }`;
 
-      const nameInstruction = namingPreference === 'with_personal_name' 
-        ? `Can incorporate "${firstName}${lastName ? ' ' + lastName : ''}" naturally where appropriate, but prioritize diversity across all 7 styles`
-        : 'Create 7 unique, brandable names across all required styles';
-
-      userPrompt = `Generate 7 business name options with MAXIMUM DIVERSITY:
+      userPrompt = `Generate 8 business name options with MAXIMUM VARIETY across all 4 brand archetypes:
 
 Business Concept: ${idea}
 Target Audience: ${audience}
-${namingPreference === 'with_personal_name' ? `Personal Name (optional use): ${firstName}${lastName ? ' ' + lastName : ''}` : ''}
+${namingPreference === 'with_personal_name' ? `Founder Name: ${firstName}${lastName ? ' ' + lastName : ''} (Surname: ${lastName || 'N/A'})` : ''}
 ${motivation ? `Founder Motivation: ${motivation}` : ''}
 Tone: ${tone}
 
-${nameInstruction}
-
-Remember: 
-- Avoid ALL generic/overused terms and banned words
-- Each name must represent a DIFFERENT style category
-- Be specific, memorable, and unique
-- Keep taglines to 5-8 words max`;
+IMPORTANT:
+- Generate 2 names per archetype (8 total)
+- Each name must feel intentional, polished, and trustworthy
+- Avoid ALL generic/overused terms and awkward combinations
+- Ensure variety in length, structure, and tone
+- Taglines should reflect the archetype and outcome focus
+- Make names that feel professional and memorable, never clunky or laughable`;
     } else {
-      systemPrompt = `You are an expert business identity generator. Create compelling, unique business identities that feel authentic and avoid generic corporate clichés.
+      const nameGuidelines = namingPreference === 'with_personal_name'
+        ? `PERSONAL NAME USAGE:
+- For Professional style: Use "${lastName || firstName}" + descriptor (e.g., "${lastName || firstName} Advisory")
+- For Playful style: Use "${firstName}" + descriptor (e.g., "${firstName}'s Studio")
+- Include 1-2 names with personal name, rest without for variety
+- AVOID awkward or overly possessive formats`
+        : 'Create diverse brandable names across different archetypes.';
+
+      systemPrompt = `You are an expert business identity generator. Create compelling, unique business identities using BRAND ARCHETYPES that feel authentic and avoid generic corporate clichés.
+
+BRAND ARCHETYPES:
+1. Professional & Trustworthy - Clear, authoritative, established (e.g., "Morris Advisory", "Anchor Partners")
+2. Creative & Visionary - Innovative, forward-thinking, bold (e.g., "BrightForge", "Launchpad Studio")
+3. Playful & Memorable - Fun, approachable, friendly (e.g., "SideHustle Spark", "BizNest")
+4. Personalized - Incorporates founder name naturally (e.g., "Morris Ventures")
 
 CRITICAL NAMING RULES:
 - Business names MUST be SHORT (1-3 words max)
-- STRICTLY AVOID: Magic, Haven, Corner, Solutions, Group, Hub, Studio, Edge, Peak, Core, Nexus, Spark, Sphere, Venture, Genesis, Blueprint, Capital
-- Be SPECIFIC to the business concept and style category
-- Make names MEMORABLE and BRANDABLE
+- STRICTLY AVOID: ${bannedWordsStr}
+- AVOID obscure, awkward, archaic, or overly technical words
+- DO NOT repeat the same structural pattern across names
+- Be SPECIFIC to the business concept and archetype
+- Make names MEMORABLE, BRANDABLE, and POLISHED
 - Match the requested style: ${styleCategory || 'professional'}
-
-Style Guidelines based on tone:
-- Professional: Trustworthy, established, clear (e.g., "Momentum Consulting", "Anchor Partners")
-- Playful: Fun, approachable, memorable (e.g., "Happy Trails", "Sunshine Coaching")  
-- Minimalist: Clean, simple, modern (e.g., "Base", "Form", "Clear Path")
-- Visionary: Bold, disruptive, forward-thinking (e.g., "Frontier Group", "Vanguard Labs")
-- Educational: Clear, informative, helpful (e.g., "Learn Path", "Guide House")
+- ${nameGuidelines}
 
 BIO GUIDELINES:
 - Length: 2-3 sentences
@@ -261,10 +307,10 @@ BIO GUIDELINES:
 Return ONLY valid JSON with this structure:
 {
   "nameOptions": [
-    {"name": "Name1", "style": "Professional", "tagline": "Short tagline"},
-    {"name": "Name2", "style": "Playful", "tagline": "Short tagline"},
-    {"name": "Name3", "style": "Minimalist", "tagline": "Short tagline"},
-    {"name": "Name4", "style": "Visionary", "tagline": "Short tagline"}
+    {"name": "Name1", "archetype": "Professional & Trustworthy", "tagline": "Outcome-focused tagline (5-8 words)"},
+    {"name": "Name2", "archetype": "Creative & Visionary", "tagline": "Outcome-focused tagline (5-8 words)"},
+    {"name": "Name3", "archetype": "Playful & Memorable", "tagline": "Outcome-focused tagline (5-8 words)"},
+    {"name": "Name4", "archetype": "Personalized", "tagline": "Outcome-focused tagline (5-8 words)"}
   ],
   "tagline": "Compelling 5-10 word tagline (max 80 chars)",
   "bio": "2-3 sentence personalized bio using founder's background and motivation",
@@ -272,25 +318,19 @@ Return ONLY valid JSON with this structure:
   "logoSVG": "Clean, simple SVG logo that matches the style"
 }`;
 
-      const nameInstruction = namingPreference === 'with_personal_name'
-        ? `Generate diverse name styles that can naturally incorporate "${firstName}${lastName ? ' ' + lastName : ''}" where appropriate`
-        : `Generate diverse ${styleCategory || 'professional'} name styles for the business`;
-
-      userPrompt = `Generate a complete business identity with diverse name options:
+      userPrompt = `Generate a complete business identity with diverse name options across brand archetypes:
 
 Business Concept: ${idea}
 Target Audience: ${audience}
 Founder Background: ${experience}
 ${motivation ? `Founder Motivation: ${motivation}` : ''}
-${firstName ? `Founder Name: ${firstName}${lastName ? ' ' + lastName : ''}` : ''}
+${firstName ? `Founder Name: ${firstName}${lastName ? ' ' + lastName : ''} (Surname: ${lastName || 'N/A'})` : ''}
 Style Category: ${styleCategory || 'professional'}
 Tone: ${tone}
 
-${nameInstruction}
+Provide 4-6 name options across different brand archetypes (Professional, Creative, Playful, Personalized), one compelling tagline (max 80 chars), a personalized bio (use "${firstName}" and reference their background: "${experience}"), 3 complementary brand colors that match the ${styleCategory || 'professional'} style, and a clean SVG logo.
 
-Provide 4-6 name options with style diversity, one compelling tagline (max 80 chars), a personalized bio (use "${firstName}" and reference their background: "${experience}"), 3 complementary brand colors that match the ${styleCategory || 'professional'} style, and a clean SVG logo.
-
-REMEMBER: Avoid ALL generic/overused business terms (${bannedWordsStr}). Be specific and provide variety across different naming styles.`;
+CRITICAL: Ensure names feel intentional, polished, and trustworthy. Avoid clunky, awkward, or laughable combinations. Each name should reflect its archetype clearly.`;
     }
 
     console.log('Calling Lovable AI API...');
