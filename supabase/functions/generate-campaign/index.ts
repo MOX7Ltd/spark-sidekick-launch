@@ -39,57 +39,84 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Attempting to verify user authentication...');
     const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    
+    let user = null;
+    
+    if (authHeader) {
+      try {
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser(
+          authHeader.replace('Bearer ', '')
+        );
+        
+        if (!authError && authUser) {
+          user = authUser;
+          console.log('User authenticated:', user.id);
+          
+          // Check rate limit for authenticated users
+          const canProceed = await checkRateLimit(user.id);
+          if (!canProceed) {
+            return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please wait before trying again.' }), {
+              status: 429,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+        } else {
+          console.log('Authentication failed, proceeding as anonymous user:', authError?.message);
+        }
+      } catch (e) {
+        console.log('Auth verification error, proceeding as anonymous user:', e);
+      }
+    } else {
+      console.log('No auth header provided, proceeding as anonymous user');
     }
 
-    // Get user from auth header
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
+    const requestBody = await req.json();
+    const { businessId, type, platforms, background, motivation, tone, businessName, audience, bio, tagline } = requestBody;
 
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Check rate limit
-    const canProceed = await checkRateLimit(user.id);
-    if (!canProceed) {
-      return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please wait before trying again.' }), {
-        status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const { businessId, type, platforms, background, motivation, tone } = await req.json();
-
-    if (!businessId || !type || !platforms?.length) {
-      return new Response(JSON.stringify({ error: 'Missing required fields: businessId, type, platforms' }), {
+    if (!type || !platforms?.length) {
+      return new Response(JSON.stringify({ error: 'Missing required fields: type, platforms' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Get business data
-    const { data: business, error: businessError } = await supabase
-      .from('businesses')
-      .select('*')
-      .eq('id', businessId)
-      .eq('owner_id', user.id)
-      .single();
+    // For anonymous users, we need to use the provided business data in the request
+    // For authenticated users, we can fetch from the database
+    let business;
+    
+    if (user && businessId) {
+      const { data: businessData, error: businessError } = await supabase
+        .from('businesses')
+        .select('*')
+        .eq('id', businessId)
+        .eq('owner_id', user.id)
+        .single();
 
-    if (businessError || !business) {
-      return new Response(JSON.stringify({ error: 'Business not found or unauthorized' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      if (businessError || !businessData) {
+        return new Response(JSON.stringify({ error: 'Business not found or unauthorized' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      business = businessData;
+    } else {
+      // For anonymous users during onboarding, use provided data
+      if (!businessName) {
+        return new Response(JSON.stringify({ error: 'businessName is required for anonymous users' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      business = {
+        business_name: businessName,
+        audience: audience || 'your target audience',
+        bio: bio || background || '',
+        tagline: tagline || ''
+      };
     }
 
     // Create campaign prompts based on type
@@ -262,7 +289,49 @@ Generate platform-optimized content for each platform that uses the business nam
       });
     }
 
-    // Create campaign record
+    // For anonymous users, skip database operations and return generated content directly
+    if (!user || !businessId) {
+      console.log('Anonymous user - returning campaign items without database storage');
+      
+      const formattedItems = generatedData.campaigns.map((item: any) => {
+        if (type === 'intro') {
+          return [
+            {
+              platform: item.platform,
+              hook: 'Short Version',
+              caption: item.shortPost.caption,
+              hashtags: item.shortPost.hashtags || []
+            },
+            {
+              platform: item.platform,
+              hook: 'Long Version',
+              caption: item.longPost.caption,
+              hashtags: []
+            }
+          ];
+        } else {
+          return {
+            platform: item.platform,
+            hook: item.hook,
+            caption: item.caption,
+            hashtags: item.hashtags
+          };
+        }
+      }).flat();
+      
+      return new Response(JSON.stringify({
+        campaign: {
+          name: `${type.charAt(0).toUpperCase() + type.slice(1)} Campaign`,
+          type,
+          objective: campaignTemplates[type as keyof typeof campaignTemplates]
+        },
+        items: formattedItems
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Create campaign record for authenticated users
     const { data: campaign, error: campaignError } = await supabase
       .from('campaigns')
       .insert({

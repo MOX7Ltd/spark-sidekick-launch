@@ -142,12 +142,16 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
       // Generate intro campaign with the business identity
       console.log('Generating intro campaign...');
       const campaignData = await generateCampaign({
-        businessId: 'temp-id', // This will be replaced when we save to DB
         type: 'intro',
         platforms: ['instagram', 'linkedin'],
         background: `${formData.aboutYou.expertise}. ${formData.aboutYou.motivation}`,
         motivation: formData.aboutYou.motivation,
-        tone: formData.aboutYou.styles.join(', ')
+        tone: formData.aboutYou.styles.join(', '),
+        // For anonymous users, pass business data directly
+        businessName: identityData.nameOptions[0].name,
+        audience: formData.audiences?.join(', ') || '',
+        bio: identityData.bio,
+        tagline: identityData.tagline
       });
 
       console.log('Generated campaign data:', campaignData);

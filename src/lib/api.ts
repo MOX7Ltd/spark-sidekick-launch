@@ -43,12 +43,17 @@ export interface GenerateIdentityResponse {
 }
 
 export interface GenerateCampaignRequest {
-  businessId: string;
+  businessId?: string;
   type: 'intro' | 'quick_win' | 'conversion' | 'custom';
   platforms: string[];
   background?: string;
   motivation?: string;
   tone?: string;
+  // For anonymous users
+  businessName?: string;
+  audience?: string;
+  bio?: string;
+  tagline?: string;
 }
 
 export interface GenerateCampaignResponse {

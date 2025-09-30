@@ -564,10 +564,13 @@ Return ONLY valid JSON with no markdown formatting:
         });
 
       // Create or update business record
-      // Extract first name from nameOptions (handle both formats)
-      const firstNameOption = typeof generatedData.nameOptions[0] === 'string' 
-        ? generatedData.nameOptions[0] 
-        : generatedData.nameOptions[0].name;
+      // Extract first name from two-track structure
+      const trackA = generatedData.trackA || [];
+      const trackB = generatedData.trackB || [];
+      const allNames = [...trackA, ...trackB];
+      const firstNameOption = allNames.length > 0 
+        ? (typeof allNames[0] === 'string' ? allNames[0] : allNames[0].name)
+        : 'Business Name';
 
       const { data: businessData, error: businessError } = await supabase
         .from('businesses')

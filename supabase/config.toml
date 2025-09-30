@@ -3,5 +3,8 @@ project_id = "hfrsaqfflwvdbywgixxv"
 [functions.generate-identity]
 verify_jwt = false
 
+[functions.generate-campaign]
+verify_jwt = false
+
 [functions.generate-logos]
 verify_jwt = false
