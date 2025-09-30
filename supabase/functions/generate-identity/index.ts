@@ -364,6 +364,76 @@ REMEMBER: Avoid ALL generic/overused business terms (${bannedWordsStr}). Be spec
     // Sanitize SVG
     generatedData.logoSVG = sanitizeSVG(generatedData.logoSVG);
 
+    // Generate product descriptions
+    console.log('Generating product descriptions...');
+    const productDescriptionPrompt = `You are creating short, outcomes-focused product descriptions for digital products in a new entrepreneur's storefront.
+
+Inputs:
+- Business Idea: ${idea}
+- Target Audience: ${audience}
+- Tone/Style: ${tone || 'Professional and friendly'}
+
+Generate exactly 3 products that match this business idea. For each product:
+- Create a practical product title (2-4 words)
+- Generate a product type/category
+- Set a reasonable price between $19-$297
+- Write a description (1-2 sentences, max 30 words) focused on outcomes and benefits
+
+Rules for descriptions:
+- Focus on outcomes and benefits for the customer (not just features)
+- Make it sound practical, clear, and inspiring
+- Write in plain, human language (avoid jargon)
+- Each description should feel like it adds real value and makes the product purchase-worthy
+
+Return ONLY valid JSON with no markdown formatting:
+{
+  "products": [
+    {
+      "title": "Product Name",
+      "type": "Product Type",
+      "price": "$XX",
+      "description": "Outcome-focused description here"
+    }
+  ]
+}`;
+
+    const productResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'user', content: productDescriptionPrompt }
+        ],
+      }),
+    });
+
+    let products = [];
+    if (productResponse.ok) {
+      const productData = await productResponse.json();
+      let productContent = productData.choices[0].message.content;
+      
+      // Strip markdown code fences if present
+      if (productContent.includes('```json')) {
+        productContent = productContent.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+      } else if (productContent.includes('```')) {
+        productContent = productContent.replace(/```\s*/g, '');
+      }
+      
+      try {
+        const productJson = JSON.parse(productContent.trim());
+        products = productJson.products || [];
+        console.log('Generated products:', products);
+      } catch (parseError) {
+        console.error('Failed to parse product response:', productContent);
+      }
+    } else {
+      console.error('Product generation failed:', productResponse.status);
+    }
+
     // Only save to database if user is authenticated
     let business = null;
     if (user) {
@@ -426,7 +496,8 @@ REMEMBER: Avoid ALL generic/overused business terms (${bannedWordsStr}). Be spec
       tagline: generatedData.tagline,
       bio: generatedData.bio,
       colors: generatedData.colors,
-      logoSVG: generatedData.logoSVG
+      logoSVG: generatedData.logoSVG,
+      products
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

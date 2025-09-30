@@ -4,6 +4,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { CustomerStorefront } from './CustomerStorefront';
 import { Rocket, Sparkles, CheckCircle, Heart, Eye, Settings } from 'lucide-react';
 
+interface Product {
+  title: string;
+  type: string;
+  price: string;
+  description: string;
+}
+
 interface StarterPackRevealProps {
   idea: string;
   aboutYou: {
@@ -27,11 +34,12 @@ interface StarterPackRevealProps {
     caption: string;
     hashtags: string[];
   };
+  products?: Product[];
   onUnlock: () => void;
   onBack: () => void;
 }
 
-export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, introCampaign, onUnlock, onBack }: StarterPackRevealProps) => {
+export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, introCampaign, products, onUnlock, onBack }: StarterPackRevealProps) => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [viewMode, setViewMode] = useState<'customer' | 'edit'>('customer');
 
@@ -105,6 +113,7 @@ export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, 
             audience={audience}
             businessIdentity={businessIdentity}
             introCampaign={introCampaign}
+            products={products}
           />
         </div>
 

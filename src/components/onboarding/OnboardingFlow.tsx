@@ -32,6 +32,12 @@ interface OnboardingData {
     logoSVG: string;
     nameOptions: Array<{name: string; style: string; tagline: string}>;
   };
+  products?: Array<{
+    title: string;
+    type: string;
+    price: string;
+    description: string;
+  }>;
   introCampaign?: {
     hook: string;
     caption: string;
@@ -133,7 +139,8 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
           colors: identityData.colors,
           logoSVG: identityData.logoSVG,
           nameOptions: identityData.nameOptions
-        }
+        },
+        products: identityData.products
       }));
       
       setCurrentStep(5);
@@ -232,6 +239,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
               audience={formData.audiences[0]}
               businessIdentity={formData.businessIdentity}
               introCampaign={formData.introCampaign}
+              products={formData.products}
               onUnlock={handleUnlock}
               onBack={goBack}
             />

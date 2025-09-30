@@ -4,6 +4,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, User, Star, Sparkles } from 'lucide-react';
 
+interface Product {
+  title: string;
+  type: string;
+  price: string;
+  description: string;
+}
+
 interface CustomerStorefrontProps {
   idea: string;
   aboutYou: {
@@ -27,11 +34,12 @@ interface CustomerStorefrontProps {
     caption: string;
     hashtags: string[];
   };
+  products?: Product[];
 }
 
-export const CustomerStorefront = ({ idea, aboutYou, audience, businessIdentity, introCampaign }: CustomerStorefrontProps) => {
-  // Generate products based on idea
-  const generateProducts = () => {
+export const CustomerStorefront = ({ idea, aboutYou, audience, businessIdentity, introCampaign, products: providedProducts }: CustomerStorefrontProps) => {
+  // Use provided products or generate fallback products
+  const generateFallbackProducts = () => {
     const ideaLower = idea.toLowerCase();
     const isGuideIdea = ideaLower.includes('guide') || ideaLower.includes('course');
     const isCoachingIdea = ideaLower.includes('coaching') || ideaLower.includes('consulting');
@@ -102,7 +110,7 @@ export const CustomerStorefront = ({ idea, aboutYou, audience, businessIdentity,
     }
   };
 
-  const products = generateProducts();
+  const products = providedProducts || generateFallbackProducts();
   const bio = businessIdentity?.bio || `Hi! I'm ${aboutYou.firstName}. ${aboutYou.expertise}`;
   const tagline = businessIdentity?.tagline || "Helping you succeed";
   const fullName = [aboutYou.firstName, aboutYou.lastName].filter(Boolean).join(' ');

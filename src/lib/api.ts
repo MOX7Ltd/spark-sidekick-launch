@@ -22,6 +22,13 @@ export interface NameSuggestion {
   tagline: string;
 }
 
+export interface Product {
+  title: string;
+  type: string;
+  price: string;
+  description: string;
+}
+
 export interface GenerateIdentityResponse {
   business: any;
   nameOptions: NameSuggestion[];
@@ -29,6 +36,7 @@ export interface GenerateIdentityResponse {
   bio: string;
   colors: string[];
   logoSVG: string;
+  products: Product[];
 }
 
 export interface GenerateCampaignRequest {
