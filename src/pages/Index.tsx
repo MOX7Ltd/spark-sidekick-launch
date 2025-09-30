@@ -23,13 +23,29 @@ interface OnboardingData {
   idea: string;
   aboutYou: {
     firstName: string;
+    lastName: string;
     expertise: string;
     style: string;
+    styleWord: string;
+    profilePicture?: string;
+    includeFirstName: boolean;
+    includeLastName: boolean;
   };
-  audience: string;
+  audiences: string[];
+  styleCategory: string;
   businessIdentity: {
     name: string;
     logo: string;
+    tagline: string;
+    bio: string;
+    colors: string[];
+    logoSVG: string;
+    nameOptions: string[];
+  };
+  introCampaign?: {
+    hook: string;
+    caption: string;
+    hashtags: string[];
   };
 }
 

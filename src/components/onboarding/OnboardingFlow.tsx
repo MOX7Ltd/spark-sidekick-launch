@@ -3,6 +3,7 @@ import { ProgressBar } from './ProgressBar';
 import { StepOne } from './StepOne';
 import { StepAboutYou } from './StepAboutYou';
 import { StepTwoMultiSelect } from './StepTwoMultiSelect';
+import { StepStyleSelect } from './StepStyleSelect';
 import { StepThreeExpandedNew } from './StepThreeExpandedNew';
 import { StarterPackReveal } from './StarterPackReveal';
 import { generateBusinessIdentity } from '@/lib/api';
@@ -15,10 +16,13 @@ interface OnboardingData {
     lastName: string;
     expertise: string;
     style: string;
+    styleWord: string;
+    profilePicture?: string;
     includeFirstName: boolean;
     includeLastName: boolean;
   };
-  audience: string;
+  audiences: string[];
+  styleCategory: string;
   businessIdentity: {
     name: string;
     logo: string;
@@ -27,6 +31,11 @@ interface OnboardingData {
     colors: string[];
     logoSVG: string;
     nameOptions: string[];
+  };
+  introCampaign?: {
+    hook: string;
+    caption: string;
+    hashtags: string[];
   };
 }
 
@@ -43,7 +52,8 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   const stepLabels = [
     'Your Idea',
     'About You',
-    'Target Audience', 
+    'Target Audience',
+    'Business Style',
     'Business Identity',
     'Launch Ready'
   ];
@@ -60,6 +70,8 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     lastName: string;
     expertise: string; 
     style: string;
+    styleWord: string;
+    profilePicture?: string;
     includeFirstName: boolean;
     includeLastName: boolean;
   }) => {
@@ -67,20 +79,26 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     setCurrentStep(3);
   };
 
-  const handleStepTwo = async (audiences: string[]) => {
-    const audience = audiences[0]; // Use first selected audience for AI generation
+  const handleStepTwo = (audiences: string[]) => {
+    setFormData(prev => ({ ...prev, audiences }));
+    setCurrentStep(4);
+  };
+
+  const handleStyleSelect = async (styleCategory: string) => {
     if (!formData.idea || !formData.aboutYou) return;
     
-    setFormData(prev => ({ ...prev, audience }));
+    setFormData(prev => ({ ...prev, styleCategory }));
     setIsGenerating(true);
     
     try {
       console.log('Generating business identity with data:', {
         idea: formData.idea,
-        audience,
+        audiences: formData.audiences,
         experience: formData.aboutYou.expertise,
         firstName: formData.aboutYou.firstName,
-        style: formData.aboutYou.style
+        style: formData.aboutYou.style,
+        styleWord: formData.aboutYou.styleWord,
+        styleCategory
       });
 
       // Determine naming preference based on checkboxes
@@ -92,10 +110,13 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
       // Generate business identity using AI after all data is collected
       const identityData = await generateBusinessIdentity({
         idea: formData.idea,
-        audience,
+        audience: formData.audiences?.join(', ') || '',
         experience: formData.aboutYou.expertise,
         firstName: formData.aboutYou.firstName,
+        lastName: formData.aboutYou.lastName,
         tone: formData.aboutYou.style.toLowerCase() as 'professional' | 'friendly' | 'playful',
+        styleWord: formData.aboutYou.styleWord,
+        styleCategory,
         namingPreference
       });
 
@@ -115,7 +136,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
         }
       }));
       
-      setCurrentStep(4);
+      setCurrentStep(5);
     } catch (error) {
       console.error('Error generating business identity:', error);
       toast({
@@ -135,13 +156,8 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
 
   const handleUnlock = () => {
     // In a real app, this would trigger Stripe checkout
-    if (onComplete && formData.idea && formData.aboutYou && formData.audience && formData.businessIdentity) {
-      onComplete({
-        idea: formData.idea,
-        aboutYou: formData.aboutYou,
-        audience: formData.audience,
-        businessIdentity: formData.businessIdentity
-      });
+    if (onComplete && formData.idea && formData.aboutYou && formData.audiences && formData.businessIdentity) {
+      onComplete(formData as OnboardingData);
     }
     console.log('Triggering Stripe checkout with:', formData);
   };
@@ -184,28 +200,38 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
             <StepTwoMultiSelect 
               onNext={handleStepTwo}
               onBack={goBack}
-              initialValue={formData.audience}
+              initialValue={formData.audiences?.[0]}
+              isLoading={false}
+            />
+          )}
+
+          {currentStep === 4 && (
+            <StepStyleSelect
+              onNext={handleStyleSelect}
+              onBack={goBack}
+              initialValue={formData.styleCategory}
               isLoading={isGenerating}
             />
           )}
           
-          {currentStep === 4 && (
+          {currentStep === 5 && (
             <StepThreeExpandedNew
               onNext={handleStepThree}
               onBack={goBack}
               initialValue={formData.businessIdentity}
               idea={formData.idea}
               aboutYou={formData.aboutYou}
-              audience={formData.audience}
+              audience={formData.audiences?.[0] || ''}
             />
           )}
           
-          {currentStep === 5 && formData.idea && formData.aboutYou && formData.audience && formData.businessIdentity && (
+          {currentStep === 6 && formData.idea && formData.aboutYou && formData.audiences && formData.businessIdentity && (
             <StarterPackReveal
               idea={formData.idea}
               aboutYou={formData.aboutYou}
-              audience={formData.audience}
+              audience={formData.audiences[0]}
               businessIdentity={formData.businessIdentity}
+              introCampaign={formData.introCampaign}
               onUnlock={handleUnlock}
               onBack={goBack}
             />

@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, User, Star } from 'lucide-react';
+import { ShoppingCart, User, Star, Sparkles } from 'lucide-react';
 
 interface CustomerStorefrontProps {
   idea: string;
@@ -11,6 +11,7 @@ interface CustomerStorefrontProps {
     lastName: string;
     expertise: string;
     style: string;
+    profilePicture?: string;
   };
   audience: string;
   businessIdentity: {
@@ -21,9 +22,14 @@ interface CustomerStorefrontProps {
     colors?: string[];
     logoSVG?: string;
   };
+  introCampaign?: {
+    hook: string;
+    caption: string;
+    hashtags: string[];
+  };
 }
 
-export const CustomerStorefront = ({ idea, aboutYou, audience, businessIdentity }: CustomerStorefrontProps) => {
+export const CustomerStorefront = ({ idea, aboutYou, audience, businessIdentity, introCampaign }: CustomerStorefrontProps) => {
   // Generate products based on idea
   const generateProducts = () => {
     const ideaLower = idea.toLowerCase();
@@ -143,9 +149,15 @@ export const CustomerStorefront = ({ idea, aboutYou, audience, businessIdentity 
       <Card className="rounded-none border-x">
         <CardContent className="px-8 py-8">
           <div className="flex items-start gap-6">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
-              <User className="w-8 h-8 text-primary" />
-            </div>
+            {aboutYou.profilePicture ? (
+              <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0 border-2 border-primary">
+                <img src={aboutYou.profilePicture} alt={fullName} className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
+                <User className="w-8 h-8 text-primary" />
+              </div>
+            )}
             <div className="flex-1">
               <h2 className="text-2xl font-bold mb-3">About {fullName || 'the Founder'}</h2>
               <p className="text-lg leading-relaxed text-foreground/90">
@@ -155,6 +167,41 @@ export const CustomerStorefront = ({ idea, aboutYou, audience, businessIdentity 
           </div>
         </CardContent>
       </Card>
+
+      {/* Intro Campaign Preview - Unblurred! */}
+      {introCampaign && (
+        <Card className="rounded-none border-x bg-gradient-to-br from-primary/5 to-accent/5">
+          <CardContent className="px-8 py-8">
+            <div className="max-w-2xl mx-auto">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Your First Social Post</h3>
+                  <p className="text-xs text-muted-foreground">Ready to announce your launch!</p>
+                </div>
+              </div>
+              
+              <div className="bg-background/80 backdrop-blur-sm rounded-lg p-6 border-2 border-primary/20">
+                <p className="text-lg font-semibold mb-2 text-primary">{introCampaign.hook}</p>
+                <p className="text-base leading-relaxed mb-4">{introCampaign.caption}</p>
+                <div className="flex flex-wrap gap-2">
+                  {introCampaign.hashtags.map((tag, idx) => (
+                    <Badge key={idx} variant="secondary" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              
+              <p className="text-sm text-muted-foreground text-center mt-4">
+                ✨ Copy, customize, and post when you're ready to launch
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Products Section */}
       <Card className="rounded-none border-x">

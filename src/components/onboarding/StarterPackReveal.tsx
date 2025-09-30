@@ -21,11 +21,16 @@ interface StarterPackRevealProps {
     colors?: string[];
     logoSVG?: string;
   };
+  introCampaign?: {
+    hook: string;
+    caption: string;
+    hashtags: string[];
+  };
   onUnlock: () => void;
   onBack: () => void;
 }
 
-export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, onUnlock, onBack }: StarterPackRevealProps) => {
+export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, introCampaign, onUnlock, onBack }: StarterPackRevealProps) => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [viewMode, setViewMode] = useState<'customer' | 'edit'>('customer');
 
@@ -98,6 +103,7 @@ export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, 
             aboutYou={aboutYou}
             audience={audience}
             businessIdentity={businessIdentity}
+            introCampaign={introCampaign}
           />
         </div>
 

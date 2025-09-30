@@ -6,7 +6,10 @@ export interface GenerateIdentityRequest {
   experience?: string;
   namingPreference?: 'with_personal_name' | 'anonymous' | 'custom';
   firstName?: string;
+  lastName?: string;
   tone?: 'professional' | 'friendly' | 'playful';
+  styleWord?: string;
+  styleCategory?: string;
 }
 
 export interface GenerateIdentityResponse {

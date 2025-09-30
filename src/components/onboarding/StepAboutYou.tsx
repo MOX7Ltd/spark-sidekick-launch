@@ -12,6 +12,8 @@ interface StepAboutYouProps {
     lastName: string;
     expertise: string; 
     style: string;
+    styleWord: string;
+    profilePicture?: string;
     includeFirstName: boolean;
     includeLastName: boolean;
   }) => void;
@@ -21,6 +23,8 @@ interface StepAboutYouProps {
     lastName?: string;
     expertise?: string; 
     style?: string;
+    styleWord?: string;
+    profilePicture?: string;
     includeFirstName?: boolean;
     includeLastName?: boolean;
   };
@@ -41,15 +45,28 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
   const [lastName, setLastName] = useState(initialValue?.lastName || '');
   const [expertise, setExpertise] = useState(initialValue?.expertise || '');
   const [style, setStyle] = useState(initialValue?.style || '');
+  const [styleWord, setStyleWord] = useState(initialValue?.styleWord || '');
+  const [profilePicture, setProfilePicture] = useState<string | undefined>(initialValue?.profilePicture);
   const [includeFirstName, setIncludeFirstName] = useState(initialValue?.includeFirstName ?? false);
   const [includeLastName, setIncludeLastName] = useState(initialValue?.includeLastName ?? false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onNext({ firstName, lastName, expertise, style, includeFirstName, includeLastName });
+  const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePicture(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  const isValid = expertise.length >= 5 && style;
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onNext({ firstName, lastName, expertise, style, styleWord, profilePicture, includeFirstName, includeLastName });
+  };
+
+  const isValid = expertise.length >= 5 && style && styleWord.length >= 3;
 
   return (
     <div className="max-w-2xl mx-auto animate-fade-in">
@@ -124,6 +141,26 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="profilePicture" className="text-base font-medium">
+              Profile Picture (optional)
+            </Label>
+            <div className="flex items-center gap-4">
+              {profilePicture && (
+                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-primary">
+                  <img src={profilePicture} alt="Profile" className="w-full h-full object-cover" />
+                </div>
+              )}
+              <Input
+                id="profilePicture"
+                type="file"
+                accept="image/*"
+                onChange={handleProfilePictureChange}
+                className="text-base"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="expertise" className="text-base font-medium">
               Your Background / Expertise
             </Label>
@@ -135,7 +172,23 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
               className="min-h-[90px] text-base resize-none"
             />
             <p className="text-sm text-muted-foreground">
-              {isValid ? '✓ Perfect!' : 'At least 5 characters'}
+              {expertise.length >= 5 ? '✓ Perfect!' : 'At least 5 characters'}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="styleWord" className="text-base font-medium">
+              One word that describes your style
+            </Label>
+            <Input
+              id="styleWord"
+              value={styleWord}
+              onChange={(e) => setStyleWord(e.target.value)}
+              placeholder="e.g., Bold, Elegant, Innovative"
+              className="h-11 text-base"
+            />
+            <p className="text-sm text-muted-foreground">
+              {styleWord.length >= 3 ? '✓ Great!' : 'At least 3 characters'}
             </p>
           </div>
 
@@ -169,9 +222,9 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
                 );
               })}
             </div>
-            {style && (
+            {style && styleWord.length >= 3 && (
               <p className="text-sm text-primary font-medium animate-fade-in">
-                🔥 This looks great!
+                🔥 Perfect! Your personality is shining through
               </p>
             )}
           </div>

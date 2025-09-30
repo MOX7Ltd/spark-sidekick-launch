@@ -107,7 +107,18 @@ serve(async (req) => {
     const requestBody = await req.json();
     console.log('Request body received:', requestBody);
     
-    const { idea, audience, experience, namingPreference, firstName, tone, regenerateNamesOnly } = requestBody;
+    const { 
+      idea, 
+      audience, 
+      experience, 
+      namingPreference, 
+      firstName, 
+      lastName,
+      tone, 
+      styleWord,
+      styleCategory,
+      regenerateNamesOnly 
+    } = requestBody;
 
     if (!idea || !audience) {
       console.error('Missing required fields:', { idea: !!idea, audience: !!audience });
@@ -125,45 +136,93 @@ serve(async (req) => {
       });
     }
 
-    // Create OpenAI prompt - different for name regeneration vs full identity
-    let systemPrompt, userPrompt;
+    // Create AI prompts - different for name regeneration vs full identity
+    let systemPrompt: string;
+    let userPrompt: string;
 
     if (regenerateNamesOnly) {
-      systemPrompt = `You are a brand strategist. Return strict JSON with ONLY nameOptions:
+      systemPrompt = `You are an expert branding consultant specializing in business naming. Generate ${namingPreference === 'with_personal_name' ? 'name variations that incorporate the personal name naturally' : `${styleCategory || 'brandable'} business names`}.
+
+CRITICAL NAMING RULES:
+- Names MUST be SHORT (1-3 words max)
+- Names MUST be MEMORABLE and BRANDABLE
+- STRICTLY AVOID these overused words: Magic, Haven, Corner, Solutions, Group, Hub, Studio, Edge, Peak, Core, Nexus, Spark
+- Be SPECIFIC to the business idea, not generic
+- Match the style: ${styleCategory || 'professional'}
+- ${styleWord ? `Incorporate this style essence: ${styleWord}` : ''}
+
+Style Guidelines:
+- Professional: Clear, authoritative, trust-building (e.g., "Meridian Advisory", "Anchor Partners")
+- Playful: Fun, memorable, friendly (e.g., "Wiggle Room", "Bumble Bee Coaching")
+- Minimalist: Clean, simple, modern (e.g., "Base", "Form Collective")
+- Visionary: Bold, forward-thinking (e.g., "Horizon Labs", "Frontier Guild")
+
+Return ONLY a JSON object with this structure:
 {
-  "nameOptions": ["Name 1", "Name 2", "Name 3", "Name 4", "Name 5", "Name 6", "Name 7"]
-}
+  "nameOptions": ["Name1", "Name2", "Name3", "Name4", "Name5", "Name6"]
+}`;
 
-Generate 7 unique, creative business name options.`;
+      const nameInstruction = namingPreference === 'with_personal_name' 
+        ? `Create variations using "${firstName}${lastName ? ' ' + lastName : ''}" (e.g., "${firstName} ${idea.split(' ')[0]}", "${lastName || firstName} Advisory")`
+        : 'Create unique, brandable names';
 
-      userPrompt = `Generate NEW business name options for:
-- Idea: ${idea}
-- Target audience: ${audience}
-- Naming preference: ${namingPreference || 'anonymous'}
-- First name: ${firstName || 'Not provided'}
+      userPrompt = `Generate 6 ${styleCategory || 'brandable'} business name options:
 
-These should be completely different from any previous suggestions. Make them creative, memorable, and relevant.`;
+Business Concept: ${idea}
+Target Audience: ${audience}
+Style Category: ${styleCategory || 'professional'}
+${styleWord ? `Style Word: ${styleWord}` : ''}
+${namingPreference === 'with_personal_name' ? `Personal Name to Incorporate: ${firstName}${lastName ? ' ' + lastName : ''}` : ''}
+Tone: ${tone}
+
+${nameInstruction}
+
+Remember: Avoid all generic/overused terms. Be specific, memorable, and match the ${styleCategory || 'professional'} style.`;
     } else {
-      systemPrompt = `You are a brand strategist. Return strict JSON matching this exact schema:
+      systemPrompt = `You are an expert business identity generator. Create compelling, unique business identities that feel authentic and avoid generic corporate clichés.
+
+CRITICAL NAMING RULES:
+- Business names MUST be SHORT (1-3 words max)
+- STRICTLY AVOID: Magic, Haven, Corner, Solutions, Group, Hub, Studio, Edge, Peak, Core, Nexus, Spark, Sphere
+- Be SPECIFIC to the business concept and style category
+- Make names MEMORABLE and BRANDABLE
+- Match the requested style: ${styleCategory || 'professional'}
+- ${styleWord ? `Embody this style essence: ${styleWord}` : ''}
+
+Style Guidelines:
+- Professional: Trustworthy, established, clear (e.g., "Momentum Consulting", "Blueprint Advisory")
+- Playful: Fun, approachable, memorable (e.g., "Happy Trails", "Sunshine Coaching")  
+- Minimalist: Clean, simple, modern (e.g., "Base", "Form", "Clear Path")
+- Visionary: Bold, disruptive, forward-thinking (e.g., "Frontier Group", "Vanguard Labs")
+
+Return ONLY valid JSON with this structure:
 {
-  "nameOptions": ["Name 1", "Name 2", "Name 3"],
-  "tagline": "tagline here",
-  "bio": "bio here", 
-  "colors": ["#color1", "#color2", "#color3"],
-  "logoSVG": "<svg>...</svg>"
-}
+  "nameOptions": ["Name1", "Name2", "Name3", "Name4"],
+  "tagline": "Compelling 5-10 word tagline (max 80 chars)",
+  "bio": "2-3 sentence personalized bio using founder's background and name",
+  "colors": ["#hexcolor1", "#hexcolor2", "#hexcolor3"],
+  "logoSVG": "Clean, simple SVG logo that matches the style"
+}`;
 
-Keep names unique, modern, and relevant to the idea and audience. Bio must sound human and specific (2-3 sentences). Logo must be a minimal, monochrome SVG wordmark with optional simple icon, viewBox="0 0 320 80", using only safe tags (svg, g, path, rect, circle, text). No scripts, no external references.`;
+      const nameInstruction = namingPreference === 'with_personal_name'
+        ? `Generate names that naturally incorporate "${firstName}${lastName ? ' ' + lastName : ''}" (e.g., "${firstName} ${idea.split(' ')[0]}", "${lastName || firstName} ${styleCategory === 'professional' ? 'Advisory' : styleCategory === 'playful' ? 'Studio' : 'Co'}")`
+        : `Generate ${styleCategory || 'professional'} names for the business`;
 
-      userPrompt = `Generate a business identity for:
-- Idea: ${idea}
-- Target audience: ${audience}
-- Experience/background: ${experience || 'Not specified'}
-- Naming preference: ${namingPreference || 'anonymous'}
-- First name: ${firstName || 'Not provided'}
-- Tone: ${tone || 'professional'}
+      userPrompt = `Generate a complete business identity:
 
-Provide 3-6 name options, one compelling tagline (max 80 chars), a personalized bio using first name and experience if provided, 3 brand colors, and a clean SVG logo.`;
+Business Concept: ${idea}
+Target Audience: ${audience}
+Founder Background: ${experience}
+${firstName ? `Founder Name: ${firstName}${lastName ? ' ' + lastName : ''}` : ''}
+Style Category: ${styleCategory || 'professional'}
+${styleWord ? `Style Word: ${styleWord}` : ''}
+Tone: ${tone}
+
+${nameInstruction}
+
+Provide 4-6 ${styleCategory || 'professional'} name options, one compelling tagline (max 80 chars), a personalized bio (use "${firstName}" and reference their background: "${experience}"), 3 complementary brand colors that match the ${styleCategory || 'professional'} style, and a clean SVG logo.
+
+REMEMBER: Avoid ALL generic/overused business terms. Be specific and match the ${styleCategory || 'professional'} aesthetic.`;
     }
 
     console.log('Calling Lovable AI API...');
