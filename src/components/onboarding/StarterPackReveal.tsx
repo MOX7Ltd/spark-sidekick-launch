@@ -30,9 +30,13 @@ interface StarterPackRevealProps {
     logoSVG?: string;
   };
   introCampaign?: {
-    hook: string;
-    caption: string;
-    hashtags: string[];
+    shortPost: {
+      caption: string;
+      hashtags: string[];
+    };
+    longPost: {
+      caption: string;
+    };
   };
   products?: Product[];
   onUnlock: () => void;

@@ -103,42 +103,69 @@ serve(async (req) => {
     let userPrompt: string;
 
     if (type === 'intro') {
-      systemPrompt = `You are writing an introductory social media post for a new business.
+      systemPrompt = `You are writing introductory social media posts for a new business launch. The entrepreneur wants authentic, human content that reflects their personal journey.
 
 CRITICAL RULES:
 - Write in the first person ("I" / "my")
-- Length: 120–150 characters
-- Must sound human, authentic, and a little vulnerable
-- Avoid corporate jargon, robotic phrasing, or clichés
-- Include exactly 2–3 natural hashtags
-- Keep grammar clean but conversational
-- Add an emoji if the tone is Friendly or Playful
+- Sound human, authentic, and conversational — avoid corporate jargon and AI-sounding phrases
+- Match the specified tone/style (${tone || 'friendly'})
+- Show vulnerability and personality
+- Avoid clichés like "I'm thrilled to announce..." unless they genuinely fit the tone
 
-Return strict JSON with this schema:
+Return strict JSON with TWO versions for EACH platform:
+
 {
   "campaigns": [
     {
       "platform": "platform_name",
-      "hook": "First sentence (engaging, personal)",
-      "caption": "Full intro post text (120-150 chars)", 
-      "hashtags": ["#hashtag1", "#hashtag2"]
+      "shortPost": {
+        "caption": "2-3 sentence energetic announcement (<280 chars)",
+        "hashtags": ["#hashtag1", "#hashtag2", "#hashtag3"]
+      },
+      "longPost": {
+        "caption": "3-6 sentence authentic intro (500-800 chars) including: personal backstory, why they started, what the business offers, who it helps, vulnerability/challenges, call to action"
+      }
     }
   ]
-}`;
+}
 
-      userPrompt = `Write an introductory social media post for a new business launch:
+SHORT POST GUIDELINES:
+- 2-3 sentences max, under 280 characters
+- Energetic, celebratory tone
+- Focus on "going live" excitement
+- Include 3-5 niche-specific hashtags
+- Can include 1-2 emojis if tone is friendly/playful
 
+LONG POST GUIDELINES:
+- 3-6 sentences, 500-800 characters
+- Introduce the person behind the business
+- Share the "why" — personal motivation, backstory, passion
+- Clearly describe what the business offers and who it helps
+- Show authenticity and vulnerability (challenges, hopes, learning)
+- End with inclusive call to action (e.g., "I'd love your feedback," "Follow along on this journey")
+- NO hashtags unless explicitly relevant to the story`;
+
+      userPrompt = `Write TWO versions of an introductory social media post for a new business launch:
+
+Business Details:
 - Business Name: ${business.business_name}
 - Background/Expertise: ${background || business.bio}
-${motivation ? `- Motivation: ${motivation}` : ''}
+${motivation ? `- Personal Motivation: ${motivation}` : ''}
 - Tone/Style: ${tone || 'friendly'}
 - Platforms: ${platforms.join(', ')}
 
-Examples of good intro posts:
-1. "Big news 🎉 I'm finally starting my journey with CreateBright. It's been a dream for years — let's make it real! #NewBeginnings #SideHustle"
-2. "After years helping friends with their side hustles, I'm launching my own 🚀 Excited to share my story and see where it goes. #Hustle #Community"
+Create both a short celebratory version AND a longer authentic story-driven version for each platform.
 
-Generate authentic, human-sounding intro posts for each platform.`;
+EXAMPLES OF GOOD SHORT POSTS:
+1. "After 5 years of helping friends launch their side hustles, I'm finally starting my own! 🚀 Meet [BusinessName] — let's build something amazing together. #NewBeginnings #Entrepreneur #Launch"
+2. "Big news: [BusinessName] is officially live! It's been a dream for years, and I can't wait to share this journey with you all. Let's do this! 🎉 #SideHustle #SmallBusiness"
+
+EXAMPLES OF GOOD LONG POSTS:
+1. "For the past decade, I've worked as a fitness coach helping busy parents get back in shape. Time and time again, I saw the same pattern: they'd start strong, then life would get in the way. I realized traditional fitness programs weren't built for real life. That's why I created [BusinessName] — a flexible, family-friendly fitness program designed for parents who want to prioritize their health without sacrificing family time. I'm learning as I go, and I'd love to hear from other parents navigating this journey. What's your biggest fitness challenge?"
+
+2. "I never planned on becoming an entrepreneur. But after watching my dad struggle to find simple, affordable legal templates for his small business, I knew there had to be a better way. [BusinessName] is my answer to that problem — straightforward legal tools for everyday entrepreneurs who can't afford a $500/hour lawyer. I'm still figuring a lot of this out, and I'd love your feedback as I build this. What legal challenges have you faced in your business?"
+
+Generate authentic, human posts that sound like they were written by a real person, not an AI.`;
     } else {
       systemPrompt = `You are a social media copywriter. Return strict JSON with this schema:
 {
@@ -230,13 +257,35 @@ Generate platform-optimized content for each platform that uses the business nam
     }
 
     // Create campaign items for each platform
-    const campaignItems = generatedData.campaigns.map((item: any) => ({
-      campaign_id: campaign.id,
-      platform: item.platform,
-      hook: item.hook,
-      caption: item.caption,
-      hashtags: item.hashtags
-    }));
+    const campaignItems = generatedData.campaigns.map((item: any) => {
+      if (type === 'intro') {
+        // For intro campaigns, create two items per platform (short and long)
+        return [
+          {
+            campaign_id: campaign.id,
+            platform: item.platform,
+            hook: 'Short Version',
+            caption: item.shortPost.caption,
+            hashtags: item.shortPost.hashtags || []
+          },
+          {
+            campaign_id: campaign.id,
+            platform: item.platform,
+            hook: 'Long Version',
+            caption: item.longPost.caption,
+            hashtags: []
+          }
+        ];
+      } else {
+        return {
+          campaign_id: campaign.id,
+          platform: item.platform,
+          hook: item.hook,
+          caption: item.caption,
+          hashtags: item.hashtags
+        };
+      }
+    }).flat();
 
     const { data: items, error: itemsError } = await supabase
       .from('campaign_items')

@@ -43,9 +43,13 @@ interface OnboardingData {
     nameOptions: Array<{name: string; style: string; tagline: string}>;
   };
   introCampaign?: {
-    hook: string;
-    caption: string;
-    hashtags: string[];
+    shortPost: {
+      caption: string;
+      hashtags: string[];
+    };
+    longPost: {
+      caption: string;
+    };
   };
 }
 

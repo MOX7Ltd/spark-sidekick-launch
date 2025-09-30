@@ -30,9 +30,13 @@ interface CustomerStorefrontProps {
     logoSVG?: string;
   };
   introCampaign?: {
-    hook: string;
-    caption: string;
-    hashtags: string[];
+    shortPost: {
+      caption: string;
+      hashtags: string[];
+    };
+    longPost: {
+      caption: string;
+    };
   };
   products?: Product[];
 }
@@ -188,30 +192,49 @@ export const CustomerStorefront = ({ idea, aboutYou, audience, businessIdentity,
         </CardContent>
       </Card>
 
-      {/* Intro Campaign Preview - Unblurred! */}
+      {/* Intro Campaign Preview - Two Versions */}
       {introCampaign && (
         <Card className="rounded-none border-x bg-gradient-to-br from-primary/5 to-accent/5">
           <CardContent className="px-8 py-8">
-            <div className="max-w-2xl mx-auto">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-white" />
+            <div className="max-w-3xl mx-auto space-y-6">
+              {/* Short Version */}
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">You</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold">{aboutYou.firstName} {aboutYou.lastName}</p>
+                    <p className="text-xs text-muted-foreground">Short Launch Post</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold">Your First Social Post</h3>
-                  <p className="text-xs text-muted-foreground">Ready to announce your launch!</p>
+                
+                <div className="bg-background/80 backdrop-blur-sm rounded-lg p-5 border-2 border-primary/20">
+                  <p className="text-base leading-relaxed mb-3">{introCampaign.shortPost.caption}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {introCampaign.shortPost.hashtags.map((tag, idx) => (
+                      <Badge key={idx} variant="secondary" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               </div>
-              
-              <div className="bg-background/80 backdrop-blur-sm rounded-lg p-6 border-2 border-primary/20">
-                <p className="text-lg font-semibold mb-2 text-primary">{introCampaign.hook}</p>
-                <p className="text-base leading-relaxed mb-4">{introCampaign.caption}</p>
-                <div className="flex flex-wrap gap-2">
-                  {introCampaign.hashtags.map((tag, idx) => (
-                    <Badge key={idx} variant="secondary" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
+
+              {/* Long Version */}
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">You</span>
+                  </div>
+                  <div>
+                    <p className="font-semibold">{aboutYou.firstName} {aboutYou.lastName}</p>
+                    <p className="text-xs text-muted-foreground">Full Story Post</p>
+                  </div>
+                </div>
+                
+                <div className="bg-background/80 backdrop-blur-sm rounded-lg p-6 border-2 border-accent/20">
+                  <p className="text-base leading-relaxed whitespace-pre-line">{introCampaign.longPost.caption}</p>
                 </div>
               </div>
               

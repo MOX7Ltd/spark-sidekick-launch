@@ -475,9 +475,13 @@ export const StepThreeExpandedNew = ({ onNext, onBack, initialValue, idea, about
                   logoSVG: generatedLogos[selectedLogoIndex] || initialValue?.logoSVG
                 }}
                 introCampaign={{
-                  hook: `🚀 Excited to announce: ${displayName} is live!`,
-                  caption: `After years of ${aboutYou.expertise}, I'm thrilled to bring you ${displayName}. Let's make this journey amazing together!`,
-                  hashtags: ['#NewBusiness', '#Entrepreneur', '#Launch']
+                  shortPost: {
+                    caption: `🚀 Big moment! After years of ${aboutYou.expertise}, I'm officially launching ${displayName}. Can't wait to share this journey with you all! Let's build something amazing together.`,
+                    hashtags: ['#NewBusiness', '#Entrepreneur', '#Launch']
+                  },
+                  longPost: {
+                    caption: `I've spent years working in ${aboutYou.expertise}, and one thing has always stood out to me: ${idea}. That's why I created ${displayName}. I'm not going to pretend this is easy or that I have all the answers. But I'm committed to learning, growing, and building something meaningful. I'd love your feedback and support as I take this leap. What challenges have you faced in this space?`
+                  }
                 }}
               />
             </CardContent>
