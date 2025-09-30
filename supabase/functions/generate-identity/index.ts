@@ -177,33 +177,39 @@ serve(async (req) => {
     });
 
     if (regenerateSingleName) {
-      // Determine archetype diversity based on existing names
-      const archetypes = ['Professional & Trustworthy', 'Creative & Visionary', 'Playful & Memorable', 'Personalized'];
-      const randomArchetype = archetypes[Math.floor(Math.random() * archetypes.length)];
+      // Determine which track to use based on what names are missing
+      const needsThematicName = rejectedNames.some((n: string) => !n.includes(firstName || '') && !n.includes(lastName || ''));
+      const needsNameIntegrated = rejectedNames.some((n: string) => n.includes(firstName || '') || n.includes(lastName || ''));
       
-      let nameGuidelines = 'Create unique, brandable names without personal names.';
-      if (namingPreference === 'with_personal_name') {
-        if (includeFirstName && includeLastName) {
-          nameGuidelines = `Use BOTH "${firstName}" AND "${lastName}" in creative ways (e.g., "${firstName} ${lastName} Advisory", "${lastName} & ${firstName} Studio"). Avoid using only one name.`;
-        } else if (includeLastName) {
-          nameGuidelines = `Use ONLY "${lastName}" (surname) + descriptor (e.g., "${lastName} Advisory", "${lastName} Partners", "${lastName} Studio"). DO NOT use "${firstName}".`;
-        } else if (includeFirstName) {
-          nameGuidelines = `Use ONLY "${firstName}" (first name) + descriptor (e.g., "${firstName}'s Studio", "${firstName} Lab", "${firstName} Coaching"). DO NOT use "${lastName}".`;
-        }
+      let trackType = needsThematicName ? 'thematic' : 'name-integrated';
+      
+      let nameGuidelines = '';
+      if (trackType === 'thematic') {
+        nameGuidelines = `Generate a THEMATIC name (Track A) - DO NOT use any personal names ("${firstName}" or "${lastName}"). 
+Focus on: metaphors, emotional concepts, descriptive industry terms.
+Examples for family/parenting: Family Rhythm, Parent Compass, Home Harmony, ThriveTrack, Kiddo Flow.
+Make it natural, emotional, and industry-relevant.`;
+      } else {
+        nameGuidelines = `Generate a NAME-INTEGRATED option (Track B) using the founder's name naturally.
+Use ONLY these patterns:
+- [Concept] by [Name] (e.g., "Parent Compass by ${firstName}")
+- [Name] [Descriptor] (e.g., "${lastName} Family Consulting")
+- [Verb/Concept] with [Name] (e.g., "LifeFlow with ${firstName}")
+
+${includeFirstName && includeLastName ? `Use either "${firstName}" OR "${lastName}" (not both).` : ''}
+${includeFirstName && !includeLastName ? `Use "${firstName}" only.` : ''}
+${!includeFirstName && includeLastName ? `Use "${lastName}" only.` : ''}
+
+AVOID: Simple possessive formats like "${firstName}'s [Noun]" unless extremely natural.`;
       }
       
+      console.log('[SINGLE NAME] Track type:', trackType);
       console.log('[SINGLE NAME] Name guidelines being used:', nameGuidelines);
 
-      systemPrompt = `You are an expert branding consultant. Generate ONE unique business name from the "${randomArchetype}" archetype.
-
-BRAND ARCHETYPES:
-1. Professional & Trustworthy - Clear, authoritative, established (e.g., "Morris Advisory", "Anchor Partners")
-2. Creative & Visionary - Innovative, forward-thinking, bold (e.g., "BrightForge", "Launchpad Studio")
-3. Playful & Memorable - Fun, approachable, friendly (e.g., "SideHustle Spark", "BizNest")
-4. Personalized - Incorporates founder name naturally (e.g., "Morris Ventures", "Sarah's Studio")
+      systemPrompt = `You are an expert branding consultant. Generate ONE unique, professional business name.
 
 CRITICAL NAMING RULES:
-- Name MUST be SHORT (1-3 words max)
+- Name MUST be SHORT (2-4 words max)
 - Name MUST be MEMORABLE and BRANDABLE
 - STRICTLY AVOID these words: ${bannedWordsStr}
 - AVOID awkward, obscure, archaic, or overly technical words
@@ -216,155 +222,128 @@ ${rejectedPatterns.length > 0 ? `- Avoid these patterns: ${rejectedPatterns.join
 Return ONLY a JSON object:
 {
   "name": "BusinessName",
-  "archetype": "${randomArchetype}",
-  "tagline": "5-8 word tagline that reflects the archetype and outcome focus"
+  "style": "${trackType === 'thematic' ? 'Thematic' : 'Name-Integrated'}",
+  "tagline": "5-8 word human-sounding tagline that reflects the outcome"
 }`;
 
-      let personalNameInfo = '';
-      if (namingPreference === 'with_personal_name') {
-        if (includeFirstName && includeLastName) {
-          personalNameInfo = `Personal Names: First="${firstName}", Last="${lastName}" (Use BOTH)`;
-        } else if (includeLastName) {
-          personalNameInfo = `Surname ONLY: "${lastName}" (DO NOT use "${firstName}")`;
-        } else if (includeFirstName) {
-          personalNameInfo = `First Name ONLY: "${firstName}" (DO NOT use "${lastName}")`;
-        }
-      }
-
-      userPrompt = `Generate 1 fresh business name from the "${randomArchetype}" archetype:
+      userPrompt = `Generate 1 fresh business name (${trackType} track):
 
 Business Concept: ${idea}
 Target Audience: ${audience}
-${personalNameInfo}
+${firstName ? `Founder First Name: ${firstName}` : ''}
+${lastName ? `Founder Last Name: ${lastName}` : ''}
 ${motivation ? `Founder Motivation: ${motivation}` : ''}
-Tone: ${tone}
+Business Type Tone: ${tone}
 
-Make it COMPLETELY DIFFERENT from the rejected names. Focus on the "${randomArchetype}" archetype qualities.`;
+Make it COMPLETELY DIFFERENT from the rejected names.`;
 
     } else if (regenerateNamesOnly) {
-      console.log('[REGENERATE NAMES] Starting name regeneration...');
-      let nameGuidelines = 'Create unique, brandable names across all archetypes without personal names.';
-      if (namingPreference === 'with_personal_name') {
-        if (includeFirstName && includeLastName) {
-          nameGuidelines = `PERSONAL NAME USAGE RULES:
-- Use BOTH "${firstName}" AND "${lastName}" in creative combinations
-- Examples: "${firstName} ${lastName} Advisory", "${lastName} & ${firstName} Co."
-- At least 4-5 names should include BOTH names
-- DO NOT use only one name in isolation`;
-        } else if (includeLastName) {
-          nameGuidelines = `PERSONAL NAME USAGE RULES:
-- Use ONLY the surname "${lastName}" (e.g., "${lastName} Advisory", "${lastName} Partners", "${lastName} Studio")
-- STRICTLY FORBIDDEN: Do NOT use the first name "${firstName}"
-- At least 5-6 names should include "${lastName}"
-- 2-3 names can be without personal name for variety`;
-        } else if (includeFirstName) {
-          nameGuidelines = `PERSONAL NAME USAGE RULES:
-- Use ONLY the first name "${firstName}" (e.g., "${firstName}'s Studio", "${firstName} Lab", "${firstName} Coaching")
-- STRICTLY FORBIDDEN: Do NOT use the last name "${lastName}"
-- At least 5-6 names should include "${firstName}"
-- 2-3 names can be without personal name for variety`;
-        }
+      console.log('[REGENERATE NAMES] Starting two-track name generation...');
+      
+      // Build context-aware industry tone
+      let industryContext = '';
+      if (idea.toLowerCase().includes('parent') || idea.toLowerCase().includes('family')) {
+        industryContext = 'Family/Parenting: nurturing, playful, supportive tone';
+      } else if (idea.toLowerCase().includes('fitness') || idea.toLowerCase().includes('health')) {
+        industryContext = 'Fitness/Health: energetic, inspiring, movement-focused tone';
+      } else if (idea.toLowerCase().includes('consult') || idea.toLowerCase().includes('coach')) {
+        industryContext = 'Consulting/Coaching: professional, credible, trustworthy tone';
+      } else {
+        industryContext = `${tone || 'professional'} tone appropriate to the industry`;
       }
 
-      systemPrompt = `You are an expert branding consultant. Generate 8 SHORT, brandable business names across 4 distinct BRAND ARCHETYPES.
+      systemPrompt = `You are an expert branding consultant. Generate business names using a TWO-TRACK APPROACH:
 
-BRAND ARCHETYPES (Generate 2 names per archetype):
-1. Professional & Trustworthy - Clear, authoritative, established (e.g., "Morris Advisory", "Anchor Partners", "Blueprint Co.")
-2. Creative & Visionary - Innovative, forward-thinking, bold (e.g., "BrightForge", "Launchpad Studio", "Momentum Lab")
-3. Playful & Memorable - Fun, approachable, friendly (e.g., "SideHustle Spark", "BizNest", "Happy Trails")
-4. Personalized (if applicable) - Incorporates founder name naturally (e.g., "Morris Ventures", "Sarah's Studio")
+🎯 TRACK A - THEMATIC NAMES (3-5 names)
+Generate creative, metaphorical, or descriptive names WITHOUT using the founder's personal name.
+- Focus on: emotional concepts, industry metaphors, outcome-focused terms
+- Examples for parenting: Family Rhythm, Kiddo Flow, Parent Compass, Home Harmony, ThriveTrack
+- Examples for consulting: Blueprint Partners, Catalyst Co., Momentum Lab
+- Make them feel natural, memorable, and emotionally appealing
 
-CRITICAL NAMING RULES:
-- Names MUST be SHORT (1-3 words max)
-- Names MUST be MEMORABLE and BRANDABLE
-- STRICTLY AVOID these overused/awkward words: ${bannedWordsStr}
-- AVOID obscure, archaic, overly technical, or awkward word combinations
-- DO NOT repeat the same structural pattern (e.g., multiple "___'s ___" names)
-${rejectedNamesStr ? `- DO NOT suggest any of these previously rejected names: ${rejectedNamesStr}` : ''}
-${rejectedPatterns.length > 0 ? `- Avoid these patterns that were rejected: ${rejectedPatterns.join(', ')}` : ''}
-- Ensure VARIETY in tone, length, and memorability
-- ${nameGuidelines}
+👤 TRACK B - NAME-INTEGRATED (2-3 names)
+Naturally integrate the founder's name using ONLY these patterns:
+- [Concept] by [Name] (e.g., "Parent Compass by ${firstName || lastName}")
+- [Name] [Descriptor] (e.g., "${lastName || firstName} Family Consulting")
+- [Verb/Concept] with [Name] (e.g., "LifeFlow with ${firstName || lastName}")
 
-Return ONLY a JSON object with this structure:
+${firstName && lastName ? `Use EITHER "${firstName}" OR "${lastName}" in each option (not both together).` : ''}
+${firstName && !lastName ? `Use "${firstName}" naturally.` : ''}
+${!firstName && lastName ? `Use "${lastName}" naturally.` : ''}
+
+CRITICAL RULES FOR ALL NAMES:
+- STRICTLY AVOID: ${bannedWordsStr}
+- NO awkward possessive formats like "${firstName || 'Name'}'s Pylon" or "${firstName || 'Name'}'s Roost"
+- NO forced, archaic, or irrelevant word combinations
+- Be emotionally appealing and relevant to: ${industryContext}
+${rejectedNamesStr ? `- DO NOT reuse these rejected names: ${rejectedNamesStr}` : ''}
+- If you detect repeated patterns (e.g., ${firstName}'s Path, ${firstName}'s Pylon, ${firstName}'s Pith), regenerate with different structures
+
+Return ONLY valid JSON:
 {
-  "nameOptions": [
-    {"name": "Name1", "archetype": "Professional & Trustworthy", "tagline": "Outcome-focused tagline (5-8 words)"},
-    {"name": "Name2", "archetype": "Professional & Trustworthy", "tagline": "Outcome-focused tagline (5-8 words)"},
-    {"name": "Name3", "archetype": "Creative & Visionary", "tagline": "Outcome-focused tagline (5-8 words)"},
-    {"name": "Name4", "archetype": "Creative & Visionary", "tagline": "Outcome-focused tagline (5-8 words)"},
-    {"name": "Name5", "archetype": "Playful & Memorable", "tagline": "Outcome-focused tagline (5-8 words)"},
-    {"name": "Name6", "archetype": "Playful & Memorable", "tagline": "Outcome-focused tagline (5-8 words)"},
-    {"name": "Name7", "archetype": "Personalized", "tagline": "Outcome-focused tagline (5-8 words)"},
-    {"name": "Name8", "archetype": "Personalized", "tagline": "Outcome-focused tagline (5-8 words)"}
+  "trackA": [
+    {"name": "ThematicName1", "style": "Thematic", "tagline": "5-10 word human tagline"},
+    {"name": "ThematicName2", "style": "Thematic", "tagline": "5-10 word human tagline"},
+    {"name": "ThematicName3", "style": "Thematic", "tagline": "5-10 word human tagline"}
+  ],
+  "trackB": [
+    {"name": "NameIntegrated1", "style": "Name-Integrated", "tagline": "5-10 word human tagline"},
+    {"name": "NameIntegrated2", "style": "Name-Integrated", "tagline": "5-10 word human tagline"}
   ]
 }`;
-
-      let personalNameInfo = '';
-      if (namingPreference === 'with_personal_name') {
-        if (includeFirstName && includeLastName) {
-          personalNameInfo = `Founder Names: First="${firstName}", Last="${lastName}" (Use BOTH names)`;
-        } else if (includeLastName) {
-          personalNameInfo = `Surname ONLY: "${lastName}" (NEVER use "${firstName}")`;
-        } else if (includeFirstName) {
-          personalNameInfo = `First Name ONLY: "${firstName}" (NEVER use "${lastName}")`;
-        }
-      }
-
-      userPrompt = `Generate 8 business name options with MAXIMUM VARIETY across all 4 brand archetypes:
+      userPrompt = `Generate business names using the TWO-TRACK approach:
 
 Business Concept: ${idea}
 Target Audience: ${audience}
-${personalNameInfo}
+Industry Context: ${industryContext}
+${firstName ? `Founder First Name: ${firstName}` : ''}
+${lastName ? `Founder Last Name: ${lastName}` : ''}
 ${motivation ? `Founder Motivation: ${motivation}` : ''}
-Tone: ${tone}
 
-IMPORTANT:
-- Generate 2 names per archetype (8 total)
-- Each name must feel intentional, polished, and trustworthy
-- Avoid ALL generic/overused terms and awkward combinations
-- Ensure variety in length, structure, and tone
-- Taglines should reflect the archetype and outcome focus
-- Make names that feel professional and memorable, never clunky or laughable`;
+TRACK A: Generate 3-5 thematic names (no personal names)
+TRACK B: Generate 2-3 name-integrated options using natural patterns
+
+Ensure all names are emotionally appealing, relevant, and sound like something a real entrepreneur would proudly use.`;
+
     } else {
-      console.log('[FULL IDENTITY] Starting full identity generation...');
-      let nameGuidelines = 'Create diverse brandable names across different archetypes.';
-      if (namingPreference === 'with_personal_name') {
-        if (includeFirstName && includeLastName) {
-          nameGuidelines = `PERSONAL NAME USAGE:
-- Use BOTH "${firstName}" AND "${lastName}" together
-- Include 2-3 names with both names, rest without for variety`;
-        } else if (includeLastName) {
-          nameGuidelines = `PERSONAL NAME USAGE:
-- Use ONLY "${lastName}" (e.g., "${lastName} Advisory", "${lastName} Studio")
-- NEVER use "${firstName}"
-- Include 1-2 names with "${lastName}", rest without for variety`;
-        } else if (includeFirstName) {
-          nameGuidelines = `PERSONAL NAME USAGE:
-- Use ONLY "${firstName}" (e.g., "${firstName}'s Studio", "${firstName} Lab")
-- NEVER use "${lastName}"
-- Include 1-2 names with "${firstName}", rest without for variety`;
-        }
-      }
+      console.log('[FULL IDENTITY] Starting full identity generation with two-track names...');
       
-      console.log('[FULL IDENTITY] Name guidelines being used:', nameGuidelines);
+      // Build context-aware industry tone
+      let industryContext = '';
+      if (idea.toLowerCase().includes('parent') || idea.toLowerCase().includes('family')) {
+        industryContext = 'Family/Parenting: nurturing, playful, supportive';
+      } else if (idea.toLowerCase().includes('fitness') || idea.toLowerCase().includes('health')) {
+        industryContext = 'Fitness/Health: energetic, inspiring, movement-focused';
+      } else if (idea.toLowerCase().includes('consult') || idea.toLowerCase().includes('coach')) {
+        industryContext = 'Consulting/Coaching: professional, credible, trustworthy';
+      } else {
+        industryContext = tone || 'professional';
+      }
 
-      systemPrompt = `You are an expert business identity generator. Create compelling, unique business identities using BRAND ARCHETYPES that feel authentic and avoid generic corporate clichés.
+      systemPrompt = `You are an expert business identity generator. Create a compelling business identity using a TWO-TRACK naming approach.
 
-BRAND ARCHETYPES:
-1. Professional & Trustworthy - Clear, authoritative, established (e.g., "Morris Advisory", "Anchor Partners")
-2. Creative & Visionary - Innovative, forward-thinking, bold (e.g., "BrightForge", "Launchpad Studio")
-3. Playful & Memorable - Fun, approachable, friendly (e.g., "SideHustle Spark", "BizNest")
-4. Personalized - Incorporates founder name naturally (e.g., "Morris Ventures")
+🎯 TRACK A - THEMATIC NAMES (Generate 3 names)
+Creative names WITHOUT the founder's personal name:
+- Focus on: metaphors, emotional concepts, industry-relevant descriptors
+- Industry context: ${industryContext}
+- Examples: Family Rhythm, Kiddo Flow, Blueprint Partners, Momentum Lab
 
-CRITICAL NAMING RULES:
-- Business names MUST be SHORT (1-3 words max)
+👤 TRACK B - NAME-INTEGRATED (Generate 2 names)
+Names that naturally integrate the founder's name using ONLY these patterns:
+- [Concept] by [Name] (e.g., "Parent Compass by ${firstName || lastName}")
+- [Name] [Descriptor] (e.g., "${lastName || firstName} Family Consulting")
+- [Verb/Concept] with [Name] (e.g., "LifeFlow with ${firstName || lastName}")
+
+${firstName && lastName ? `Use EITHER "${firstName}" OR "${lastName}" (not both together).` : ''}
+${firstName && !lastName ? `Use "${firstName}" naturally in Track B.` : ''}
+${!firstName && lastName ? `Use "${lastName}" naturally in Track B.` : ''}
+
+CRITICAL RULES:
+- All names MUST be SHORT (2-4 words max)
 - STRICTLY AVOID: ${bannedWordsStr}
-- AVOID obscure, awkward, archaic, or overly technical words
-- DO NOT repeat the same structural pattern across names
-- Be SPECIFIC to the business concept and archetype
-- Make names MEMORABLE, BRANDABLE, and POLISHED
-- Match the requested style: ${styleCategory || 'professional'}
-- ${nameGuidelines}
+- NO awkward possessive formats or forced combinations
+- Match the tone: ${industryContext}
+- Be emotionally appealing and authentic
 
 BIO GUIDELINES:
 - Length: 2-3 sentences (40-80 words)
@@ -382,13 +361,16 @@ TRANSFORMATION EXAMPLES:
 ✅ GOOD (natural, human):
 "As a parent of five, I know firsthand the beautiful chaos of family life. Over the years I've developed simple, practical ways to stay organized while juggling competing demands. Now, I'm excited to share those strategies with other parents who want more balance, confidence, and joy at home."
 
-Return ONLY valid JSON with this structure:
+Return ONLY valid JSON:
 {
-  "nameOptions": [
-    {"name": "Name1", "archetype": "Professional & Trustworthy", "tagline": "Outcome-focused tagline (5-8 words)"},
-    {"name": "Name2", "archetype": "Creative & Visionary", "tagline": "Outcome-focused tagline (5-8 words)"},
-    {"name": "Name3", "archetype": "Playful & Memorable", "tagline": "Outcome-focused tagline (5-8 words)"},
-    {"name": "Name4", "archetype": "Personalized", "tagline": "Outcome-focused tagline (5-8 words)"}
+  "trackA": [
+    {"name": "ThematicName1", "style": "Thematic", "tagline": "5-10 word tagline"},
+    {"name": "ThematicName2", "style": "Thematic", "tagline": "5-10 word tagline"},
+    {"name": "ThematicName3", "style": "Thematic", "tagline": "5-10 word tagline"}
+  ],
+  "trackB": [
+    {"name": "NameIntegrated1", "style": "Name-Integrated", "tagline": "5-10 word tagline"},
+    {"name": "NameIntegrated2", "style": "Name-Integrated", "tagline": "5-10 word tagline"}
   ],
   "tagline": "Compelling 5-10 word tagline (max 80 chars)",
   "bio": "2-3 sentence polished bio that transforms user's raw experience + motivation into cohesive narrative",
@@ -396,35 +378,30 @@ Return ONLY valid JSON with this structure:
   "logoSVG": "Clean, simple SVG logo that matches the style"
 }`;
 
-      let personalNameInfo = '';
-      if (firstName || lastName) {
-        if (includeFirstName && includeLastName) {
-          personalNameInfo = `Founder Names: First="${firstName}", Last="${lastName}" (Use BOTH)`;
-        } else if (includeLastName) {
-          personalNameInfo = `Surname ONLY: "${lastName}" (DO NOT use "${firstName}")`;
-        } else if (includeFirstName) {
-          personalNameInfo = `First Name ONLY: "${firstName}" (DO NOT use "${lastName}")`;
-        }
-      }
 
-      userPrompt = `Generate a complete business identity with diverse name options across brand archetypes:
+      userPrompt = `Generate a complete business identity with TWO-TRACK name approach:
 
 Business Concept: ${idea}
 Target Audience: ${audience}
+Industry Context: ${industryContext}
 Founder Background: ${experience}
 ${motivation ? `Founder Motivation: ${motivation}` : ''}
-${personalNameInfo}
+${firstName ? `Founder First Name: ${firstName}` : ''}
+${lastName ? `Founder Last Name: ${lastName}` : ''}
 Style Category: ${styleCategory || 'professional'}
 Tone: ${tone}
 
-Provide 4-6 name options across different brand archetypes (Professional, Creative, Playful, Personalized), one compelling tagline (max 80 chars), a personalized bio that TRANSFORMS the raw inputs below into polished narrative text (blend their experience/skills with their motivation into 2-3 cohesive sentences - do NOT copy their exact words), 3 complementary brand colors that match the ${styleCategory || 'professional'} style, and a clean SVG logo.
+TRACK A: Generate 3 thematic names (without personal name)
+TRACK B: Generate 2 name-integrated options (with natural name integration)
+
+Provide the two tracks of names, one compelling tagline (max 80 chars), a personalized bio that TRANSFORMS the raw inputs below into polished narrative text (blend their experience/skills with their motivation into 2-3 cohesive sentences - do NOT copy their exact words), 3 complementary brand colors that match the ${styleCategory || 'professional'} style, and a clean SVG logo.
 
 IMPORTANT FOR BIO: Transform these raw inputs into polished text:
 - Experience/Skills: "${experience}" (factual context)
 - Motivation: "${motivation || 'passion for helping others'}" (their why)
 Blend both into natural, cohesive bio that sounds like it was written by a professional, not copied from a form.
 
-CRITICAL: Ensure names feel intentional, polished, and trustworthy. Avoid clunky, awkward, or laughable combinations. Each name should reflect its archetype clearly.`;
+CRITICAL: Ensure names feel intentional, polished, and trustworthy. Each name should be emotionally appealing and relevant to the business idea.`;
     }
 
     console.log('Calling Lovable AI API...');
@@ -485,11 +462,15 @@ CRITICAL: Ensure names feel intentional, polished, and trustworthy. Avoid clunky
       });
     }
 
-    // For name regeneration, skip everything else and just return names
+    // For name regeneration, combine both tracks into single array
     if (regenerateNamesOnly) {
-      console.log('Returning regenerated names only');
+      console.log('Returning regenerated names from two tracks');
+      const trackA = generatedData.trackA || [];
+      const trackB = generatedData.trackB || [];
+      const combinedNames = [...trackA, ...trackB];
+      
       return new Response(JSON.stringify({
-        nameOptions: generatedData.nameOptions
+        nameOptions: combinedNames
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -624,9 +605,14 @@ Return ONLY valid JSON with no markdown formatting:
       console.log('Skipping database operations for anonymous user');
     }
 
+    // Combine two tracks into single nameOptions array
+    const trackA = generatedData.trackA || [];
+    const trackB = generatedData.trackB || [];
+    const combinedNameOptions = [...trackA, ...trackB];
+
     return new Response(JSON.stringify({
       business,
-      nameOptions: generatedData.nameOptions,
+      nameOptions: combinedNameOptions,
       tagline: generatedData.tagline,
       bio: generatedData.bio,
       colors: generatedData.colors,
