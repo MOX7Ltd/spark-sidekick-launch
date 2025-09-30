@@ -115,10 +115,22 @@ export const CustomerStorefront = ({ idea, aboutYou, audience, businessIdentity,
         <div className="relative px-8 py-12 text-center">
           {/* Logo */}
           {businessIdentity?.logoSVG ? (
-            <div 
-              className="w-24 h-24 mx-auto mb-6 bg-background rounded-full flex items-center justify-center overflow-hidden shadow-lg border-4 border-background"
-              dangerouslySetInnerHTML={{ __html: businessIdentity.logoSVG }}
-            />
+            businessIdentity.logoSVG.trim().startsWith('<') ? (
+              // It's SVG markup
+              <div 
+                className="w-24 h-24 mx-auto mb-6 bg-background rounded-full flex items-center justify-center overflow-hidden shadow-lg border-4 border-background"
+                dangerouslySetInnerHTML={{ __html: businessIdentity.logoSVG }}
+              />
+            ) : (
+              // It's an image URL
+              <div className="w-24 h-24 mx-auto mb-6 bg-background rounded-full flex items-center justify-center overflow-hidden shadow-lg border-4 border-background">
+                <img 
+                  src={businessIdentity.logoSVG} 
+                  alt={businessIdentity.name}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )
           ) : (
             <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-primary to-primary/70 rounded-full flex items-center justify-center text-4xl font-bold text-white shadow-lg">
               {businessIdentity.name.charAt(0)}
