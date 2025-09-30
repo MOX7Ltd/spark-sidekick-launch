@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { LivePreview } from './LivePreview';
-import { Rocket, Sparkles, CheckCircle, Heart } from 'lucide-react';
+import { CustomerStorefront } from './CustomerStorefront';
+import { Rocket, Sparkles, CheckCircle, Heart, Eye, Settings } from 'lucide-react';
 
 interface StarterPackRevealProps {
   idea: string;
   aboutYou: {
     firstName: string;
+    lastName: string;
     expertise: string;
     style: string;
   };
@@ -15,6 +16,10 @@ interface StarterPackRevealProps {
   businessIdentity: {
     name: string;
     logo: string;
+    tagline?: string;
+    bio?: string;
+    colors?: string[];
+    logoSVG?: string;
   };
   onUnlock: () => void;
   onBack: () => void;
@@ -22,6 +27,7 @@ interface StarterPackRevealProps {
 
 export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, onUnlock, onBack }: StarterPackRevealProps) => {
   const [showConfetti, setShowConfetti] = useState(false);
+  const [viewMode, setViewMode] = useState<'customer' | 'edit'>('customer');
 
   useEffect(() => {
     // Trigger confetti animation on mount
@@ -55,18 +61,39 @@ export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, 
           <Rocket className="w-10 h-10 text-white" />
         </div>
         <h2 className="text-4xl md:text-5xl font-bold mb-4">
-          {businessIdentity.name} is ready to launch! 🚀
+          🔥 Your business is ready to launch!
         </h2>
-        <p className="text-xl text-muted-foreground mb-6 max-w-2xl mx-auto">
-          Your complete business identity is live. Publish your storefront and start earning today for just $10.
+        <p className="text-xl text-muted-foreground mb-4 max-w-2xl mx-auto">
+          This is exactly what customers will see when they visit your link from social media.
         </p>
+        
+        {/* View Toggle */}
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <Button
+            variant={viewMode === 'customer' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('customer')}
+            className="gap-2"
+          >
+            <Eye className="w-4 h-4" />
+            See as Customer
+          </Button>
+          <Button
+            variant={viewMode === 'edit' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('edit')}
+            className="gap-2"
+          >
+            <Settings className="w-4 h-4" />
+            Edit Details
+          </Button>
+        </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-2 items-start">
-        {/* Preview Panel - Full Visibility */}
+      <div className="grid gap-8 lg:grid-cols-[1.5fr,1fr] items-start">
+        {/* Storefront Preview - Customer Facing */}
         <div>
-          <h3 className="text-2xl font-bold mb-4 text-center">Your Complete Business Preview</h3>
-          <LivePreview 
+          <CustomerStorefront
             idea={idea}
             aboutYou={aboutYou}
             audience={audience}

@@ -3,7 +3,7 @@ import { ProgressBar } from './ProgressBar';
 import { StepOne } from './StepOne';
 import { StepAboutYou } from './StepAboutYou';
 import { StepTwoMultiSelect } from './StepTwoMultiSelect';
-import { StepThreeExpanded } from './StepThreeExpanded';
+import { StepThreeExpandedNew } from './StepThreeExpandedNew';
 import { StarterPackReveal } from './StarterPackReveal';
 import { generateBusinessIdentity } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
@@ -12,8 +12,11 @@ interface OnboardingData {
   idea: string;
   aboutYou: {
     firstName: string;
+    lastName: string;
     expertise: string;
     style: string;
+    includeFirstName: boolean;
+    includeLastName: boolean;
   };
   audience: string;
   businessIdentity: {
@@ -52,7 +55,14 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     setCurrentStep(2);
   };
 
-  const handleStepAboutYou = (aboutYou: { firstName: string; expertise: string; style: string }) => {
+  const handleStepAboutYou = (aboutYou: { 
+    firstName: string; 
+    lastName: string;
+    expertise: string; 
+    style: string;
+    includeFirstName: boolean;
+    includeLastName: boolean;
+  }) => {
     setFormData(prev => ({ ...prev, aboutYou }));
     setCurrentStep(3);
   };
@@ -73,6 +83,12 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
         style: formData.aboutYou.style
       });
 
+      // Determine naming preference based on checkboxes
+      let namingPreference: 'with_personal_name' | 'anonymous' | 'custom' = 'anonymous';
+      if (formData.aboutYou.includeFirstName || formData.aboutYou.includeLastName) {
+        namingPreference = 'with_personal_name';
+      }
+
       // Generate business identity using AI after all data is collected
       const identityData = await generateBusinessIdentity({
         idea: formData.idea,
@@ -80,7 +96,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
         experience: formData.aboutYou.expertise,
         firstName: formData.aboutYou.firstName,
         tone: formData.aboutYou.style.toLowerCase() as 'professional' | 'friendly' | 'playful',
-        namingPreference: 'anonymous'
+        namingPreference
       });
 
       console.log('Generated identity data:', identityData);
@@ -174,7 +190,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
           )}
           
           {currentStep === 4 && (
-            <StepThreeExpanded
+            <StepThreeExpandedNew
               onNext={handleStepThree}
               onBack={goBack}
               initialValue={formData.businessIdentity}

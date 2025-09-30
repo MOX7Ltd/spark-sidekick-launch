@@ -7,9 +7,23 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, User, Heart, Zap, Lightbulb, Target, TrendingUp, BookOpen, Sparkles } from 'lucide-react';
 
 interface StepAboutYouProps {
-  onNext: (data: { firstName: string; expertise: string; style: string }) => void;
+  onNext: (data: { 
+    firstName: string; 
+    lastName: string;
+    expertise: string; 
+    style: string;
+    includeFirstName: boolean;
+    includeLastName: boolean;
+  }) => void;
   onBack: () => void;
-  initialValue?: { firstName?: string; expertise?: string; style?: string };
+  initialValue?: { 
+    firstName?: string; 
+    lastName?: string;
+    expertise?: string; 
+    style?: string;
+    includeFirstName?: boolean;
+    includeLastName?: boolean;
+  };
   isLoading?: boolean;
 }
 
@@ -24,12 +38,15 @@ const styleOptions = [
 
 export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAboutYouProps) => {
   const [firstName, setFirstName] = useState(initialValue?.firstName || '');
+  const [lastName, setLastName] = useState(initialValue?.lastName || '');
   const [expertise, setExpertise] = useState(initialValue?.expertise || '');
   const [style, setStyle] = useState(initialValue?.style || '');
+  const [includeFirstName, setIncludeFirstName] = useState(initialValue?.includeFirstName ?? false);
+  const [includeLastName, setIncludeLastName] = useState(initialValue?.includeLastName ?? false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onNext({ firstName, expertise, style });
+    onNext({ firstName, lastName, expertise, style, includeFirstName, includeLastName });
   };
 
   const isValid = expertise.length >= 5 && style;
@@ -52,13 +69,58 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
             <Label htmlFor="firstName" className="text-base font-medium">
               First Name (optional)
             </Label>
-            <Input
-              id="firstName"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Your first name"
-              className="h-11 text-base"
-            />
+            <div className="space-y-2">
+              <Input
+                id="firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Your first name"
+                className="h-11 text-base"
+              />
+              {firstName && (
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="includeFirstName"
+                    checked={includeFirstName}
+                    onChange={(e) => setIncludeFirstName(e.target.checked)}
+                    className="w-4 h-4 rounded border-input"
+                  />
+                  <Label htmlFor="includeFirstName" className="text-sm font-normal cursor-pointer">
+                    Include this in my business name
+                  </Label>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="lastName" className="text-base font-medium">
+              Last Name (optional)
+            </Label>
+            <div className="space-y-2">
+              <Input
+                id="lastName"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Your last name"
+                className="h-11 text-base"
+              />
+              {lastName && (
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="includeLastName"
+                    checked={includeLastName}
+                    onChange={(e) => setIncludeLastName(e.target.checked)}
+                    className="w-4 h-4 rounded border-input"
+                  />
+                  <Label htmlFor="includeLastName" className="text-sm font-normal cursor-pointer">
+                    Include this in my business name
+                  </Label>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">

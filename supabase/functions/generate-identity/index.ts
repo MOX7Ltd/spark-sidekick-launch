@@ -107,7 +107,7 @@ serve(async (req) => {
     const requestBody = await req.json();
     console.log('Request body received:', requestBody);
     
-    const { idea, audience, experience, namingPreference, firstName, tone } = requestBody;
+    const { idea, audience, experience, namingPreference, firstName, tone, regenerateNamesOnly } = requestBody;
 
     if (!idea || !audience) {
       console.error('Missing required fields:', { idea: !!idea, audience: !!audience });
@@ -125,8 +125,26 @@ serve(async (req) => {
       });
     }
 
-    // Create OpenAI prompt
-    const systemPrompt = `You are a brand strategist. Return strict JSON matching this exact schema:
+    // Create OpenAI prompt - different for name regeneration vs full identity
+    let systemPrompt, userPrompt;
+
+    if (regenerateNamesOnly) {
+      systemPrompt = `You are a brand strategist. Return strict JSON with ONLY nameOptions:
+{
+  "nameOptions": ["Name 1", "Name 2", "Name 3", "Name 4", "Name 5", "Name 6", "Name 7"]
+}
+
+Generate 7 unique, creative business name options.`;
+
+      userPrompt = `Generate NEW business name options for:
+- Idea: ${idea}
+- Target audience: ${audience}
+- Naming preference: ${namingPreference || 'anonymous'}
+- First name: ${firstName || 'Not provided'}
+
+These should be completely different from any previous suggestions. Make them creative, memorable, and relevant.`;
+    } else {
+      systemPrompt = `You are a brand strategist. Return strict JSON matching this exact schema:
 {
   "nameOptions": ["Name 1", "Name 2", "Name 3"],
   "tagline": "tagline here",
@@ -137,7 +155,7 @@ serve(async (req) => {
 
 Keep names unique, modern, and relevant to the idea and audience. Bio must sound human and specific (2-3 sentences). Logo must be a minimal, monochrome SVG wordmark with optional simple icon, viewBox="0 0 320 80", using only safe tags (svg, g, path, rect, circle, text). No scripts, no external references.`;
 
-    const userPrompt = `Generate a business identity for:
+      userPrompt = `Generate a business identity for:
 - Idea: ${idea}
 - Target audience: ${audience}
 - Experience/background: ${experience || 'Not specified'}
@@ -146,6 +164,7 @@ Keep names unique, modern, and relevant to the idea and audience. Bio must sound
 - Tone: ${tone || 'professional'}
 
 Provide 3-6 name options, one compelling tagline (max 80 chars), a personalized bio using first name and experience if provided, 3 brand colors, and a clean SVG logo.`;
+    }
 
     console.log('Calling OpenAI API...');
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -185,6 +204,16 @@ Provide 3-6 name options, one compelling tagline (max 80 chars), a personalized 
       console.error('Failed to parse AI response:', content);
       return new Response(JSON.stringify({ error: 'Invalid AI response format' }), {
         status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // For name regeneration, skip everything else and just return names
+    if (regenerateNamesOnly) {
+      console.log('Returning regenerated names only');
+      return new Response(JSON.stringify({
+        nameOptions: generatedData.nameOptions
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

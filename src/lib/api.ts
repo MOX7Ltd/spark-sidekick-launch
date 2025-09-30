@@ -55,6 +55,32 @@ export async function generateCampaign(request: GenerateCampaignRequest): Promis
   return data;
 }
 
+export async function regenerateBusinessNames(request: GenerateIdentityRequest): Promise<string[]> {
+  const { data, error } = await supabase.functions.invoke('generate-identity', {
+    body: { ...request, regenerateNamesOnly: true }
+  });
+
+  if (error) {
+    console.error('Error regenerating business names:', error);
+    throw new Error(error.message || 'Failed to regenerate business names');
+  }
+
+  return data.nameOptions;
+}
+
+export async function generateLogos(businessName: string, style: string): Promise<string[]> {
+  const { data, error } = await supabase.functions.invoke('generate-logos', {
+    body: { businessName, style }
+  });
+
+  if (error) {
+    console.error('Error generating logos:', error);
+    throw new Error(error.message || 'Failed to generate logos');
+  }
+
+  return data.logos;
+}
+
 export async function updateBusinessName(businessId: string, businessName: string) {
   const { data, error } = await supabase
     .from('businesses')
