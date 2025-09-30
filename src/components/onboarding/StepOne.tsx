@@ -14,7 +14,7 @@ interface StepOneProps {
 export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   const [idea, setIdea] = useState(initialValue);
   const [showPreview, setShowPreview] = useState(false);
-  const [products, setProducts] = useState<Array<{title: string; type: string; price: string}>>([]);
+  const [products, setProducts] = useState<Array<{title: string; type: string; price: string; description: string}>>([]);
   const [taglines, setTaglines] = useState<string[]>([]);
 
   useEffect(() => {
@@ -31,8 +31,18 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
     
     if (ideaLower.includes('fitness') || ideaLower.includes('health') || ideaLower.includes('workout')) {
       setProducts([
-        { title: "7-Day Fitness Blueprint", type: "Digital Guide", price: "$29" },
-        { title: "Nutrition Tracker Template", type: "Template Pack", price: "$19" },
+        { 
+          title: "7-Day Fitness Blueprint", 
+          type: "Digital Guide", 
+          price: "$29",
+          description: "Step-by-step workout plans and habit-building strategies that help you build consistency and see real results in your first week."
+        },
+        { 
+          title: "Nutrition Tracker Template", 
+          type: "Template Pack", 
+          price: "$19",
+          description: "Easy-to-use meal planning tools that take the guesswork out of healthy eating so you can fuel your body right."
+        },
       ]);
       setTaglines([
         "Your journey to better health starts here",
@@ -41,8 +51,18 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
       ]);
     } else if (ideaLower.includes('parent') || ideaLower.includes('family') || ideaLower.includes('kid')) {
       setProducts([
-        { title: "Parent Survival Guide", type: "Digital Guide", price: "$27" },
-        { title: "Family Activity Planner", type: "Template Pack", price: "$15" },
+        { 
+          title: "Parent Survival Guide", 
+          type: "Digital Guide", 
+          price: "$27",
+          description: "Practical strategies for managing the chaos of family life, from bedtime battles to sibling rivalry, with confidence and calm."
+        },
+        { 
+          title: "Family Activity Planner", 
+          type: "Template Pack", 
+          price: "$15",
+          description: "Ready-to-go activity ideas and schedule templates that help you create quality time without the planning stress."
+        },
       ]);
       setTaglines([
         "Making family life easier, one tip at a time",
@@ -51,8 +71,18 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
       ]);
     } else if (ideaLower.includes('business') || ideaLower.includes('entrepreneur') || ideaLower.includes('startup')) {
       setProducts([
-        { title: "Business Launch Checklist", type: "Digital Guide", price: "$39" },
-        { title: "Financial Planning Templates", type: "Template Pack", price: "$29" },
+        { 
+          title: "Business Launch Checklist", 
+          type: "Digital Guide", 
+          price: "$39",
+          description: "Step-by-step tasks that take the guesswork out of launching, so you can go from idea to live business with confidence."
+        },
+        { 
+          title: "Financial Planning Templates", 
+          type: "Template Pack", 
+          price: "$29",
+          description: "Easy-to-use spreadsheets that help you track costs, plan income, and stay on top of your business finances from day one."
+        },
       ]);
       setTaglines([
         "Turn your side hustle into real income",
@@ -61,8 +91,18 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
       ]);
     } else {
       setProducts([
-        { title: "Complete Starter Guide", type: "Digital Guide", price: "$37" },
-        { title: "Quick Reference Checklist", type: "Template Pack", price: "$19" },
+        { 
+          title: "Complete Starter Guide", 
+          type: "Digital Guide", 
+          price: "$37",
+          description: "Everything you need to get started quickly and confidently, with clear steps that eliminate confusion and accelerate your progress."
+        },
+        { 
+          title: "Quick Reference Checklist", 
+          type: "Template Pack", 
+          price: "$19",
+          description: "Essential tasks and resources organized in one place, so you never miss a critical step on your journey."
+        },
       ]);
       setTaglines([
         "Making it simple to get started",
@@ -134,12 +174,13 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
               {products.map((product, idx) => (
                 <Card key={idx} className="border-primary/20 hover:border-primary/40 transition-all hover:scale-[1.01]">
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
                         <h4 className="font-semibold text-base">{product.title}</h4>
                         <Badge variant="outline" className="mt-1 text-xs">{product.type}</Badge>
+                        <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{product.description}</p>
                       </div>
-                      <div className="text-lg font-bold text-accent flex items-center gap-1">
+                      <div className="text-lg font-bold text-accent flex items-center gap-1 whitespace-nowrap">
                         <DollarSign className="h-4 w-4" />
                         {product.price.replace('$', '')}
                       </div>
