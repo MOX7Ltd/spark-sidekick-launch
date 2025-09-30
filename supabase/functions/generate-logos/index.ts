@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,37 +34,38 @@ serve(async (req) => {
       
       const prompt = `Create a simple, clean logo mark for "${businessName}". Style: ${styleDesc}. Design variation ${i + 1}. Minimalist, scalable, works well at small sizes. No text in the logo, just the icon/mark. Flat design, vector style, professional. Transparent background.`;
 
-      const response = await fetch('https://api.openai.com/v1/images/generations', {
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
+          'Authorization': `Bearer ${lovableApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-image-1',
-          prompt,
-          n: 1,
-          size: '1024x1024',
-          quality: 'low',
-          background: 'transparent',
-          output_format: 'png'
+          model: 'google/gemini-2.5-flash-image-preview',
+          messages: [
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          modalities: ['image', 'text']
         }),
       });
 
       if (!response.ok) {
         const error = await response.text();
-        console.error('OpenAI API error:', error);
-        throw new Error(`OpenAI API error: ${error}`);
+        console.error('Lovable AI API error:', error);
+        throw new Error(`Lovable AI API error: ${error}`);
       }
 
       const data = await response.json();
       
-      // OpenAI returns base64 for gpt-image-1
-      if (data.data && data.data[0] && data.data[0].b64_json) {
-        return `data:image/png;base64,${data.data[0].b64_json}`;
+      // Gemini returns base64 in images array
+      if (data.choices?.[0]?.message?.images?.[0]?.image_url?.url) {
+        return data.choices[0].message.images[0].image_url.url;
       }
       
-      throw new Error('Invalid response format from OpenAI');
+      throw new Error('Invalid response format from Lovable AI');
     });
 
     const logos = await Promise.all(logoPromises);
