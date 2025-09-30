@@ -253,11 +253,18 @@ REMEMBER: Avoid ALL generic/overused business terms. Be specific and match the $
 
     const data = await response.json();
     console.log('Lovable AI response received successfully');
-    const content = data.choices[0].message.content;
+    let content = data.choices[0].message.content;
+
+    // Strip markdown code fences if present
+    if (content.includes('```json')) {
+      content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+    } else if (content.includes('```')) {
+      content = content.replace(/```\s*/g, '');
+    }
 
     let generatedData;
     try {
-      generatedData = JSON.parse(content);
+      generatedData = JSON.parse(content.trim());
     } catch (parseError) {
       console.error('Failed to parse AI response:', content);
       return new Response(JSON.stringify({ error: 'Invalid AI response format' }), {
