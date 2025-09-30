@@ -108,9 +108,10 @@ serve(async (req) => {
 CRITICAL RULES:
 - Write in the first person ("I" / "my")
 - Sound human, authentic, and conversational — avoid corporate jargon and AI-sounding phrases
-- Match the specified tone/style (${tone || 'friendly'})
-- Show vulnerability and personality
-- Avoid clichés like "I'm thrilled to announce..." unless they genuinely fit the tone
+- Match the specified tone/style (${tone || 'friendly'}) consistently throughout
+- Show vulnerability and personality — real people have doubts, excitement, and learning moments
+- NEVER use robotic phrases like "I'm thrilled to announce..." "Big moment!" "Exciting news!" unless the tone is explicitly Playful
+- Transform raw user inputs into natural, polished storytelling — do NOT copy their exact words
 
 Return strict JSON with TWO versions for EACH platform:
 
@@ -129,12 +130,12 @@ Return strict JSON with TWO versions for EACH platform:
   ]
 }
 
-SHORT POST GUIDELINES:
-- 2-3 sentences max, under 280 characters
-- Energetic, celebratory tone
+SHORT POST GUIDELINES (<280 characters):
+- 2-3 sentences maximum
+- Energetic but natural tone (avoid "thrilled to announce" unless tone is Playful)
 - Focus on "going live" excitement
 - Include 3-5 niche-specific hashtags
-- Can include 1-2 emojis if tone is friendly/playful
+- Optional: 1-2 emojis if tone is Friendly/Playful (zero emojis if Professional)
 
 LONG POST GUIDELINES:
 - 3-6 sentences, 500-800 characters

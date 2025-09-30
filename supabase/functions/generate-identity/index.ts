@@ -367,11 +367,17 @@ CRITICAL NAMING RULES:
 - ${nameGuidelines}
 
 BIO GUIDELINES:
-- Length: 2-3 sentences
-- Tone: Warm, approachable, aligned with user's style
-- Must feel authentic and personal, not corporate or robotic
-- Include a hint of the user's "why" from their motivation if provided
+- Length: 2-3 sentences (40-80 words)
+- CRITICAL: Transform raw user input into polished, natural narrative text
+- DO NOT copy-paste user's exact words — rephrase professionally
+- Blend experience/skills (factual context) + motivation (why) into single cohesive story
+- Tone: Warm, approachable, aligned with user's selected style (${tone})
+- Must feel authentic and personal, NOT corporate or robotic
 - Write in first person if founder name is provided
+- Show personality and humanity
+- Example transformation:
+  * Raw input: "I've raised 5 children" + "I see people struggling"
+  * Good bio: "As a parent of five, I've learned countless organizational systems that actually work in real life. Now I'm sharing those insights to help other busy families thrive without the overwhelm."
 
 Return ONLY valid JSON with this structure:
 {
@@ -382,7 +388,7 @@ Return ONLY valid JSON with this structure:
     {"name": "Name4", "archetype": "Personalized", "tagline": "Outcome-focused tagline (5-8 words)"}
   ],
   "tagline": "Compelling 5-10 word tagline (max 80 chars)",
-  "bio": "2-3 sentence personalized bio using founder's background and motivation",
+  "bio": "2-3 sentence polished bio that transforms user's raw experience + motivation into cohesive narrative",
   "colors": ["#hexcolor1", "#hexcolor2", "#hexcolor3"],
   "logoSVG": "Clean, simple SVG logo that matches the style"
 }`;
@@ -408,7 +414,12 @@ ${personalNameInfo}
 Style Category: ${styleCategory || 'professional'}
 Tone: ${tone}
 
-Provide 4-6 name options across different brand archetypes (Professional, Creative, Playful, Personalized), one compelling tagline (max 80 chars), a personalized bio (use "${firstName}" and reference their background: "${experience}"), 3 complementary brand colors that match the ${styleCategory || 'professional'} style, and a clean SVG logo.
+Provide 4-6 name options across different brand archetypes (Professional, Creative, Playful, Personalized), one compelling tagline (max 80 chars), a personalized bio that TRANSFORMS the raw inputs below into polished narrative text (blend their experience/skills with their motivation into 2-3 cohesive sentences - do NOT copy their exact words), 3 complementary brand colors that match the ${styleCategory || 'professional'} style, and a clean SVG logo.
+
+IMPORTANT FOR BIO: Transform these raw inputs into polished text:
+- Experience/Skills: "${experience}" (factual context)
+- Motivation: "${motivation || 'passion for helping others'}" (their why)
+Blend both into natural, cohesive bio that sounds like it was written by a professional, not copied from a form.
 
 CRITICAL: Ensure names feel intentional, polished, and trustworthy. Avoid clunky, awkward, or laughable combinations. Each name should reflect its archetype clearly.`;
     }
