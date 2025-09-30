@@ -111,7 +111,25 @@ CRITICAL RULES:
 - Match the specified tone/style (${tone || 'friendly'}) consistently throughout
 - Show vulnerability and personality — real people have doubts, excitement, and learning moments
 - NEVER use robotic phrases like "I'm thrilled to announce..." "Big moment!" "Exciting news!" unless the tone is explicitly Playful
-- Transform raw user inputs into natural, polished storytelling — do NOT copy their exact words
+
+🚨 CRITICAL: DO NOT COPY RAW USER INPUT DIRECTLY 🚨
+The user will provide raw inputs like "I've raised 5 children" or "I see families struggling". You MUST transform these into natural, grammatically correct sentences. NEVER paste their exact words mid-sentence.
+
+❌ BAD EXAMPLES (broken grammar from pasting raw inputs):
+- "After years of I've raised 5 children, I'm launching..." ← WRONG
+- "I've spent years working in I've raised 5 children..." ← WRONG
+- "As someone who I see families struggling..." ← WRONG
+
+✅ GOOD EXAMPLES (transformed into natural language):
+- "After raising five kids over the years, I'm launching..."
+- "I've spent years raising five children and learning..."
+- "As someone who has seen families struggle..."
+
+TRANSFORMATION GUIDE:
+Raw Input → Natural Transformation
+"I've raised 5 children" → "raising five kids" or "as a parent of five" or "with five children"
+"I see families struggling" → "I've seen families struggle" or "watching families navigate..."
+"I had to learn how to..." → "I learned how to..." or "I developed strategies to..."
 
 Return strict JSON with TWO versions for EACH platform:
 
@@ -157,15 +175,21 @@ ${motivation ? `- Personal Motivation: ${motivation}` : ''}
 
 Create both a short celebratory version AND a longer authentic story-driven version for each platform.
 
-EXAMPLES OF GOOD SHORT POSTS:
-1. "🚀 Big news! After years of [relevant experience], I'm launching [BusinessName] — [brief benefit for audience]. Can't wait to start this journey with you all! ✨ #NewBusiness #Entrepreneur #Launch"
-2. "After 5 years of helping friends launch their side hustles, I'm finally starting my own! 🚀 Meet [BusinessName] — let's build something amazing together. #NewBeginnings #Entrepreneur #Launch"
+REMEMBER: Transform the user's raw inputs into polished narrative. If they say "I've raised 5 children", write "raising five kids" or "as a parent of five". Never copy-paste their exact phrasing mid-sentence.
 
-EXAMPLES OF GOOD LONG POSTS (follow this 4-part structure):
+EXAMPLES OF GOOD SHORT POSTS (natural, grammatically correct):
+1. "🚀 Big news! After years of raising five kids and learning how to stay organized through the chaos, I'm launching [BusinessName] — a space to help parents find balance and joy. Can't wait to start this journey with you all! ✨"
+2. "After helping friends launch their side hustles for years, I'm finally starting my own! 🚀 Meet [BusinessName] — let's build something amazing together."
+
+EXAMPLES OF GOOD LONG POSTS (follow this 4-part structure: Intro → Story → Mission → Close):
 
 1. "Hi everyone, I'm Sarah. As a fitness coach for the past decade, I've helped dozens of busy parents try to get back in shape. Time and time again, I saw the same pattern: they'd start strong, then life would get in the way. I realized traditional fitness programs weren't built for real life. That's why I created [BusinessName] — a flexible, family-friendly program designed for parents who want to prioritize their health without sacrificing family time. I'm not claiming to have all the answers, but I'm learning as I go and would love to hear from other parents navigating this journey. What's your biggest fitness challenge?"
 
 2. "Hi everyone, I'm Alex. I never planned on becoming an entrepreneur. But after watching my dad struggle to find simple, affordable legal templates for his small business, I knew there had to be a better way. [BusinessName] is my answer to that problem — straightforward legal tools for everyday entrepreneurs who can't afford a $500/hour lawyer. I'm still figuring a lot of this out, and I'd love your feedback as I build this. What legal challenges have you faced in your business?"
+
+3. "Hi everyone, I'm Paul. As a parent of five, I know firsthand the chaos and joy of family life. Over the years I've learned that staying organized isn't about perfection — it's about finding small strategies that make life feel lighter. That's why I created [BusinessName]: to help parents like me simplify the chaos and focus on what really matters. I'm not claiming to have all the answers, but I'm passionate about learning, sharing, and growing together. I'd love your support and feedback as I take this leap — and I can't wait to hear your own stories about what helps you stay balanced at home."
+
+CRITICAL REMINDER: You are transforming raw user inputs into polished narrative prose. NEVER insert their exact words mid-sentence. Review every post for grammar errors before returning it.
 
 Generate authentic, human posts that sound like they were written by a real person, not an AI.`;
     } else {
