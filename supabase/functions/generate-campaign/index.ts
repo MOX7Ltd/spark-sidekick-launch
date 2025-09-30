@@ -158,13 +158,14 @@ ${motivation ? `- Personal Motivation: ${motivation}` : ''}
 Create both a short celebratory version AND a longer authentic story-driven version for each platform.
 
 EXAMPLES OF GOOD SHORT POSTS:
-1. "After 5 years of helping friends launch their side hustles, I'm finally starting my own! 🚀 Meet [BusinessName] — let's build something amazing together. #NewBeginnings #Entrepreneur #Launch"
-2. "Big news: [BusinessName] is officially live! It's been a dream for years, and I can't wait to share this journey with you all. Let's do this! 🎉 #SideHustle #SmallBusiness"
+1. "🚀 Big news! After years of [relevant experience], I'm launching [BusinessName] — [brief benefit for audience]. Can't wait to start this journey with you all! ✨ #NewBusiness #Entrepreneur #Launch"
+2. "After 5 years of helping friends launch their side hustles, I'm finally starting my own! 🚀 Meet [BusinessName] — let's build something amazing together. #NewBeginnings #Entrepreneur #Launch"
 
-EXAMPLES OF GOOD LONG POSTS:
-1. "For the past decade, I've worked as a fitness coach helping busy parents get back in shape. Time and time again, I saw the same pattern: they'd start strong, then life would get in the way. I realized traditional fitness programs weren't built for real life. That's why I created [BusinessName] — a flexible, family-friendly fitness program designed for parents who want to prioritize their health without sacrificing family time. I'm learning as I go, and I'd love to hear from other parents navigating this journey. What's your biggest fitness challenge?"
+EXAMPLES OF GOOD LONG POSTS (follow this 4-part structure):
 
-2. "I never planned on becoming an entrepreneur. But after watching my dad struggle to find simple, affordable legal templates for his small business, I knew there had to be a better way. [BusinessName] is my answer to that problem — straightforward legal tools for everyday entrepreneurs who can't afford a $500/hour lawyer. I'm still figuring a lot of this out, and I'd love your feedback as I build this. What legal challenges have you faced in your business?"
+1. "Hi everyone, I'm Sarah. As a fitness coach for the past decade, I've helped dozens of busy parents try to get back in shape. Time and time again, I saw the same pattern: they'd start strong, then life would get in the way. I realized traditional fitness programs weren't built for real life. That's why I created [BusinessName] — a flexible, family-friendly program designed for parents who want to prioritize their health without sacrificing family time. I'm not claiming to have all the answers, but I'm learning as I go and would love to hear from other parents navigating this journey. What's your biggest fitness challenge?"
+
+2. "Hi everyone, I'm Alex. I never planned on becoming an entrepreneur. But after watching my dad struggle to find simple, affordable legal templates for his small business, I knew there had to be a better way. [BusinessName] is my answer to that problem — straightforward legal tools for everyday entrepreneurs who can't afford a $500/hour lawyer. I'm still figuring a lot of this out, and I'd love your feedback as I build this. What legal challenges have you faced in your business?"
 
 Generate authentic, human posts that sound like they were written by a real person, not an AI.`;
     } else {

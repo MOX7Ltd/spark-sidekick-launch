@@ -368,16 +368,19 @@ CRITICAL NAMING RULES:
 
 BIO GUIDELINES:
 - Length: 2-3 sentences (40-80 words)
-- CRITICAL: Transform raw user input into polished, natural narrative text
-- DO NOT copy-paste user's exact words — rephrase professionally
-- Blend experience/skills (factual context) + motivation (why) into single cohesive story
-- Tone: Warm, approachable, aligned with user's selected style (${tone})
-- Must feel authentic and personal, NOT corporate or robotic
-- Write in first person if founder name is provided
-- Show personality and humanity
-- Example transformation:
-  * Raw input: "I've raised 5 children" + "I see people struggling"
-  * Good bio: "As a parent of five, I've learned countless organizational systems that actually work in real life. Now I'm sharing those insights to help other busy families thrive without the overwhelm."
+- CRITICAL: Transform raw user input into polished, natural storytelling
+- NEVER use formal language like "successfully managed" or "intimately understand"
+- NEVER use phrases like "I'm passionate about sharing" or "ensuring everyone thrives"
+- Write conversationally, as if the founder is speaking to a friend
+- Show vulnerability and authenticity — real people, real challenges
+- Blend experience + motivation into natural flow
+
+TRANSFORMATION EXAMPLES:
+❌ BAD (robotic, formal):
+"As a parent who successfully managed raising five children, I intimately understand the challenges of modern family life. I'm passionate about sharing the practical tips and clever hacks I developed to help other families navigate busy schedules, ensuring everyone thrives without dropping any balls."
+
+✅ GOOD (natural, human):
+"As a parent of five, I know firsthand the beautiful chaos of family life. Over the years I've developed simple, practical ways to stay organized while juggling competing demands. Now, I'm excited to share those strategies with other parents who want more balance, confidence, and joy at home."
 
 Return ONLY valid JSON with this structure:
 {
