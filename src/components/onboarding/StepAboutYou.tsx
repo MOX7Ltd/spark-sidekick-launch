@@ -3,9 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card } from '@/components/ui/card';
-import { User, Sparkles } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { ArrowLeft, User, Heart, Zap, Lightbulb, Target, TrendingUp, BookOpen, Sparkles } from 'lucide-react';
 
 interface StepAboutYouProps {
   onNext: (data: { firstName: string; expertise: string; style: string }) => void;
@@ -13,6 +12,15 @@ interface StepAboutYouProps {
   initialValue?: { firstName?: string; expertise?: string; style?: string };
   isLoading?: boolean;
 }
+
+const styleOptions = [
+  { value: 'Professional', label: 'Professional', icon: Target, description: 'Clear, authoritative' },
+  { value: 'Friendly', label: 'Friendly', icon: Heart, description: 'Warm, approachable' },
+  { value: 'Playful', label: 'Playful', icon: Sparkles, description: 'Fun, energetic' },
+  { value: 'Inspirational', label: 'Inspirational', icon: TrendingUp, description: 'Motivational, visionary' },
+  { value: 'Bold', label: 'Bold & Direct', icon: Zap, description: 'High-energy, "hustle" tone' },
+  { value: 'Educational', label: 'Educational', icon: BookOpen, description: 'Step-by-step, teacher-like' },
+];
 
 export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAboutYouProps) => {
   const [firstName, setFirstName] = useState(initialValue?.firstName || '');
@@ -27,119 +35,108 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
   const isValid = expertise.length >= 5 && style;
 
   return (
-    <div className="max-w-xl mx-auto animate-fade-in">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-accent rounded-full flex items-center justify-center">
-          <User className="w-8 h-8 text-white" />
+    <div className="max-w-2xl mx-auto animate-fade-in">
+      <div className="text-center mb-6">
+        <div className="flex items-center justify-center space-x-2 mb-3">
+          <User className="w-7 h-7 text-primary" />
+          <h2 className="text-3xl font-bold">About You</h2>
         </div>
-        <h2 className="text-3xl font-bold mb-3">About You</h2>
-        <p className="text-muted-foreground text-lg">
-          Let's personalize your business identity and make it authentically yours.
+        <p className="text-lg text-muted-foreground">
+          Let's make it personal
         </p>
       </div>
 
-      <Card className="p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="firstName">First Name (Optional)</Label>
+            <Label htmlFor="firstName" className="text-base font-medium">
+              First Name (optional)
+            </Label>
             <Input
               id="firstName"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              placeholder="e.g. Sarah"
-              className="text-lg"
+              placeholder="Your first name"
+              className="h-11 text-base"
             />
-            <p className="text-sm text-muted-foreground">
-              We'll use this to personalize your bio and social posts
-            </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="expertise">Your Background/Expertise</Label>
+            <Label htmlFor="expertise" className="text-base font-medium">
+              Your Background / Expertise
+            </Label>
             <Textarea
               id="expertise"
               value={expertise}
               onChange={(e) => setExpertise(e.target.value)}
-              placeholder="e.g. I've been meal planning for busy families for 5 years..."
-              className="text-lg resize-none"
-              rows={3}
+              placeholder="e.g., I've been running businesses for over 30 years"
+              className="min-h-[90px] text-base resize-none"
             />
-            <div className="flex justify-between items-center">
-              <p className="text-sm text-muted-foreground">
-                This helps us create your personalized bio and positioning
+            <p className="text-sm text-muted-foreground">
+              {isValid ? '✓ Perfect!' : 'At least 5 characters'}
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <Label className="text-base font-medium">
+              Preferred Tone / Style
+            </Label>
+            <div className="grid grid-cols-2 gap-3">
+              {styleOptions.map((option) => {
+                const Icon = option.icon;
+                return (
+                  <Card 
+                    key={option.value}
+                    className={`cursor-pointer transition-all hover:scale-[1.02] ${
+                      style === option.value 
+                        ? 'border-primary ring-2 ring-primary/20 bg-primary/5' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                    onClick={() => setStyle(option.value)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <Icon className={`h-5 w-5 mt-0.5 ${style === option.value ? 'text-primary' : 'text-muted-foreground'}`} />
+                        <div className="flex-1 space-y-1">
+                          <div className="font-semibold text-sm">{option.label}</div>
+                          <div className="text-xs text-muted-foreground">{option.description}</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+            {style && (
+              <p className="text-sm text-primary font-medium animate-fade-in">
+                🔥 This looks great!
               </p>
-              <span className={`text-sm ${expertise.length >= 5 ? 'text-primary' : 'text-muted-foreground'}`}>
-                {expertise.length}/5+ characters
-              </span>
-            </div>
+            )}
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="style">Preferred Style</Label>
-            <Select value={style} onValueChange={setStyle}>
-              <SelectTrigger className="text-lg">
-                <SelectValue placeholder="Choose your communication style" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="professional">
-                  <div className="flex items-center space-x-2">
-                    <span>💼</span>
-                    <div>
-                      <div className="font-medium">Professional</div>
-                      <div className="text-sm text-muted-foreground">Clear, authoritative, expert-focused</div>
-                    </div>
-                  </div>
-                </SelectItem>
-                <SelectItem value="friendly">
-                  <div className="flex items-center space-x-2">
-                    <span>🤗</span>
-                    <div>
-                      <div className="font-medium">Friendly</div>
-                      <div className="text-sm text-muted-foreground">Warm, approachable, conversational</div>
-                    </div>
-                  </div>
-                </SelectItem>
-                <SelectItem value="playful">
-                  <div className="flex items-center space-x-2">
-                    <span>✨</span>
-                    <div>
-                      <div className="font-medium">Playful</div>
-                      <div className="text-sm text-muted-foreground">Fun, creative, energetic</div>
-                    </div>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {isValid && (
-            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20 animate-fade-in">
-              <div className="flex items-center space-x-2 text-primary">
-                <Sparkles className="w-5 h-5" />
-                <span className="font-semibold">Perfect! This will make your bio shine ✨</span>
-              </div>
-            </div>
-          )}
-
-          <div className="flex space-x-3 pt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onBack}
-              className="flex-1"
-            >
-              ← Back
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={!isValid || isLoading}
-              className="flex-1"
-            >
-              {isLoading ? 'Generating...' : 'Next Step →'}
-            </Button>
-          </div>
-        </form>
-      </Card>
+        <div className="flex gap-4 pt-2">
+          <Button 
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={onBack}
+            className="flex-1 h-12 text-base"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+          
+          <Button 
+            type="submit"
+            size="lg"
+            disabled={!isValid || isLoading}
+            className="flex-1 h-12 text-base"
+          >
+            {isLoading ? 'Generating...' : 'Next step →'}
+          </Button>
+        </div>
+      </form>
     </div>
   );
 };

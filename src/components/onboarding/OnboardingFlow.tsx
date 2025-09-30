@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { ProgressBar } from './ProgressBar';
 import { StepOne } from './StepOne';
 import { StepAboutYou } from './StepAboutYou';
-import { StepTwo } from './StepTwo';
-import { StepThree } from './StepThree';
+import { StepTwoMultiSelect } from './StepTwoMultiSelect';
+import { StepThreeExpanded } from './StepThreeExpanded';
 import { StarterPackReveal } from './StarterPackReveal';
 import { generateBusinessIdentity } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
@@ -57,7 +57,8 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     setCurrentStep(3);
   };
 
-  const handleStepTwo = async (audience: string) => {
+  const handleStepTwo = async (audiences: string[]) => {
+    const audience = audiences[0]; // Use first selected audience for AI generation
     if (!formData.idea || !formData.aboutYou) return;
     
     setFormData(prev => ({ ...prev, audience }));
@@ -164,7 +165,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
           )}
           
           {currentStep === 3 && (
-            <StepTwo 
+            <StepTwoMultiSelect 
               onNext={handleStepTwo}
               onBack={goBack}
               initialValue={formData.audience}
@@ -173,7 +174,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
           )}
           
           {currentStep === 4 && (
-            <StepThree
+            <StepThreeExpanded
               onNext={handleStepThree}
               onBack={goBack}
               initialValue={formData.businessIdentity}
