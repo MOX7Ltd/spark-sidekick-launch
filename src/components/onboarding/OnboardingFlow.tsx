@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ProgressBar } from './ProgressBar';
 import { StepOne } from './StepOne';
 import { StepAboutYou } from './StepAboutYou';
@@ -69,6 +69,11 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   ];
 
   const totalSteps = stepLabels.length;
+
+  // Scroll to top whenever the step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentStep]);
 
   const handleStepOne = (idea: string) => {
     setFormData(prev => ({ ...prev, idea }));
