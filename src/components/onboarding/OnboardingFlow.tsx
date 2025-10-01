@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StepOne } from './StepOne';
-import { StepAboutYou } from './StepAboutYou';
+import { StepAboutYouMobile } from './StepAboutYouMobile';
+import { SocialPostPreview } from './SocialPostPreview';
 import { StepTwoMultiSelect } from './StepTwoMultiSelect';
 import { StepStyleSelect } from './StepStyleSelect';
 import { StepThreeExpandedNew } from './StepThreeExpandedNew';
@@ -79,6 +80,10 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     includeLastName: boolean;
   }) => {
     setFormData(prev => ({ ...prev, aboutYou }));
+    setCurrentStep(2.5); // Show social post preview
+  };
+
+  const handleSocialPostContinue = () => {
     setCurrentStep(3);
   };
 
@@ -212,11 +217,22 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
           )}
           
           {currentStep === 2 && (
-            <StepAboutYou 
+            <StepAboutYouMobile 
               onNext={handleStepAboutYou}
               onBack={goBack}
               initialValue={formData.aboutYou}
               isLoading={false}
+            />
+          )}
+
+          {currentStep === 2.5 && formData.aboutYou && formData.idea && (
+            <SocialPostPreview
+              firstName={formData.aboutYou.firstName}
+              expertise={formData.aboutYou.expertise}
+              motivation={formData.aboutYou.motivation}
+              styles={formData.aboutYou.styles}
+              idea={formData.idea}
+              onContinue={handleSocialPostContinue}
             />
           )}
           
