@@ -4,7 +4,7 @@ import { StepAboutYouMobile } from './StepAboutYouMobile';
 import { SocialPostPreview } from './SocialPostPreview';
 import { StepTwoMultiSelect } from './StepTwoMultiSelect';
 import { StepStyleSelect } from './StepStyleSelect';
-import { StepThreeExpandedNew } from './StepThreeExpandedNew';
+import { StepBusinessIdentity } from './StepBusinessIdentity';
 import { StarterPackReveal } from './StarterPackReveal';
 import { generateBusinessIdentity, generateCampaign } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
@@ -255,14 +255,13 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
           )}
           
           {currentStep === 5 && (
-            <StepThreeExpandedNew
+            <StepBusinessIdentity
               onNext={handleStepThree}
               onBack={goBack}
               initialValue={formData.businessIdentity}
               idea={formData.idea}
               aboutYou={formData.aboutYou}
               audience={formData.audiences?.[0] || ''}
-              introCampaign={formData.introCampaign}
             />
           )}
           
