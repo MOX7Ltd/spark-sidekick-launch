@@ -53,12 +53,10 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   
   const inspirationChips = [
     "Local running club with paid weekly sessions",
-    "AI resume + LinkedIn overhaul service",
     "Meal-prep plans for gym beginners",
     "Notion templates for freelancers",
     "Photography mini-sessions (weekends)",
     "Kids' homework + study skills workshop",
-    "1:1 accountability coaching for side hustlers",
     "Digital crochet patterns shop",
   ];
 
