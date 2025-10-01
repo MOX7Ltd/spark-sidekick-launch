@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Users, Baby, GraduationCap, Briefcase, Palette, MapPin, Globe, Heart, Target, Sparkles, Smile, Zap, BookOpen, Lightbulb, Rocket } from 'lucide-react';
+import { logFrontendEvent } from '@/lib/frontendEventLogger';
 
 interface StepAboutBusinessProps {
   onNext: (data: { vibes: string[]; audiences: string[] }) => void;
@@ -45,19 +46,31 @@ export const StepAboutBusiness = ({
   const [selectedAudiences, setSelectedAudiences] = useState<string[]>(initialAudiences);
 
   const toggleVibe = (vibeId: string) => {
-    setSelectedVibes(prev => 
-      prev.includes(vibeId)
-        ? prev.filter(id => id !== vibeId)
-        : [...prev, vibeId]
-    );
+    const newVibes = selectedVibes.includes(vibeId)
+      ? selectedVibes.filter(id => id !== vibeId)
+      : [...selectedVibes, vibeId];
+    
+    setSelectedVibes(newVibes);
+    
+    logFrontendEvent({
+      eventType: 'user_action',
+      step: 'StepAboutBusiness',
+      payload: { action: 'select_vibes', vibes: newVibes }
+    });
   };
 
   const toggleAudience = (audienceId: string) => {
-    setSelectedAudiences(prev => 
-      prev.includes(audienceId)
-        ? prev.filter(id => id !== audienceId)
-        : [...prev, audienceId]
-    );
+    const newAudiences = selectedAudiences.includes(audienceId)
+      ? selectedAudiences.filter(id => id !== audienceId)
+      : [...selectedAudiences, audienceId];
+    
+    setSelectedAudiences(newAudiences);
+    
+    logFrontendEvent({
+      eventType: 'user_action',
+      step: 'StepAboutBusiness',
+      payload: { action: 'select_audiences', audiences: newAudiences }
+    });
   };
 
   const handleSubmit = (e?: React.FormEvent) => {

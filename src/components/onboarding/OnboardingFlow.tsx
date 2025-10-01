@@ -8,6 +8,8 @@ import { StarterPackReveal } from './StarterPackReveal';
 import { StarterPackCheckout } from './StarterPackCheckout';
 import { generateBusinessIdentity, generateCampaign, GenerateIdentityRequest, GenerateCampaignRequest } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { logFrontendEvent } from '@/lib/frontendEventLogger';
+import { DebugPanel } from '@/components/debug/DebugPanel';
 
 interface OnboardingData {
   idea: string;
@@ -58,13 +60,28 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
-  // Scroll to top whenever the step changes
+  // Scroll to top and log step transitions
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Log step transition
+    const stepNames = ['', 'StepOne', 'StepAboutYou', 'StepAboutBusiness', 'StepBusinessIdentity', 'StarterPackReveal', 'SocialPostPreview', 'StarterPackCheckout'];
+    if (currentStep > 0 && currentStep < stepNames.length) {
+      logFrontendEvent({
+        eventType: 'step_transition',
+        step: stepNames[currentStep],
+        payload: { stepNumber: currentStep }
+      });
+    }
   }, [currentStep]);
 
   // Stage 1: Idea + Products
   const handleStepOne = (idea: string, products: any[]) => {
+    logFrontendEvent({
+      eventType: 'user_action',
+      step: 'StepOne',
+      payload: { action: 'submit_idea', productCount: products.length }
+    });
     setFormData(prev => ({ ...prev, idea, products }));
     setCurrentStep(2);
   };
@@ -79,29 +96,66 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     includeFirstName: boolean;
     includeLastName: boolean;
   }) => {
+    logFrontendEvent({
+      eventType: 'user_action',
+      step: 'StepAboutYou',
+      payload: { 
+        action: 'submit_about_you',
+        includeFirstName: aboutYou.includeFirstName,
+        includeLastName: aboutYou.includeLastName,
+        hasProfilePicture: !!aboutYou.profilePicture
+      }
+    });
     setFormData(prev => ({ ...prev, aboutYou }));
     setCurrentStep(3); // Go to business info (vibes + audiences)
   };
 
   // Stage 3: About Your Business (Vibe & Style + Target Audience)
   const handleAboutBusiness = (data: { vibes: string[]; audiences: string[] }) => {
+    logFrontendEvent({
+      eventType: 'user_action',
+      step: 'StepAboutBusiness',
+      payload: { 
+        action: 'submit_business_info',
+        vibes: data.vibes,
+        audiences: data.audiences
+      }
+    });
     setFormData(prev => ({ ...prev, vibes: data.vibes, audiences: data.audiences }));
     setCurrentStep(4); // Go to business identity (name + logo)
   };
 
   // Stage 4: Business Identity (Name + Logo)
   const handleBusinessIdentity = (businessIdentity: OnboardingData['businessIdentity']) => {
+    logFrontendEvent({
+      eventType: 'user_action',
+      step: 'StepBusinessIdentity',
+      payload: { 
+        action: 'submit_business_identity',
+        businessName: businessIdentity.name
+      }
+    });
     setFormData(prev => ({ ...prev, businessIdentity }));
     setCurrentStep(5); // Go to shopfront preview
   };
 
   // Stage 5: Shopfront Preview (Celebration)
   const handleShopfrontContinue = () => {
+    logFrontendEvent({
+      eventType: 'user_action',
+      step: 'StarterPackReveal',
+      payload: { action: 'view_shopfront_preview' }
+    });
     setCurrentStep(6); // Go to social media posts
   };
 
   // Stage 6: Social Media Posts
   const handleSocialPostsComplete = () => {
+    logFrontendEvent({
+      eventType: 'user_action',
+      step: 'SocialPostPreview',
+      payload: { action: 'complete_social_posts' }
+    });
     setCurrentStep(7); // Go to checkout
   };
 
@@ -114,6 +168,12 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
 
   const goBack = () => {
     if (currentStep > 1) {
+      const stepNames = ['', 'StepOne', 'StepAboutYou', 'StepAboutBusiness', 'StepBusinessIdentity', 'StarterPackReveal', 'SocialPostPreview', 'StarterPackCheckout'];
+      logFrontendEvent({
+        eventType: 'user_action',
+        step: stepNames[currentStep] || 'Unknown',
+        payload: { action: 'go_back', fromStep: currentStep, toStep: currentStep - 1 }
+      });
       setCurrentStep(currentStep - 1);
     }
   };
@@ -209,6 +269,10 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
           )}
         </div>
       </div>
+      
+      <DebugPanel info={{ 
+        step: ['', 'StepOne', 'StepAboutYou', 'StepAboutBusiness', 'StepBusinessIdentity', 'StarterPackReveal', 'SocialPostPreview', 'StarterPackCheckout'][currentStep] 
+      }} />
     </div>
   );
 };

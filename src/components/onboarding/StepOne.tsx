@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Sparkles, ThumbsUp, ThumbsDown, RefreshCw, CheckCircle, Lightbulb, Mic, Zap } from 'lucide-react';
 import { generateProductIdeas, type ProductIdea } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { logFrontendEvent } from '@/lib/frontendEventLogger';
 
 interface StepOneProps {
   onNext: (idea: string, products: ProductIdea[]) => void;
@@ -61,6 +62,12 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   ];
 
   const handleChipClick = (chip: string) => {
+    logFrontendEvent({
+      eventType: 'user_action',
+      step: 'StepOne',
+      payload: { action: 'select_inspiration_chip', chip }
+    });
+    
     setIdea(chip);
     setIdeaSource('chip');
     setHasGenerated(false);
@@ -76,6 +83,12 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
       });
       return;
     }
+
+    logFrontendEvent({
+      eventType: 'user_action',
+      step: 'StepOne',
+      payload: { action: 'start_voice_input' }
+    });
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
@@ -166,6 +179,12 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   };
 
   const handleThumbsDown = async (productId: string) => {
+    logFrontendEvent({
+      eventType: 'user_action',
+      step: 'StepOne',
+      payload: { action: 'thumbs_down', productId }
+    });
+    
     setFadingOutId(productId);
     setTimeout(async () => {
       await handleRefreshProduct(productId);
@@ -174,6 +193,12 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   };
 
   const handleThumbsUp = (productId: string, event: React.MouseEvent) => {
+    logFrontendEvent({
+      eventType: 'user_action',
+      step: 'StepOne',
+      payload: { action: 'thumbs_up', productId }
+    });
+    
     // Create confetti particles
     const button = event.currentTarget as HTMLElement;
     const rect = button.getBoundingClientRect();
