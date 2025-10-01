@@ -47,7 +47,8 @@ export const SocialPostPreview = ({
         audience: audiences.join(', '),
         background: expertise,
         motivation: motivation,
-        tone: styles.join(', ')
+        tone: styles.join(', '),
+        firstName: firstName
       });
 
       console.log('Campaign response:', response);

@@ -49,6 +49,7 @@ export interface GenerateCampaignRequest {
   background?: string;
   motivation?: string;
   tone?: string;
+  firstName?: string;
   // For anonymous users
   businessName?: string;
   audience?: string;
