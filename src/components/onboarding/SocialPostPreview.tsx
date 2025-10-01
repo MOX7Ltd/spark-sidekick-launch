@@ -47,19 +47,25 @@ export const SocialPostPreview = ({
         tone: styles.join(', ')
       });
 
+      console.log('Campaign response:', response);
+      
       if (response.items && response.items.length >= 2) {
-        const short = response.items.find(item => item.platform === 'instagram');
-        const long = response.items.find(item => item.platform === 'linkedin');
+        const short = response.items.find(item => item.hook === 'Short Version');
+        const long = response.items.find(item => item.hook === 'Long Version');
         
         if (short) {
-          const hashtagMatch = short.content.match(/(#\w+)/g) || [];
-          const captionWithoutHashtags = short.content.replace(/(#\w+)/g, '').trim();
-          setShortPost({ caption: captionWithoutHashtags, hashtags: hashtagMatch });
+          setShortPost({ 
+            caption: short.caption, 
+            hashtags: short.hashtags || [] 
+          });
         }
         
         if (long) {
-          setLongPost({ caption: long.content });
+          setLongPost({ caption: long.caption });
         }
+      } else {
+        console.error('Invalid response structure:', response);
+        throw new Error('Invalid response structure');
       }
     } catch (err) {
       console.error('Error generating posts:', err);
