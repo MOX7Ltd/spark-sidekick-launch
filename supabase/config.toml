@@ -6,5 +6,8 @@ verify_jwt = false
 [functions.generate-campaign]
 verify_jwt = false
 
+[functions.generate-product-ideas]
+verify_jwt = false
+
 [functions.generate-logos]
 verify_jwt = false

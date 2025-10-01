@@ -126,6 +126,35 @@ export async function generateLogos(businessName: string, style: string): Promis
   return data.logos;
 }
 
+export interface ProductIdea {
+  id: string;
+  title: string;
+  format: string;
+  description: string;
+}
+
+export interface GenerateProductIdeasRequest {
+  idea_text: string;
+  idea_source?: 'typed' | 'chip';
+  audience_tags?: string[];
+  tone_tags?: string[];
+  max_ideas?: number;
+  exclude_ids?: string[];
+}
+
+export async function generateProductIdeas(request: GenerateProductIdeasRequest): Promise<ProductIdea[]> {
+  const { data, error } = await supabase.functions.invoke('generate-product-ideas', {
+    body: request
+  });
+
+  if (error) {
+    console.error('Error generating product ideas:', error);
+    throw new Error(error.message || 'Failed to generate product ideas');
+  }
+
+  return data.products || [];
+}
+
 export async function updateBusinessName(businessId: string, businessName: string) {
   const { data, error } = await supabase
     .from('businesses')

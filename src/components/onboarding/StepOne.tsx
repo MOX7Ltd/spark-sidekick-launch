@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Lightbulb, Sparkles, Package, DollarSign } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Sparkles, ThumbsUp, ThumbsDown, RefreshCw } from 'lucide-react';
+import { generateProductIdeas, type ProductIdea } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
 
 interface StepOneProps {
   onNext: (idea: string) => void;
@@ -13,122 +16,111 @@ interface StepOneProps {
 
 export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   const [idea, setIdea] = useState(initialValue);
-  const [showPreview, setShowPreview] = useState(false);
-  const [products, setProducts] = useState<Array<{title: string; type: string; price: string; description: string}>>([]);
-  const [taglines, setTaglines] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (idea.trim().length >= 10) {
-      setShowPreview(true);
-      generateMockups();
-    } else {
-      setShowPreview(false);
-    }
-  }, [idea]);
-
-  const generateMockups = () => {
-    const ideaLower = idea.toLowerCase();
-    
-    if (ideaLower.includes('fitness') || ideaLower.includes('health') || ideaLower.includes('workout')) {
-      setProducts([
-        { 
-          title: "7-Day Fitness Blueprint", 
-          type: "Digital Guide", 
-          price: "$29",
-          description: "Step-by-step workout plans and habit-building strategies that help you build consistency and see real results in your first week."
-        },
-        { 
-          title: "Nutrition Tracker Template", 
-          type: "Template Pack", 
-          price: "$19",
-          description: "Easy-to-use meal planning tools that take the guesswork out of healthy eating so you can fuel your body right."
-        },
-      ]);
-      setTaglines([
-        "Your journey to better health starts here",
-        "Transform your fitness, one day at a time",
-        "Making healthy habits stick"
-      ]);
-    } else if (ideaLower.includes('parent') || ideaLower.includes('family') || ideaLower.includes('kid')) {
-      setProducts([
-        { 
-          title: "Parent Survival Guide", 
-          type: "Digital Guide", 
-          price: "$27",
-          description: "Practical strategies for managing the chaos of family life, from bedtime battles to sibling rivalry, with confidence and calm."
-        },
-        { 
-          title: "Family Activity Planner", 
-          type: "Template Pack", 
-          price: "$15",
-          description: "Ready-to-go activity ideas and schedule templates that help you create quality time without the planning stress."
-        },
-      ]);
-      setTaglines([
-        "Making family life easier, one tip at a time",
-        "Parenting support when you need it most",
-        "Because raising kids takes a village"
-      ]);
-    } else if (ideaLower.includes('business') || ideaLower.includes('entrepreneur') || ideaLower.includes('startup')) {
-      setProducts([
-        { 
-          title: "Business Launch Checklist", 
-          type: "Digital Guide", 
-          price: "$39",
-          description: "Step-by-step tasks that take the guesswork out of launching, so you can go from idea to live business with confidence."
-        },
-        { 
-          title: "Financial Planning Templates", 
-          type: "Template Pack", 
-          price: "$29",
-          description: "Easy-to-use spreadsheets that help you track costs, plan income, and stay on top of your business finances from day one."
-        },
-      ]);
-      setTaglines([
-        "Turn your side hustle into real income",
-        "Building businesses that actually work",
-        "Your roadmap to entrepreneurial success"
-      ]);
-    } else {
-      setProducts([
-        { 
-          title: "Complete Starter Guide", 
-          type: "Digital Guide", 
-          price: "$37",
-          description: "Everything you need to get started quickly and confidently, with clear steps that eliminate confusion and accelerate your progress."
-        },
-        { 
-          title: "Quick Reference Checklist", 
-          type: "Template Pack", 
-          price: "$19",
-          description: "Essential tasks and resources organized in one place, so you never miss a critical step on your journey."
-        },
-      ]);
-      setTaglines([
-        "Making it simple to get started",
-        "Your success starts here",
-        "Expert guidance made accessible"
-      ]);
-    }
-  };
+  const [products, setProducts] = useState<ProductIdea[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [hasGenerated, setHasGenerated] = useState(false);
+  const [ideaSource, setIdeaSource] = useState<'typed' | 'chip'>('typed');
+  const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (idea.trim().length >= 10) {
+    if (idea.trim().length >= 12) {
       onNext(idea.trim());
     }
   };
 
-  const isValid = idea.trim().length >= 10;
+  const isValid = idea.trim().length >= 12;
   
-  const exampleIdeas = [
-    "staying organized while juggling work and family",
-    "building confidence through fitness and nutrition",
-    "creating their own microbusiness with easy setup",
+  const inspirationChips = [
+    "Local running club with paid weekly sessions",
+    "AI resume + LinkedIn overhaul service",
+    "Meal-prep plans for gym beginners",
+    "Notion templates for freelancers",
+    "Photography mini-sessions (weekends)",
+    "Kids' homework + study skills workshop",
+    "1:1 accountability coaching for side hustlers",
+    "Digital crochet patterns shop",
   ];
 
-  const handleExampleClick = (example: string) => {
-    setIdea(example);
+  const handleChipClick = (chip: string) => {
+    setIdea(chip);
+    setIdeaSource('chip');
+    setHasGenerated(false);
+    setProducts([]);
+  };
+
+  const handleGenerateProducts = async () => {
+    if (idea.trim().length < 12) return;
+    
+    setIsGenerating(true);
+    setHasGenerated(true);
+    
+    try {
+      const productIdeas = await generateProductIdeas({
+        idea_text: idea.trim(),
+        idea_source: ideaSource,
+        max_ideas: 4
+      });
+      
+      setProducts(productIdeas);
+    } catch (error) {
+      console.error('Failed to generate product ideas:', error);
+      toast({
+        title: "Couldn't generate right now",
+        description: "Try again, or tweak your idea.",
+        variant: "destructive"
+      });
+      setHasGenerated(false);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleRefreshProduct = async (productId: string) => {
+    setRegeneratingIds(prev => new Set(prev).add(productId));
+    
+    try {
+      const excludeIds = products.map(p => p.id);
+      const newProducts = await generateProductIdeas({
+        idea_text: idea.trim(),
+        idea_source: ideaSource,
+        max_ideas: 1,
+        exclude_ids: excludeIds
+      });
+      
+      if (newProducts.length > 0) {
+        setProducts(prev => prev.map(p => 
+          p.id === productId ? newProducts[0] : p
+        ));
+      }
+    } catch (error) {
+      console.error('Failed to refresh product:', error);
+      toast({
+        title: "Couldn't refresh",
+        description: "Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setRegeneratingIds(prev => {
+        const next = new Set(prev);
+        next.delete(productId);
+        return next;
+      });
+    }
+  };
+
+  const handleThumbsDown = async (productId: string) => {
+    await handleRefreshProduct(productId);
+  };
+
+  const handleThumbsUp = (productId: string) => {
+    // Optional: Track positive feedback
+    console.log('Product liked:', productId);
+    toast({
+      title: "Great choice!",
+      description: "We'll refine these after you sign up.",
+    });
   };
 
   return (
@@ -138,8 +130,11 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
           <Sparkles className="w-7 h-7 text-accent animate-pulse" />
           <h2 className="text-3xl font-bold">Your Idea</h2>
         </div>
-        <p className="text-lg text-muted-foreground">
-          I want to help people with...
+        <p className="text-lg font-semibold text-foreground mb-1">
+          What do you want to make money from?
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Describe your offer in plain words. We'll turn the idea into sellable products after you launch.
         </p>
       </div>
 
@@ -147,81 +142,154 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
         <div className="space-y-3">
           <Textarea
             id="idea"
-            placeholder="e.g., staying organized while juggling work and family"
+            placeholder="e.g., premium meal-planning membership for busy parents"
             value={idea}
-            onChange={(e) => setIdea(e.target.value)}
+            onChange={(e) => {
+              setIdea(e.target.value);
+              setIdeaSource('typed');
+            }}
             className="min-h-[100px] text-base p-4 border-2 focus:border-primary transition-all resize-none"
             autoFocus
           />
-          
-          {showPreview && (
-            <div className="text-sm text-primary font-medium animate-fade-in flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              Nice choice! Watch it come alive →
-            </div>
-          )}
         </div>
 
-        {/* Product Mockups Preview */}
-        {showPreview && products.length > 0 && (
-          <div className="space-y-4 animate-fade-in">
-            <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-              <Package className="h-4 w-4" />
-              <span>Product mockups (preview)</span>
-            </div>
-            
-            <div className="grid gap-3">
-              {products.map((product, idx) => (
-                <Card key={idx} className="border-primary/20 hover:border-primary/40 transition-all hover:scale-[1.01]">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-base">{product.title}</h4>
-                        <Badge variant="outline" className="mt-1 text-xs">{product.type}</Badge>
-                        <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{product.description}</p>
-                      </div>
-                      <div className="text-lg font-bold text-accent flex items-center gap-1 whitespace-nowrap">
-                        <DollarSign className="h-4 w-4" />
-                        {product.price.replace('$', '')}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {/* Tagline suggestions */}
-            <div className="space-y-2">
-              <div className="text-sm font-semibold text-muted-foreground">Draft taglines</div>
-              <div className="flex flex-wrap gap-2">
-                {taglines.map((tagline, idx) => (
-                  <Badge key={idx} variant="secondary" className="text-xs py-1 px-3">
-                    {tagline}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Example Ideas */}
-        {!showPreview && (
+        {/* Inspiration Chips */}
+        {!hasGenerated && (
           <div className="space-y-3">
             <Label className="text-sm font-medium text-muted-foreground">
-              Need inspiration? Try one of these:
+              Need inspiration? Tap an idea:
             </Label>
-            <div className="grid gap-2">
-              {exampleIdeas.map((example, index) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {inspirationChips.map((chip, index) => (
                 <button
                   key={index}
                   type="button"
-                  onClick={() => handleExampleClick(example)}
+                  onClick={() => handleChipClick(chip)}
                   className="p-3 text-left text-sm bg-muted/50 hover:bg-muted rounded-lg transition-all border hover:border-primary/30"
                 >
-                  💡 {example}
+                  💡 {chip}
                 </button>
               ))}
             </div>
+            <p className="text-xs text-muted-foreground text-center pt-2">
+              These are previews. Your starter pack turns ideas into real products, a storefront, and launch content.
+            </p>
+          </div>
+        )}
+
+        {/* Generate Product Ideas Button */}
+        {!hasGenerated && (
+          <Card className="border-2 border-dashed border-primary/30">
+            <CardContent className="p-6 text-center space-y-4">
+              <p className="font-medium text-foreground">
+                Want to see product ideas you could sell?
+              </p>
+              <Button
+                type="button"
+                onClick={handleGenerateProducts}
+                disabled={!isValid || isGenerating}
+                size="lg"
+                className="w-full sm:w-auto"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Generate product ideas
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Product Ideas Display */}
+        {hasGenerated && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-muted-foreground">
+                Product ideas you could sell
+              </h3>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleGenerateProducts}
+                disabled={isGenerating}
+              >
+                <RefreshCw className={`w-4 h-4 mr-1 ${isGenerating ? 'animate-spin' : ''}`} />
+                Regenerate all
+              </Button>
+            </div>
+            
+            <div className="grid gap-3">
+              {isGenerating && products.length === 0 ? (
+                // Loading skeletons
+                Array.from({ length: 4 }).map((_, idx) => (
+                  <Card key={idx} className="border-primary/20">
+                    <CardContent className="p-4 space-y-3">
+                      <Skeleton className="h-5 w-3/4" />
+                      <Skeleton className="h-4 w-1/4" />
+                      <Skeleton className="h-12 w-full" />
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                products.map((product) => (
+                  <Card key={product.id} className="border-primary/20 hover:border-primary/40 transition-all">
+                    <CardContent className="p-4">
+                      {regeneratingIds.has(product.id) ? (
+                        <div className="space-y-3">
+                          <Skeleton className="h-5 w-3/4" />
+                          <Skeleton className="h-4 w-1/4" />
+                          <Skeleton className="h-12 w-full" />
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-start justify-between gap-4 mb-3">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-base">{product.title}</h4>
+                              <Badge variant="outline" className="mt-1 text-xs">{product.format}</Badge>
+                              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                                {product.description}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 pt-2 border-t">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleThumbsUp(product.id)}
+                              className="flex-1"
+                            >
+                              <ThumbsUp className="w-4 h-4 mr-1" />
+                              Looks good
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleThumbsDown(product.id)}
+                            >
+                              <ThumbsDown className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRefreshProduct(product.id)}
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+
+            <p className="text-xs text-muted-foreground text-center">
+              Refine these anytime after signup. Your starter pack turns them into real listings.
+            </p>
           </div>
         )}
 
@@ -232,12 +300,12 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
             className="w-full h-12 text-base font-semibold"
             disabled={!isValid}
           >
-            {showPreview ? '🔥 Next → Watch it come alive' : 'Next step'}
+            Next step
           </Button>
           
           {!isValid && (
             <p className="text-center text-sm text-muted-foreground mt-3">
-              Tell us a bit more about your idea to continue
+              Describe your idea (at least 12 characters) to continue
             </p>
           )}
         </div>
