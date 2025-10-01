@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Sparkles, ThumbsUp, ThumbsDown, RefreshCw, CheckCircle, Lightbulb } from 'lucide-react';
+import { Sparkles, ThumbsUp, ThumbsDown, RefreshCw, CheckCircle, Lightbulb, Mic, Zap } from 'lucide-react';
 import { generateProductIdeas, type ProductIdea } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
@@ -24,15 +23,16 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   const [motivationalMessage, setMotivationalMessage] = useState('');
   const [showConfetti, setShowConfetti] = useState<string | null>(null);
   const [fadingOutId, setFadingOutId] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [showSparkAnimation, setShowSparkAnimation] = useState(false);
   const { toast } = useToast();
 
   const motivationalMessages = [
-    "Nice! You're onto something big 🚀",
-    "Your idea has serious potential 👏",
-    "Let's make this real 🔥",
-    "This could be amazing ✨",
-    "You're building something special 💪",
-    "Great thinking! Let's go 🎯"
+    "Nice work 🚀 — your idea is starting to look real.",
+    "This is how people could actually buy into your idea 👏",
+    "Your idea has serious potential 💡",
+    "You're building something special ✨",
+    "Let's make this happen 🔥"
   ];
 
   useEffect(() => {
@@ -67,9 +67,46 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
     setProducts([]);
   };
 
+  const startVoiceInput = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      toast({
+        title: "Voice input not supported",
+        description: "Please use Chrome or Edge for voice input.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => {
+      setIsListening(false);
+      toast({
+        title: "Couldn't hear you",
+        description: "Try again or type your idea instead.",
+        variant: "destructive"
+      });
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setIdea(transcript);
+      setIdeaSource('typed');
+    };
+
+    recognition.start();
+  };
+
   const handleGenerateProducts = async () => {
     if (idea.trim().length < 12) return;
     
+    setShowSparkAnimation(true);
     setIsGenerating(true);
     setHasGenerated(true);
     
@@ -91,6 +128,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
       setHasGenerated(false);
     } finally {
       setIsGenerating(false);
+      setTimeout(() => setShowSparkAnimation(false), 1000);
     }
   };
 
@@ -136,8 +174,6 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   };
 
   const handleThumbsUp = (productId: string, event: React.MouseEvent) => {
-    console.log('Product liked:', productId);
-    
     // Create confetti particles
     const button = event.currentTarget as HTMLElement;
     const rect = button.getBoundingClientRect();
@@ -167,81 +203,107 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto animate-fade-in">
-      <div className="text-center mb-6">
-        <div className="flex items-center justify-center space-x-2 mb-3">
-          <Sparkles className="w-7 h-7 text-accent animate-pulse" />
-          <h2 className="text-3xl font-bold">Your Idea</h2>
-        </div>
-        <p className="text-lg font-semibold text-foreground mb-1">
-          What do you want to make money from?
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Describe your offer in plain words. Our A.I. will turn the idea into sellable products for you.
-        </p>
+    <div className="max-w-lg mx-auto px-4 py-6 animate-fade-in">
+      {/* Progress indicator - Step 1 */}
+      <div className="flex justify-center gap-2 mb-8">
+        <div className="w-8 h-2 rounded-full bg-primary" />
+        <div className="w-2 h-2 rounded-full bg-border" />
+        <div className="w-2 h-2 rounded-full bg-border" />
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="space-y-3">
-          <Textarea
-            id="idea"
-            placeholder="e.g., premium meal-planning membership for busy parents"
-            value={idea}
-            onChange={(e) => {
-              setIdea(e.target.value);
-              setIdeaSource('typed');
-            }}
-            className="min-h-[100px] text-base p-4 border-2 focus:border-primary transition-all resize-none"
-            autoFocus
-          />
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Main Input Card */}
+        <Card className="border-2 border-primary/20 animate-fade-in-up">
+          <CardContent className="p-6 space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+                <h2 className="text-2xl font-bold">What do you want to make money from?</h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Describe your offer in plain words. Our A.I. will turn the idea into sellable products for you.
+              </p>
+            </div>
+
+            <div className="relative">
+              <Textarea
+                id="idea"
+                placeholder="e.g., premium meal-planning membership for busy parents"
+                value={idea}
+                onChange={(e) => {
+                  setIdea(e.target.value);
+                  setIdeaSource('typed');
+                }}
+                className="min-h-[120px] text-base resize-none pr-12"
+                autoFocus
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="absolute top-2 right-2"
+                onClick={startVoiceInput}
+                disabled={isListening}
+              >
+                <Mic className={`h-5 w-5 ${isListening ? 'text-red-500 animate-pulse' : ''}`} />
+              </Button>
+            </div>
+
+            {idea.length >= 12 && !hasGenerated && (
+              <div className="flex items-center gap-2 text-primary animate-bounce-in">
+                <CheckCircle className="w-5 h-5" />
+                <span className="font-medium">Looking good! Ready to generate 🚀</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Inspiration Chips */}
         {!hasGenerated && (
-          <div className="space-y-3">
-            <Label className="text-sm font-medium text-muted-foreground">
+          <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+            <p className="text-sm font-medium text-muted-foreground text-center">
               Need inspiration? Tap an idea:
-            </Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center">
               {inspirationChips.map((chip, index) => (
                 <button
                   key={index}
                   type="button"
                   onClick={() => handleChipClick(chip)}
-                  className="p-3 text-left text-sm bg-muted/50 hover:bg-muted rounded-lg transition-all border hover:border-primary/30"
+                  className="px-4 py-2 text-xs bg-muted/50 hover:bg-primary/10 hover:border-primary/30 rounded-full transition-all border border-border"
                 >
                   💡 {chip}
                 </button>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground text-center pt-2">
-              These are just starter ideas — your starter pack will turn them into real products you can sell.
-            </p>
           </div>
         )}
 
         {/* Generate Product Ideas Button */}
-        {!hasGenerated && (
-          <Card className="border-2 border-dashed border-primary/30">
+        {!hasGenerated && isValid && (
+          <Card className="border-2 border-dashed border-primary/30 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             <CardContent className="p-6 text-center space-y-4">
-              <p className="font-medium text-foreground">
-                Do you want to see what your products might look like?
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-2">
+                <Lightbulb className="w-8 h-8 text-primary" />
+              </div>
+              <p className="font-semibold text-lg">
+                Ready to see what this could become?
               </p>
               <p className="text-sm text-muted-foreground">
-                Use 👍 to mark ideas you like, 👎 to generate a replacement, or the refresh icon to try a different variation.
+                Use 👍 to mark ideas you like, 👎 to try another, or ↻ to shuffle variations
               </p>
-                <Button
+              <Button
                 type="button"
                 onClick={handleGenerateProducts}
-                disabled={!isValid || isGenerating}
+                disabled={isGenerating}
                 size="lg"
-                className="w-full sm:w-auto relative"
+                className="w-full h-14 text-base"
               >
                 {isGenerating ? (
                   <>
-                    <Lightbulb className="w-4 h-4 mr-2 animate-pulse" />
+                    <Zap className="w-5 h-5 mr-2 animate-pulse" />
                     <span className="flex items-center gap-1">
-                      Generating
+                      Turning your idea into reality
                       <span className="flex gap-0.5">
                         <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
                         <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
@@ -251,8 +313,8 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Generate product ideas
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    Generate Product Ideas
                   </>
                 )}
               </Button>
@@ -260,26 +322,40 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
           </Card>
         )}
 
+        {/* Spark Animation Overlay */}
+        {showSparkAnimation && (
+          <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-50">
+            <div className="relative">
+              <Lightbulb className="w-24 h-24 text-primary animate-lightbulb-power" />
+              <Sparkles className="w-12 h-12 text-accent absolute top-0 right-0 animate-pulse" />
+            </div>
+          </div>
+        )}
+
         {/* Product Ideas Display */}
         {hasGenerated && (
           <div className="space-y-4 animate-fade-in">
-            {/* Motivational Message & Progress Badge */}
+            {/* Motivational Message */}
             {motivationalMessage && products.length > 0 && (
-              <div className="flex items-center justify-between p-4 bg-primary/5 border border-primary/20 rounded-lg animate-bounce-in">
-                <div className="flex items-center gap-2">
-                  <Lightbulb className="w-5 h-5 text-primary animate-lightbulb-power" />
-                  <p className="font-semibold text-foreground">{motivationalMessage}</p>
-                </div>
-                <Badge variant="outline" className="flex items-center gap-1 bg-background animate-glow-pulse">
-                  <CheckCircle className="w-3 h-3 text-primary" />
-                  Idea Locked In
-                </Badge>
-              </div>
+              <Card className="bg-primary/5 border-2 border-primary/20 animate-bounce-in">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-primary animate-pulse" />
+                      <p className="font-semibold">{motivationalMessage}</p>
+                    </div>
+                    <Badge variant="outline" className="flex items-center gap-1 bg-background">
+                      <CheckCircle className="w-3 h-3 text-primary" />
+                      Step 1 done ✨
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
             )}
             
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-muted-foreground">
-                Here's how your idea could become products that make you money 💡
+              <h3 className="text-base font-bold">
+                Here's how your idea could start making money 💡
               </h3>
               <Button
                 type="button"
@@ -289,11 +365,11 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 disabled={isGenerating}
               >
                 <RefreshCw className={`w-4 h-4 mr-1 ${isGenerating ? 'animate-spin' : ''}`} />
-                Regenerate all
+                Refresh all
               </Button>
             </div>
             
-            <div className="grid gap-3">
+            <div className="space-y-3">
               {isGenerating && products.length === 0 ? (
                 // Loading skeletons
                 Array.from({ length: 4 }).map((_, idx) => (
@@ -309,14 +385,14 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 products.map((product, idx) => (
                   <Card 
                     key={product.id} 
-                    className={`border-primary/20 hover:border-primary/40 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:-translate-y-1 group relative overflow-hidden ${
+                    className={`border-2 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-lg ${
                       fadingOutId === product.id ? 'animate-fade-out' : 'animate-fade-in-up'
                     } ${showConfetti === product.id ? 'animate-glow-pulse' : ''}`}
                     style={{ 
                       animationDelay: `${idx * 0.1}s`
                     }}
                   >
-                    <CardContent className="p-4 relative">
+                    <CardContent className="p-4">
                       {regeneratingIds.has(product.id) ? (
                         <div className="space-y-3">
                           <Skeleton className="h-5 w-3/4" />
@@ -325,14 +401,12 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                         </div>
                       ) : (
                         <>
-                          <div className="flex items-start justify-between gap-4 mb-3">
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-base">{product.title}</h4>
-                              <Badge variant="outline" className="mt-1 text-xs">{product.format}</Badge>
-                              <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-                                {product.description}
-                              </p>
-                            </div>
+                          <div className="mb-3">
+                            <h4 className="font-semibold text-base mb-1">{product.title}</h4>
+                            <Badge variant="outline" className="text-xs">{product.format}</Badge>
+                            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                              {product.description}
+                            </p>
                           </div>
                           
                           <div className="flex items-center gap-2 pt-2 border-t">
@@ -341,7 +415,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                               variant="ghost"
                               size="sm"
                               onClick={(e) => handleThumbsUp(product.id, e)}
-                              className="flex-1 hover:bg-primary/10 hover:scale-105 transition-all duration-200 active:scale-95"
+                              className="flex-1 hover:bg-primary/10 hover:scale-105 transition-all"
                             >
                               <ThumbsUp className="w-4 h-4 mr-1" />
                               Looks good
@@ -351,7 +425,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleThumbsDown(product.id)}
-                              className="hover:bg-destructive/10 hover:scale-110 transition-all duration-200 active:scale-95"
+                              className="hover:bg-destructive/10 hover:scale-110 transition-all"
                             >
                               <ThumbsDown className="w-4 h-4" />
                             </Button>
@@ -360,7 +434,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleRefreshProduct(product.id)}
-                              className="hover:bg-accent/10 hover:scale-110 transition-all duration-200 active:scale-95"
+                              className="hover:bg-accent/10 hover:scale-110 transition-all"
                             >
                               <RefreshCw className="w-4 h-4" />
                             </Button>
@@ -373,23 +447,29 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
               )}
             </div>
 
-            <p className="text-xs text-muted-foreground text-center">
+            <p className="text-xs text-muted-foreground text-center pt-2">
               Refine these anytime after signup. Your starter pack turns them into real products.
             </p>
           </div>
         )}
 
-        {hasGenerated && (
-          <div className="pt-2">
-            <Button 
-              type="submit" 
-              size="lg" 
-              className="w-full h-12 text-base font-semibold"
-              disabled={!isValid}
-            >
-              Next step - tell us a bit about yourself
-            </Button>
-          </div>
+        {/* Next Button - Only shows after generation */}
+        {hasGenerated && products.length > 0 && (
+          <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-2 border-primary/20 animate-fade-in-up">
+            <CardContent className="p-6 space-y-3">
+              <p className="text-center font-medium">
+                Your idea is taking shape! ✨
+              </p>
+              <Button 
+                type="submit" 
+                size="lg" 
+                className="w-full h-14 text-base font-semibold"
+                disabled={!isValid}
+              >
+                Next Step → Tell us about yourself
+              </Button>
+            </CardContent>
+          </Card>
         )}
       </form>
     </div>
