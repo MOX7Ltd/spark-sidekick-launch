@@ -279,7 +279,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
             
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-muted-foreground">
-                Here's how your idea could make money 💡
+                Here's how your idea could become products that make you money 💡
               </h3>
               <Button
                 type="button"
