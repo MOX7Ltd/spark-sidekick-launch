@@ -53,8 +53,14 @@ interface StarterPackRevealProps {
 export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, introCampaign, products, onUnlock, onBack }: StarterPackRevealProps) => {
   const [showConfetti, setShowConfetti] = useState(false);
 
-  // Compose a proper bio from expertise and motivation
-  const composedBio = `${aboutYou.firstName} brings ${aboutYou.expertise} to help ${audience}. ${aboutYou.motivation}`;
+  // Use generated bio or compose fallback
+  const composedBio = businessIdentity.bio || 
+    `${aboutYou.firstName} brings ${aboutYou.expertise} to help ${audience}. ${aboutYou.motivation}`;
+
+  // Use brand colors for confetti if available
+  const confettiColors = businessIdentity.colors && businessIdentity.colors.length > 0
+    ? businessIdentity.colors
+    : ['#2DD4BF', '#F59E0B', '#1E40AF', '#F97316'];
 
   useEffect(() => {
     // Trigger confetti animation on mount
@@ -74,7 +80,7 @@ export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, 
               className="absolute w-2 h-2 opacity-75 animate-confetti"
               style={{
                 left: `${Math.random() * 100}%`,
-                backgroundColor: ['#2DD4BF', '#F59E0B', '#1E40AF', '#F97316'][Math.floor(Math.random() * 4)],
+                backgroundColor: confettiColors[Math.floor(Math.random() * confettiColors.length)],
                 animationDelay: `${Math.random() * 3}s`,
                 animationDuration: `${3 + Math.random() * 2}s`
               }}
@@ -115,7 +121,7 @@ export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, 
           {/* About Section */}
           <div className="mb-4 md:mb-6">
             <h4 className="text-xs md:text-sm font-semibold text-muted-foreground uppercase mb-2">About</h4>
-            <p className="text-sm md:text-base leading-relaxed">{businessIdentity.bio || composedBio}</p>
+            <p className="text-sm md:text-base leading-relaxed">{composedBio}</p>
           </div>
 
           {/* Audience Tags */}

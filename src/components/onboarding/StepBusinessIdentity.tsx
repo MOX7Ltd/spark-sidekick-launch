@@ -8,7 +8,7 @@ import {
   Hexagon, RefreshCw, Loader2, ThumbsUp, ThumbsDown, ArrowLeft, 
   Briefcase, Smile, Minimize2, Eye, User, Upload
 } from 'lucide-react';
-import { regenerateBusinessNames, regenerateSingleName, generateLogos, type NameSuggestion as ApiNameSuggestion } from '@/lib/api';
+import { regenerateBusinessNames, regenerateSingleName, generateLogos, generateBusinessIdentity, type NameSuggestion as ApiNameSuggestion } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 interface NameSuggestion {
@@ -90,6 +90,8 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
   const [rejectedNames, setRejectedNames] = useState<string[]>([]);
   const [bannedWords, setBannedWords] = useState<string[]>([]);
   const [likedLogos, setLikedLogos] = useState<Set<number>>(new Set());
+  const [generatedBio, setGeneratedBio] = useState<string>('');
+  const [generatedColors, setGeneratedColors] = useState<string[]>([]);
   const { toast } = useToast();
 
   const totalSteps = 6;
@@ -105,13 +107,14 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     }
   };
 
-  // Step 1.5: Enter existing name and generate alternatives
+  // Step 1.5: Enter existing name and generate alternatives + full identity (bio, colors)
   const handleExistingNameSubmit = async () => {
     if (!existingName.trim()) return;
     
     setIsGeneratingNames(true);
     try {
-      const alternatives = await regenerateBusinessNames({
+      // Call full identity generation to get bio, colors, and alternative names
+      const fullIdentity = await generateBusinessIdentity({
         idea,
         audience,
         experience: aboutYou.expertise,
@@ -126,7 +129,10 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
         rejectedNames: [existingName]
       });
       
-      setNameOptions(alternatives);
+      // Store the generated bio and colors for later use
+      setGeneratedBio(fullIdentity.bio || '');
+      setGeneratedColors(fullIdentity.colors || ['#6B7280', '#374151', '#1F2937']);
+      setNameOptions(fullIdentity.nameOptions || []);
       setSelectedName(existingName); // Pre-select their existing name
       setCurrentStep(3); // Go to name selection
       
@@ -145,13 +151,14 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     }
   };
 
-  // Step 2: Generate names based on style
+  // Step 2: Generate names based on style + fetch full identity (bio, colors)
   const handleNameStyleSelect = async (styleId: string) => {
     setSelectedNameStyle(styleId);
     setIsGeneratingNames(true);
     
     try {
-      const names = await regenerateBusinessNames({
+      // Call full identity generation to get bio, colors, and names
+      const fullIdentity = await generateBusinessIdentity({
         idea,
         audience,
         experience: aboutYou.expertise,
@@ -166,7 +173,10 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
         rejectedNames: []
       });
       
-      setNameOptions(names);
+      // Store the generated bio and colors for later use
+      setGeneratedBio(fullIdentity.bio || '');
+      setGeneratedColors(fullIdentity.colors || ['#6B7280', '#374151', '#1F2937']);
+      setNameOptions(fullIdentity.nameOptions || []);
       setCurrentStep(3); // Go to name selection
     } catch (error) {
       toast({
@@ -316,12 +326,15 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     if (!uploadedLogo) return;
     const selectedNameOption = nameOptions.find(opt => opt.name === selectedName);
     
+    // Generate complementary color palette for uploaded logo
+    const uploadedColors = ['#6B7280', '#9CA3AF', '#D1D5DB']; // Neutral grey palette
+    
     onNext({
       name: selectedName,
       logo: 'uploaded',
       tagline: selectedNameOption?.tagline || 'Helping you succeed',
-      bio: aboutYou.expertise,
-      colors: ['#2563eb', '#1d4ed8'],
+      bio: generatedBio || aboutYou.expertise,
+      colors: uploadedColors,
       logoSVG: uploadedLogo,
       nameOptions: nameOptions,
       logoSource: 'uploaded'
@@ -440,8 +453,8 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
       name: selectedName,
       logo: selectedLogoStyle,
       tagline: selectedNameOption?.tagline || 'Helping you succeed',
-      bio: aboutYou.expertise,
-      colors: ['#2563eb', '#1d4ed8'],
+      bio: generatedBio || aboutYou.expertise,
+      colors: generatedColors.length > 0 ? generatedColors : ['#6B7280', '#374151', '#1F2937'],
       logoSVG: finalLogo,
       nameOptions: nameOptions,
       logoSource: 'generated'
