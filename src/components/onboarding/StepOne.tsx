@@ -467,7 +467,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 className="w-full min-h-[3.5rem] h-auto text-sm sm:text-base font-semibold px-4 py-3"
                 disabled={!isValid}
               >
-                <span className="text-center">Next Step → Tell us about yourself</span>
+                <span className="text-center">Great — tell us about yourself</span>
               </Button>
             </CardContent>
           </Card>

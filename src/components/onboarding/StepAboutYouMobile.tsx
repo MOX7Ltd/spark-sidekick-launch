@@ -353,9 +353,9 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
                 size="lg"
                 onClick={handleNext}
                 disabled={!canProceed()}
-                className="flex-1 h-11 sm:h-12 text-sm sm:text-base whitespace-nowrap"
+                className="flex-1 h-11 sm:h-12 text-sm sm:text-base"
               >
-                Continue →
+                Now set your business vibe & audience
               </Button>
             </div>
           </CardContent>

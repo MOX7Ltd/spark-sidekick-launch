@@ -95,17 +95,17 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     setCurrentStep(5); // Go to shopfront preview
   };
 
-  // Stage 6: Shopfront Preview (Celebration)
+  // Stage 5: Shopfront Preview (Celebration)
   const handleShopfrontContinue = () => {
-    setCurrentStep(7); // Go to social media posts
+    setCurrentStep(6); // Go to social media posts
   };
 
-  // Stage 7: Social Media Posts
+  // Stage 6: Social Media Posts
   const handleSocialPostsComplete = () => {
-    setCurrentStep(8); // Go to checkout
+    setCurrentStep(7); // Go to checkout
   };
 
-  // Stage 8: Starter Pack Checkout (Final Step)
+  // Checkout: Starter Pack (Final Step - not counted in onboarding)
   const handleCheckoutComplete = () => {
     if (onComplete && formData.idea && formData.aboutYou && formData.audiences && formData.businessIdentity) {
       onComplete(formData as OnboardingData);
@@ -171,7 +171,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
             />
           )}
           
-          {/* Stage 6: Shopfront Preview (Celebration) */}
+          {/* Stage 5: Shopfront Preview (Celebration) */}
           {currentStep === 5 && formData.idea && formData.aboutYou && formData.audiences && formData.businessIdentity && (
             <StarterPackReveal
               idea={formData.idea}
@@ -188,8 +188,8 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
             />
           )}
 
-          {/* Stage 7: Social Media Kickstart */}
-          {currentStep === 7 && formData.aboutYou && formData.businessIdentity && formData.audiences && formData.vibes && formData.products && (
+          {/* Stage 6: Social Media Kickstart */}
+          {currentStep === 6 && formData.aboutYou && formData.businessIdentity && formData.audiences && formData.vibes && formData.products && (
             <SocialPostPreview
               aboutYou={formData.aboutYou}
               vibes={formData.vibes}
@@ -200,8 +200,8 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
             />
           )}
 
-          {/* Stage 8: Starter Pack Checkout */}
-          {currentStep === 8 && formData.businessIdentity && (
+          {/* Checkout: Starter Pack (Not counted in main onboarding steps) */}
+          {currentStep === 7 && formData.businessIdentity && (
             <StarterPackCheckout
               businessName={formData.businessIdentity.name}
               onContinue={handleCheckoutComplete}

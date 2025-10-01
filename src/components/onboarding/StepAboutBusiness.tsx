@@ -228,7 +228,7 @@ export const StepAboutBusiness = ({
             disabled={!isValid || isLoading}
             className="w-full sm:flex-1 h-12 text-sm md:text-base bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all disabled:opacity-50"
           >
-            {isLoading ? 'Processing...' : 'Perfect — now let\'s give your business a name! →'}
+            {isLoading ? 'Processing...' : 'Let\'s name your business! →'}
           </Button>
         </div>
       </form>
