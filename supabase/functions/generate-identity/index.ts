@@ -13,7 +13,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-id, x-trace-id, x-env, x-retry, x-feature-flags',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-id, x-trace-id, x-env, x-retry, x-idempotency-key, x-feature-flags',
 };
 
 const requestSchema = z.object({
@@ -60,12 +60,16 @@ function rateLimit(sessionId: string): boolean {
   return requestCounts[sessionId] > RATE_LIMIT_MAX_REQUESTS;
 }
 
+console.log('[generate-identity] Function started and deployed successfully');
+
 serve(async (req) => {
   const startTime = performance.now();
   const sessionId = req.headers.get('X-Session-Id') || 'unknown';
   const traceId = req.headers.get('X-Trace-Id') || 'unknown';
   const idempotencyKey = req.headers.get('X-Idempotency-Key') || traceId;
   const featureFlags = parseFeatureFlags(req.headers);
+  
+  console.log(`[generate-identity] ${req.method} request - Session: ${sessionId}, Trace: ${traceId}`);
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });

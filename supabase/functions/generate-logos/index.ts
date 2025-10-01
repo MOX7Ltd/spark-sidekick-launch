@@ -6,8 +6,10 @@ const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-id, x-trace-id, x-env, x-retry, x-feature-flags',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-id, x-trace-id, x-env, x-retry, x-idempotency-key, x-feature-flags',
 };
+
+console.log('[generate-logos] Function started and deployed successfully');
 
 serve(async (req) => {
   const startTime = performance.now();
@@ -15,6 +17,8 @@ serve(async (req) => {
   const traceId = req.headers.get('X-Trace-Id') || 'unknown';
   const idempotencyKey = req.headers.get('X-Idempotency-Key') || traceId;
   const featureFlags = parseFeatureFlags(req.headers);
+  
+  console.log(`[generate-logos] ${req.method} request - Session: ${sessionId}, Trace: ${traceId}`);
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
