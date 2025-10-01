@@ -170,19 +170,111 @@
     }
   }
 
-  @keyframes confetti {
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes bounceIn {
     0% {
-      transform: translateY(0) rotate(0deg);
+      transform: scale(0.9);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes confettiPop {
+    0% {
+      transform: translate(0, 0) rotate(0deg) scale(1);
       opacity: 1;
     }
     100% {
-      transform: translateY(100vh) rotate(360deg);
+      transform: translate(var(--x), var(--y)) rotate(720deg) scale(0);
       opacity: 0;
+    }
+  }
+
+  @keyframes glowPulse {
+    0%, 100% {
+      box-shadow: 0 0 10px hsl(var(--primary) / 0.3);
+    }
+    50% {
+      box-shadow: 0 0 25px hsl(var(--primary) / 0.6), 0 0 40px hsl(var(--primary-glow) / 0.4);
+    }
+  }
+
+  @keyframes lightbulbPowerUp {
+    0% {
+      opacity: 0.3;
+      filter: brightness(0.5);
+      transform: scale(0.9);
+    }
+    50% {
+      opacity: 1;
+      filter: brightness(1.5);
+      transform: scale(1.1);
+    }
+    100% {
+      opacity: 1;
+      filter: brightness(1);
+      transform: scale(1);
+    }
+  }
+
+  @keyframes fadeOut {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.95);
     }
   }
 
   .animate-confetti {
     animation: confetti 3s ease-in-out forwards;
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out both;
+  }
+
+  .animate-bounce-in {
+    animation: bounceIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) both;
+  }
+
+  .animate-glow-pulse {
+    animation: glowPulse 2s ease-in-out infinite;
+  }
+
+  .animate-lightbulb-power {
+    animation: lightbulbPowerUp 0.6s ease-out both;
+  }
+
+  .animate-fade-out {
+    animation: fadeOut 0.3s ease-out forwards;
+  }
+
+  /* Confetti particles */
+  .confetti-particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    animation: confettiPop 0.8s ease-out forwards;
+    pointer-events: none;
   }
 
   /* Progress indicators */

@@ -23,6 +23,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
   const [motivationalMessage, setMotivationalMessage] = useState('');
   const [showConfetti, setShowConfetti] = useState<string | null>(null);
+  const [fadingOutId, setFadingOutId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const motivationalMessages = [
@@ -129,14 +130,38 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   };
 
   const handleThumbsDown = async (productId: string) => {
-    await handleRefreshProduct(productId);
+    setFadingOutId(productId);
+    setTimeout(async () => {
+      await handleRefreshProduct(productId);
+      setFadingOutId(null);
+    }, 300);
   };
 
-  const handleThumbsUp = (productId: string) => {
-    // Optional: Track positive feedback
+  const handleThumbsUp = (productId: string, event: React.MouseEvent) => {
     console.log('Product liked:', productId);
+    
+    // Create confetti particles
+    const button = event.currentTarget as HTMLElement;
+    const rect = button.getBoundingClientRect();
+    const colors = ['hsl(185, 85%, 45%)', 'hsl(35, 95%, 55%)', 'hsl(185, 70%, 65%)', 'hsl(35, 85%, 75%)'];
+    
+    for (let i = 0; i < 12; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'confetti-particle';
+      particle.style.left = `${rect.left + rect.width / 2}px`;
+      particle.style.top = `${rect.top + rect.height / 2}px`;
+      particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      particle.style.setProperty('--x', `${(Math.random() - 0.5) * 200}px`);
+      particle.style.setProperty('--y', `${-Math.random() * 150 - 50}px`);
+      particle.style.animationDelay = `${Math.random() * 0.1}s`;
+      document.body.appendChild(particle);
+      
+      setTimeout(() => particle.remove(), 1000);
+    }
+    
     setShowConfetti(productId);
-    setTimeout(() => setShowConfetti(null), 1000);
+    setTimeout(() => setShowConfetti(null), 800);
+    
     toast({
       title: "Great choice!",
       description: "We'll refine these after you sign up.",
@@ -242,12 +267,12 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
           <div className="space-y-4 animate-fade-in">
             {/* Motivational Message & Progress Badge */}
             {motivationalMessage && products.length > 0 && (
-              <div className="flex items-center justify-between p-4 bg-primary/5 border border-primary/20 rounded-lg animate-scale-in">
+              <div className="flex items-center justify-between p-4 bg-primary/5 border border-primary/20 rounded-lg animate-bounce-in">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-primary animate-pulse" />
+                  <Lightbulb className="w-5 h-5 text-primary animate-lightbulb-power" />
                   <p className="font-semibold text-foreground">{motivationalMessage}</p>
                 </div>
-                <Badge variant="outline" className="flex items-center gap-1 bg-background">
+                <Badge variant="outline" className="flex items-center gap-1 bg-background animate-glow-pulse">
                   <CheckCircle className="w-3 h-3 text-primary" />
                   Idea Locked In
                 </Badge>
@@ -286,16 +311,13 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 products.map((product, idx) => (
                   <Card 
                     key={product.id} 
-                    className="border-primary/20 hover:border-primary/40 transition-all hover:scale-[1.02] hover:shadow-lg group relative overflow-hidden"
+                    className={`border-primary/20 hover:border-primary/40 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:-translate-y-1 group relative overflow-hidden ${
+                      fadingOutId === product.id ? 'animate-fade-out' : 'animate-fade-in-up'
+                    } ${showConfetti === product.id ? 'animate-glow-pulse' : ''}`}
                     style={{ 
-                      animation: `fade-in 0.5s ease-out ${idx * 0.1}s both`
+                      animationDelay: `${idx * 0.1}s`
                     }}
                   >
-                    {showConfetti === product.id && (
-                      <div className="absolute inset-0 pointer-events-none">
-                        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 animate-pulse" />
-                      </div>
-                    )}
                     <CardContent className="p-4 relative">
                       {regeneratingIds.has(product.id) ? (
                         <div className="space-y-3">
@@ -320,8 +342,8 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleThumbsUp(product.id)}
-                              className="flex-1 hover:bg-primary/10 transition-all"
+                              onClick={(e) => handleThumbsUp(product.id, e)}
+                              className="flex-1 hover:bg-primary/10 hover:scale-105 transition-all duration-200 active:scale-95"
                             >
                               <ThumbsUp className="w-4 h-4 mr-1" />
                               Looks good
@@ -331,7 +353,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleThumbsDown(product.id)}
-                              className="hover:bg-destructive/10 transition-all"
+                              className="hover:bg-destructive/10 hover:scale-110 transition-all duration-200 active:scale-95"
                             >
                               <ThumbsDown className="w-4 h-4" />
                             </Button>
@@ -340,7 +362,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleRefreshProduct(product.id)}
-                              className="hover:bg-accent/10 transition-all"
+                              className="hover:bg-accent/10 hover:scale-110 transition-all duration-200 active:scale-95"
                             >
                               <RefreshCw className="w-4 h-4" />
                             </Button>
