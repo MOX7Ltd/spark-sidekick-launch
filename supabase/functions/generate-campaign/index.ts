@@ -18,19 +18,42 @@ const corsHeaders = {
 
 console.log('[generate-campaign] Function started and deployed successfully');
 
+// Canonical schema with backwards compatibility
 const requestSchema = z.object({
   businessId: z.string().uuid().optional(),
   type: z.string().min(1),
   platforms: z.array(z.string()).min(1),
   businessName: z.string().optional(),
   tagline: z.string().optional(),
-  audience: z.string().optional(),
-  background: z.string().optional(),
-  motivation: z.string().optional(),
-  tone: z.string().optional(),
-  firstName: z.string().optional(),
-  products: z.array(z.string()).optional(),
-});
+  audiences: z.array(z.string()).min(1),
+  vibes: z.array(z.string()).min(1),
+  aboutYou: z.object({
+    firstName: z.string(),
+    lastName: z.string(),
+    motivation: z.string().optional(),
+  }).optional(),
+  products: z.array(z.object({
+    id: z.string().optional(),
+    title: z.string(),
+    format: z.string().optional(),
+    description: z.string().optional(),
+  })).optional(),
+}).or(
+  // Backwards compatibility for old payloads
+  z.object({
+    businessId: z.string().uuid().optional(),
+    type: z.string().min(1),
+    platforms: z.array(z.string()).min(1),
+    businessName: z.string().optional(),
+    tagline: z.string().optional(),
+    audience: z.string().optional(), // old single
+    background: z.string().optional(),
+    motivation: z.string().optional(),
+    tone: z.string().optional(), // old single
+    firstName: z.string().optional(),
+    products: z.array(z.string()).optional(),
+  }).passthrough()
+);
 
 // Rate limiting function
 async function checkRateLimit(userId: string): Promise<boolean> {
@@ -139,10 +162,41 @@ serve(async (req) => {
       });
     }
     
-    const { businessId, type, platforms, background, motivation, tone, firstName, businessName, audience, tagline, products } = validationResult.data;
+    const rawData = validationResult.data as any; // Use any for union type handling
     
-    // Normalize inputs
-    const normalized = normalizeOnboardingInput({ audiences: audience ? [audience] : [], vibes: tone ? [tone] : [], products: products || [] });
+    // Normalize inputs with backwards compat
+    const audiences = Array.isArray(rawData.audiences) 
+      ? rawData.audiences 
+      : (rawData.audience ? [rawData.audience] : ['General']);
+    
+    const vibes = Array.isArray(rawData.vibes)
+      ? rawData.vibes
+      : (rawData.tone ? [rawData.tone] : ['friendly']);
+    
+    const primaryTone = vibes[0];
+    const toneHints = vibes.slice(1);
+    const audienceStr = audiences.join(', ');
+    
+    // Handle products - can be array of strings (old) or objects (new)
+    const products = Array.isArray(rawData.products)
+      ? rawData.products.map((p: any) => typeof p === 'string' ? p : p.title)
+      : [];
+    
+    // Handle aboutYou
+    const aboutYou = rawData.aboutYou ?? {
+      firstName: rawData.firstName ?? '',
+      lastName: '',
+      motivation: rawData.motivation ?? rawData.background ?? '',
+    };
+    
+    const { businessId, type, platforms, businessName, tagline } = rawData;
+    
+    console.log('[generate-campaign] Normalized:', {
+      audiences,
+      vibes,
+      primaryTone,
+      products: products.length,
+    });
 
     // For anonymous users, we need to use the provided business data in the request
     // For authenticated users, we can fetch from the database
@@ -175,8 +229,8 @@ serve(async (req) => {
       
       business = {
         business_name: businessName,
-        audience: audience || 'your target audience',
-        bio: background || '',
+        audience: audienceStr,
+        bio: aboutYou?.motivation || '',
         tagline: tagline || ''
       };
     }
@@ -197,7 +251,7 @@ serve(async (req) => {
 CRITICAL RULES:
 - Write in the first person ("I" / "my")
 - Sound human, authentic, and conversational — avoid corporate jargon and AI-sounding phrases
-- Match the specified tone/style (${tone || 'friendly'}) consistently throughout
+- Match the specified tone/style (${primaryTone}) consistently throughout${toneHints.length ? ` with hints of ${toneHints.join(', ')}` : ''}
 - Show vulnerability and personality — real people have doubts, excitement, and learning moments
 - NEVER use robotic phrases like "I'm thrilled to announce..." "Big moment!" "Exciting news!" unless the tone is explicitly Playful
 
@@ -256,17 +310,16 @@ LONG POST GUIDELINES:
       userPrompt = `Write TWO versions of an introductory social media post for a new business launch:
 
 Business Details:
-${firstName ? `- First Name: ${firstName}` : ''}
+${aboutYou?.firstName ? `- First Name: ${aboutYou.firstName}` : ''}
 - Business Name: ${business.business_name}
-- Background/Expertise: ${background || business.bio}
-${motivation ? `- Personal Motivation: ${motivation}` : ''}
+- Background/Expertise: ${aboutYou?.motivation || business.bio}
 ${tagline ? `- Tagline: ${tagline}` : ''}
 ${products && products.length > 0 ? `- Products/Services: ${products.join(', ')}` : ''}
-- Target Audience: ${audience || business.audience}
-- Tone/Style: ${tone || 'friendly'}
+- Target Audience: ${audienceStr}
+- Tone/Style: ${primaryTone}${toneHints.length ? ` (with hints of ${toneHints.join(', ')})` : ''}
 - Platforms: ${platforms.join(', ')}
 
-Create both a short celebratory version AND a longer authentic story-driven version for each platform. ${firstName ? `Use the first name "${firstName}" when introducing yourself in the posts.` : ''}
+Create both a short celebratory version AND a longer authentic story-driven version for each platform. ${aboutYou?.firstName ? `Use the first name "${aboutYou.firstName}" when introducing yourself in the posts.` : ''}
 
 ${products && products.length > 0 ? 'IMPORTANT: Naturally mention at least ONE of the products/services in the posts to give concrete examples of what you offer.' : ''}
 
@@ -474,8 +527,10 @@ Generate platform-optimized content for each platform that uses the business nam
       session_id: sessionId,
       idempotency_key: idempotencyKey,
       duration_ms: durationMs,
-      applied_defaults: normalized.appliedDefaults.length > 0 ? normalized.appliedDefaults : undefined,
       feature_flags: featureFlags,
+      payload_keys: ['audiences', 'vibes', 'aboutYou', 'products'],
+      audiences_used: audiences,
+      vibes_used: vibes,
       deduped: false,
       ok: true,
     };

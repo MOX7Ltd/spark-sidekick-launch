@@ -26,7 +26,15 @@ serve(async (req) => {
 
   try {
     const requestBody = await req.json();
-    const { businessName, style } = requestBody;
+    
+    // Handle backwards compat: vibes[] or style (single string)
+    const vibes = Array.isArray(requestBody.vibes) 
+      ? requestBody.vibes 
+      : (requestBody.style ? [requestBody.style] : ['modern']);
+    const primaryStyle = vibes[0];
+    const styleHints = vibes.slice(1);
+    
+    const { businessName } = requestBody;
     
     console.log('[generate-logos] Feature flags:', featureFlags);
     
@@ -58,23 +66,27 @@ serve(async (req) => {
       });
     }
 
-    console.log('Generating logos for:', businessName, 'with style:', style);
+    console.log('Generating logos for:', businessName, 'with vibes:', vibes);
 
-    // Generate 3-5 logo variations using OpenAI
-    const logoPromises = Array.from({ length: 3 }, async (_, i) => {
-      const styleDescriptions = {
+    // Generate 6-8 logo variations
+    const logoPromises = Array.from({ length: 6 }, async (_, i) => {
+      const styleDescriptions: Record<string, string> = {
         'modern': 'modern minimalist, clean lines, simple geometric shapes',
+        'minimalist': 'modern minimalist, clean lines, simple geometric shapes',
         'playful': 'playful and colorful, fun shapes, vibrant colors',
         'bold': 'bold typography-focused, strong letterforms',
         'professional': 'clean professional, corporate, trustworthy',
         'icon': 'icon-based, symbolic, memorable mark',
         'retro': 'retro vintage style, nostalgic aesthetic',
-        'gradient': 'dynamic gradient, modern colorful transitions'
+        'gradient': 'dynamic gradient, modern colorful transitions',
+        'friendly': 'approachable and warm, soft shapes',
+        'educational': 'clear and instructive, smart design',
       };
 
-      const styleDesc = styleDescriptions[style as keyof typeof styleDescriptions] || 'modern professional';
+      const styleDesc = styleDescriptions[primaryStyle.toLowerCase()] || 'modern professional';
+      const hints = styleHints.length > 0 ? ` with hints of ${styleHints.map((h: string) => styleDescriptions[h.toLowerCase()] || h).join(', ')}` : '';
       
-      const prompt = `Create a simple, clean logo mark for "${businessName}". Style: ${styleDesc}. Design variation ${i + 1}. Minimalist, scalable, works well at small sizes. No text in the logo, just the icon/mark. Flat design, vector style, professional. Transparent background.`;
+      const prompt = `Create a simple, clean logo mark for "${businessName}". Style: ${styleDesc}${hints}. Design variation ${i + 1}. Minimalist, scalable, works well at small sizes. No text in the logo, just the icon/mark. Flat design, vector style, professional. Transparent background.`;
 
       const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
@@ -122,6 +134,8 @@ serve(async (req) => {
       idempotency_key: idempotencyKey,
       duration_ms: durationMs,
       feature_flags: featureFlags,
+      payload_keys: ['businessName', 'vibes'],
+      vibes_used: vibes,
       deduped: false,
       ok: true,
     };

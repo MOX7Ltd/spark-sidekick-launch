@@ -16,34 +16,50 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-id, x-trace-id, x-env, x-retry, x-idempotency-key, x-feature-flags',
 };
 
+// Canonical schema with backwards compatibility
 const requestSchema = z.object({
   idea: z.string().min(10),
-  audience: z.string().min(3),
-  experience: z.string().optional(),
-  motivation: z.string().optional(),
-  namingPreference: z.enum(['with_personal_name', 'anonymous', 'custom']).optional(),
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  includeFirstName: z.boolean().optional(),
-  includeLastName: z.boolean().optional(),
-  tone: z.string().optional(),
-  styleCategory: z.string().optional(),
-  bannedWords: z.array(z.string()).optional(),
-  rejectedNames: z.array(z.string()).optional(),
-  regenerateNamesOnly: z.boolean().optional(),
-  regenerateSingleName: z.boolean().optional(),
-});
+  audiences: z.array(z.string()).min(1),
+  vibes: z.array(z.string()).min(1),
+  aboutYou: z.object({
+    firstName: z.string(),
+    lastName: z.string(),
+    expertise: z.string(),
+    motivation: z.string().optional(),
+    includeFirstName: z.boolean(),
+    includeLastName: z.boolean(),
+  }),
+  products: z.array(z.object({
+    id: z.string(),
+    title: z.string(),
+    format: z.string(),
+    description: z.string(),
+  })).optional(),
+  bannedWords: z.array(z.string()).default([]),
+  rejectedNames: z.array(z.string()).default([]),
+  regenerateNamesOnly: z.boolean().default(false),
+  regenerateSingleName: z.boolean().default(false),
+}).or(
+  // Backwards compatibility for old payloads
+  z.object({
+    idea: z.string().min(10),
+    audience: z.string().optional(), // old single string
+    tone: z.string().optional(), // old single tone
+    experience: z.string().optional(),
+    motivation: z.string().optional(),
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    includeFirstName: z.boolean().optional(),
+    includeLastName: z.boolean().optional(),
+    styleCategory: z.string().optional(),
+    bannedWords: z.array(z.string()).optional(),
+    rejectedNames: z.array(z.string()).optional(),
+    regenerateNamesOnly: z.boolean().optional(),
+    regenerateSingleName: z.boolean().optional(),
+  }).passthrough()
+);
 
-// Function to sanitize SVG code (very basic, consider a more robust solution)
-function sanitizeSVG(svg: string): string {
-  // Remove any script tags
-  svg = svg.replace(/<script.*?>.*?<\/script>/gi, '');
-  // Remove any onload attributes
-  svg = svg.replace(/onload=".*?"/gi, '');
-  return svg;
-}
-
-// Rate Limiting (Example - adapt as needed)
+// Rate Limiting
 const requestCounts: { [key: string]: number } = {};
 const RATE_LIMIT_WINDOW = 60000; // 60 seconds
 const RATE_LIMIT_MAX_REQUESTS = 20;
@@ -76,7 +92,6 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Edge function called with headers:', req.headers.get('authorization') ? 'Authorization present' : 'No authorization');
     console.log('[generate-identity] Feature flags:', featureFlags);
     
     // Check for cached response
@@ -92,16 +107,6 @@ serve(async (req) => {
       });
     }
 
-    // Verify Authentication (Example - adapt as needed)
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      console.warn('Missing or invalid authorization header');
-      // return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      //   status: 401,
-      //   headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      // });
-    }
-
     // Rate limiting
     if (rateLimit(sessionId)) {
       console.warn('Rate limit exceeded for session:', sessionId);
@@ -111,10 +116,8 @@ serve(async (req) => {
       });
     }
 
-    // Parse the request body
+    // Parse and validate request body
     const requestBody = await req.json();
-
-    // Validate the request body
     const validationResult = requestSchema.safeParse(requestBody);
     if (!validationResult.success) {
       console.warn('Invalid input:', validationResult.error);
@@ -131,120 +134,72 @@ serve(async (req) => {
       });
     }
 
-    // Extract data from the request
+    // Normalize inputs with defaults and backwards compat
+    const normalized = normalizeOnboardingInput(validationResult.data);
     const {
       idea,
-      audience,
-      experience,
-      motivation,
-      namingPreference,
-      firstName,
-      lastName,
-      includeFirstName,
-      includeLastName,
-      tone,
-      styleCategory,
+      audiences,
+      vibes,
+      aboutYou,
+      products,
       bannedWords,
       rejectedNames,
       regenerateNamesOnly,
-      regenerateSingleName,
-    } = validationResult.data;
+      appliedDefaults,
+    } = normalized;
 
-    // Normalize inputs with defaults
-    const normalizedInput = normalizeOnboardingInput({
-      idea,
-      audience,
-      experience,
-      motivation,
-      namingPreference,
-      firstName,
-      lastName,
-      includeFirstName,
-      includeLastName,
-      tone,
-      styleCategory,
-      bannedWords,
-      rejectedNames,
+    // Extract tone for prompts
+    const primaryTone = vibes[0] ?? 'friendly';
+    const toneHints = vibes.slice(1);
+    const audienceStr = audiences.join(', ');
+
+    console.log('[generate-identity] Normalized input:', { 
+      audiences, 
+      vibes, 
+      primaryTone, 
+      toneHints,
+      bannedWords: bannedWords.length,
+      rejectedNames: rejectedNames.length,
     });
 
-    // Business description prompt
-    let businessPrompt = `Generate a business description for a company with this concept: ${idea}.
-      The target audience is: ${audience}.`;
-
-    if (experience) {
-      businessPrompt += `The user has this experience: ${experience}.`;
-    }
-
-    if (motivation) {
-      businessPrompt += `The user's motivation is: ${motivation}.`;
-    }
-
-    if (tone) {
-      businessPrompt += ` The tone of voice should be: ${tone}.`;
-    }
-
-    businessPrompt += ` The description should be 2-3 short sentences.`;
-
-    // Name options prompt
-    let namePrompt = `Generate 3 business names for a business about: ${idea}.`;
+    // Build name prompt with constraints
+    const nameInfo = shouldIncludeName(aboutYou);
+    let namePrompt = `Generate 6 business names for: ${idea}.\nTarget audience: ${audienceStr}.\nTone: ${primaryTone}`;
     
-    if (audience) {
-      namePrompt += ` The target audience is: ${audience}.`;
+    if (toneHints.length > 0) {
+      namePrompt += ` with hints of ${toneHints.join(', ')}`;
     }
 
-    if (firstName && lastName && (includeFirstName || includeLastName)) {
-      namePrompt += ` The user's name is ${firstName} ${lastName}.`;
+    if (nameInfo.includeFirst || nameInfo.includeLast) {
+      const nameParts = [];
+      if (nameInfo.includeFirst) nameParts.push(nameInfo.firstName);
+      if (nameInfo.includeLast) nameParts.push(nameInfo.lastName);
+      namePrompt += `\nInclude the name: ${nameParts.join(' ')}`;
     }
 
-    if (namingPreference === 'with_personal_name') {
-      namePrompt += ` The business name should include the user's personal name.`;
-    } else if (namingPreference === 'anonymous') {
-      namePrompt += ` The business name should NOT include the user's personal name.`;
-    } else if (namingPreference === 'custom') {
-      namePrompt += ` The business name can include the user's personal name, if it makes sense.`;
+    if (bannedWords.length > 0) {
+      namePrompt += `\nAvoid these words: ${bannedWords.join(', ')}`;
     }
 
-    if (styleCategory) {
-      namePrompt += ` The style category is: ${styleCategory}.`;
+    if (rejectedNames.length > 0) {
+      namePrompt += `\nDo NOT use names similar to: ${rejectedNames.join(', ')}`;
     }
 
-    if (bannedWords && bannedWords.length > 0) {
-      namePrompt += ` Avoid these words: ${bannedWords.join(', ')}.`;
-    }
-
-    if (rejectedNames && rejectedNames.length > 0) {
-      namePrompt += ` Do NOT use names similar to: ${rejectedNames.join(', ')}.`;
-    }
-    
-    // Use feature flag for new name prompt
     const useNewPrompt = featureFlags.includes('new_name_prompt');
-    console.log('[generate-identity] Using new name prompt:', useNewPrompt);
-    
     const nameGuidance = useNewPrompt
       ? 'Generate memorable, unique names that are easy to spell and pronounce. Avoid generic terms. Focus on emotional resonance and brand differentiation.'
       : 'Generate business names based on user inputs.';
     
-    namePrompt += ` ${nameGuidance} Return ONLY a JSON array with exactly 3 objects, each with "name" and "tagline" properties. Example: [{"name":"CompanyName","tagline":"A tagline"},{"name":"OtherName","tagline":"Another tagline"},{"name":"ThirdName","tagline":"Third tagline"}]`;
+    namePrompt += `\n${nameGuidance}\nReturn ONLY a JSON array with exactly 6 objects, each with "name", "tagline", and "style" properties. Example: [{"name":"CompanyName","tagline":"A tagline","style":"modern"}]`;
 
     // Tagline prompt
-    let taglinePrompt = `Generate a tagline for a business with this concept: ${idea}.
-      The target audience is: ${audience}.`;
+    const taglinePrompt = `Generate a short, memorable tagline for a business about: ${idea}.\nTarget audience: ${audienceStr}.\nTone: ${primaryTone}.\nMax 8 words.`;
 
-    if (tone) {
-      taglinePrompt += ` The tone of voice should be: ${tone}.`;
-    }
+    // Bio prompt - transform expertise into customer-facing text
+    const bioPrompt = `Transform this expertise into a concise, customer-facing bio (3-4 sentences, first-person only if name is included):\n"${aboutYou.expertise}"${aboutYou.motivation ? `\nMotivation: "${aboutYou.motivation}"` : ''}\nTarget audience: ${audienceStr}\nTone: ${primaryTone}\n\nIMPORTANT: Rewrite into natural, flowing prose. Do NOT copy the input verbatim.`;
 
-    taglinePrompt += ` The tagline should be short and memorable.`;
-
-    // Product prompt
-    let productPrompt = `Generate 3 example products for a business with this concept: ${idea}.
-      The target audience is: ${audience}.`;
-
-    if (tone) {
-      productPrompt += ` The tone of voice should be: ${tone}.`;
-    }
-
-    productPrompt += ` The products should be relevant to the business concept. Return ONLY a JSON array with exactly 3 objects, each with "name", "description", and "price" properties. Example: [{"name":"Product 1","description":"Description here","price":"$99"},{"name":"Product 2","description":"Description here","price":"$149"},{"name":"Product 3","description":"Description here","price":"$199"}]`;
+    // Colors prompt
+    const colorsPrompt = `Generate 4-5 accessible brand colors (hex codes) for a business with tone: ${primaryTone}${toneHints.length ? ` and hints of ${toneHints.join(', ')}` : ''}. Return ONLY a JSON array of hex codes: ["#hex1","#hex2",...]`;
 
     // AI Generation
     const aiGatewayUrl = 'https://ai.gateway.lovable.dev/v1/chat/completions';
@@ -265,7 +220,7 @@ serve(async (req) => {
       if (!response.ok) {
         const errorBody = await response.text();
         console.error(`[generate-identity] AI gateway error ${response.status}:`, errorBody);
-        throw new Error(`AI gateway error: ${response.status} - ${errorBody}`);
+        throw new Error(`AI gateway error: ${response.status}`);
       }
 
       const data = await response.json();
@@ -274,80 +229,45 @@ serve(async (req) => {
     
     function safeParseJSON(text: string, fallback: any) {
       try {
-        // Try to extract JSON from markdown code blocks
         const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
         if (jsonMatch) {
           return JSON.parse(jsonMatch[1]);
         }
-        // Try direct parse
         return JSON.parse(text);
       } catch (error) {
-        console.error('[generate-identity] JSON parse error:', error, 'Text:', text);
+        console.error('[generate-identity] JSON parse error:', error);
         return fallback;
       }
     }
 
-    async function generateLogo(businessName: string, style: string) {
-      try {
-        const response = await fetch(aiGatewayUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${lovableApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'google/gemini-2.5-flash-image-preview',
-            messages: [
-              {
-                role: 'user',
-                content: `Create a simple, clean, brandable logo for the business "${businessName}" in a ${style || 'modern'} style. Use a neutral background and ensure high contrast. Output a square composition suitable for app icons and social avatars.`,
-              },
-            ],
-            modalities: ['image', 'text'],
-          }),
-        });
-
-        if (!response.ok) {
-          const errorBody = await response.text();
-          console.error(`[generate-identity] AI image gateway error ${response.status}:`, errorBody);
-          // Non-blocking: return null to avoid failing the entire flow
-          return null;
-        }
-
-        const data = await response.json();
-        const imageUrl: string | undefined = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-        return imageUrl || null;
-      } catch (err) {
-        console.error('[generate-identity] generateLogo error:', err);
-        return null; // Non-blocking
-      }
-    }
-
-    const [business, nameOptions, tagline, logoUrl, products] = await Promise.all([
-      generateText(businessPrompt),
+    const [nameOptions, tagline, bio, colors] = await Promise.all([
       generateText(namePrompt),
       generateText(taglinePrompt),
-      generateLogo(idea, styleCategory || 'abstract'),
-      generateText(productPrompt),
+      generateText(bioPrompt),
+      generateText(colorsPrompt),
     ]);
 
-    // Format the response
+    // Filter out banned names
+    let parsedNames = safeParseJSON(nameOptions, [
+      { name: "BusinessName", tagline: "A great business", style: primaryTone },
+    ]);
+
+    // Apply bannedWords filter
+    if (bannedWords.length > 0) {
+      parsedNames = parsedNames.filter((opt: any) => {
+        const nameLower = opt.name.toLowerCase();
+        return !bannedWords.some(word => nameLower.includes(word.toLowerCase()));
+      });
+    }
+
+    const parsedColors = safeParseJSON(colors, ['#2563eb', '#1d4ed8', '#1e40af']);
+
     const result = {
-      business,
-      nameOptions: safeParseJSON(nameOptions, [
-        { name: "BusinessName", tagline: "A great business" },
-        { name: "CompanyName", tagline: "Your success partner" },
-        { name: "BrandName", tagline: "Quality service" }
-      ]),
+      nameOptions: parsedNames.slice(0, 6), // Ensure max 6
       tagline,
-      bio: business,
-      colors: ['#000000', '#FFFFFF'],
-      logoUrl: logoUrl,
-      products: safeParseJSON(products, [
-        { name: "Product 1", description: "Quality product", price: "$99" },
-        { name: "Product 2", description: "Premium product", price: "$149" },
-        { name: "Product 3", description: "Deluxe product", price: "$199" }
-      ]),
+      bio,
+      colors: parsedColors.slice(0, 5), // Max 5 colors
+      products: products ?? [],
     };
     
     const durationMs = Math.round(performance.now() - startTime);
@@ -357,8 +277,9 @@ serve(async (req) => {
       session_id: sessionId,
       idempotency_key: idempotencyKey,
       duration_ms: durationMs,
-      applied_defaults: normalizedInput.appliedDefaults || [],
+      applied_defaults: appliedDefaults,
       feature_flags: featureFlags,
+      payload_keys: Object.keys(normalized),
       deduped: false,
       ok: true,
     };
@@ -367,10 +288,8 @@ serve(async (req) => {
     const requestHash = await hashRequest(requestBody);
     await storeIdempotentResponse(sessionId, idempotencyKey, 'business-identity', requestHash, response);
 
-    // Log usage
     console.log('Successfully generated business identity');
 
-    // Return the response
     return new Response(
       JSON.stringify(response),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
