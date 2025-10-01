@@ -1,4 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getTelemetryHeaders, generateTraceId } from './telemetry';
+import { logEvent } from './eventLogger';
+import { callWithRetry } from './apiClient';
 
 export interface GenerateIdentityRequest {
   idea: string;

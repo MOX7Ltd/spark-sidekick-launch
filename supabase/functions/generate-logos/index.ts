@@ -5,16 +5,34 @@ const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-id, x-trace-id, x-env, x-retry',
 };
 
 serve(async (req) => {
+  const startTime = performance.now();
+  const sessionId = req.headers.get('X-Session-Id') || 'unknown';
+  const traceId = req.headers.get('X-Trace-Id') || 'unknown';
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { businessName, style } = await req.json();
+    
+    if (!businessName || typeof businessName !== 'string') {
+      const durationMs = Math.round(performance.now() - startTime);
+      return new Response(JSON.stringify({
+        error: 'Business name is required',
+        trace_id: traceId,
+        session_id: sessionId,
+        duration_ms: durationMs,
+        ok: false,
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     console.log('Generating logos for:', businessName, 'with style:', style);
 
@@ -72,17 +90,29 @@ serve(async (req) => {
 
     console.log('Generated', logos.length, 'logos');
 
-    return new Response(JSON.stringify({ logos }), {
+    const durationMs = Math.round(performance.now() - startTime);
+    return new Response(JSON.stringify({ 
+      logos,
+      trace_id: traceId,
+      session_id: sessionId,
+      duration_ms: durationMs,
+      ok: true,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
+    const durationMs = Math.round(performance.now() - startTime);
     console.error('Error in generate-logos function:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to generate logos';
     const errorDetails = error instanceof Error ? error.toString() : String(error);
     
     return new Response(JSON.stringify({ 
       error: errorMessage,
-      details: errorDetails
+      details: errorDetails,
+      trace_id: traceId,
+      session_id: sessionId,
+      duration_ms: durationMs,
+      ok: false,
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

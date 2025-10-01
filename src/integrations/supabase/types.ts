@@ -176,6 +176,51 @@ export type Database = {
           },
         ]
       }
+      events: {
+        Row: {
+          action: string
+          created_at: string
+          duration_ms: number | null
+          error_code: string | null
+          error_message: string | null
+          id: number
+          ok: boolean
+          payload_keys: string[] | null
+          provider: string | null
+          session_id: string
+          step: string
+          trace_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          duration_ms?: number | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: never
+          ok: boolean
+          payload_keys?: string[] | null
+          provider?: string | null
+          session_id: string
+          step: string
+          trace_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          duration_ms?: number | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: never
+          ok?: boolean
+          payload_keys?: string[] | null
+          provider?: string | null
+          session_id?: string
+          step?: string
+          trace_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null

@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -10,8 +11,27 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-id, x-trace-id, x-env, x-retry',
 };
+
+const requestSchema = z.object({
+  idea: z.string().min(10),
+  aboutYou: z.object({
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    includeFirstName: z.boolean().default(false),
+    includeLastName: z.boolean().default(false),
+    expertise: z.string().optional(),
+    motivation: z.string().optional()
+  }).optional(),
+  vibes: z.array(z.string()).min(1).default(['Friendly']),
+  audiences: z.array(z.string()).min(1).default(['General']),
+  products: z.array(z.string()).optional(),
+  bannedWords: z.array(z.string()).optional(),
+  rejectedNames: z.array(z.string()).optional(),
+  regenerateNames: z.boolean().optional(),
+  regenerateSingleName: z.boolean().optional(),
+});
 
 // SVG sanitization function
 function sanitizeSVG(svgString: string): string {
@@ -59,6 +79,10 @@ async function logUsage(userId: string) {
 }
 
 serve(async (req) => {
+  const startTime = performance.now();
+  const sessionId = req.headers.get('X-Session-Id') || 'unknown';
+  const traceId = req.headers.get('X-Trace-Id') || 'unknown';
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -613,6 +637,7 @@ Return ONLY valid JSON with no markdown formatting:
     const trackB = generatedData.trackB || [];
     const combinedNameOptions = [...trackA, ...trackB];
 
+    const durationMs = Math.round(performance.now() - startTime);
     return new Response(JSON.stringify({
       business,
       nameOptions: combinedNameOptions,
@@ -620,14 +645,25 @@ Return ONLY valid JSON with no markdown formatting:
       bio: generatedData.bio,
       colors: generatedData.colors,
       logoSVG: generatedData.logoSVG,
-      products
+      products,
+      trace_id: traceId,
+      session_id: sessionId,
+      duration_ms: durationMs,
+      ok: true,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
+    const durationMs = Math.round(performance.now() - startTime);
     console.error('Error in generate-identity function:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+    return new Response(JSON.stringify({ 
+      error: 'Internal server error',
+      trace_id: traceId,
+      session_id: sessionId,
+      duration_ms: durationMs,
+      ok: false,
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

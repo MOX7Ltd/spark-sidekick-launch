@@ -1,23 +1,56 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+
+const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-id, x-trace-id, x-env, x-retry',
 };
 
+const requestSchema = z.object({
+  idea_text: z.string().min(10),
+  audience_tags: z.array(z.string()).min(1).default(['General']),
+  tone_tags: z.array(z.string()).min(1).default(['Friendly']),
+  max_ideas: z.number().min(1).max(10).default(5),
+  exclude_ids: z.array(z.string()).optional(),
+});
+
 serve(async (req) => {
+  const startTime = performance.now();
+  const sessionId = req.headers.get('X-Session-Id') || 'unknown';
+  const traceId = req.headers.get('X-Trace-Id') || 'unknown';
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { idea_text, idea_source, audience_tags, tone_tags, max_ideas = 4, exclude_ids = [] } = await req.json();
+    const requestBody = await req.json();
+    
+    // Validate input
+    const validationResult = requestSchema.safeParse(requestBody);
+    if (!validationResult.success) {
+      const durationMs = Math.round(performance.now() - startTime);
+      return new Response(JSON.stringify({
+        error: 'Invalid input',
+        field_errors: validationResult.error.flatten().fieldErrors,
+        trace_id: traceId,
+        session_id: sessionId,
+        duration_ms: durationMs,
+        ok: false,
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    const { idea_text, audience_tags, tone_tags, max_ideas, exclude_ids = [] } = validationResult.data;
     
     console.log('Generating product ideas for:', idea_text);
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
+    if (!lovableApiKey) {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
@@ -54,7 +87,7 @@ Return a JSON object with this exact structure:
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -94,16 +127,28 @@ Return a JSON object with this exact structure:
 
     console.log('Generated product ideas:', productIdeas);
 
+    const durationMs = Math.round(performance.now() - startTime);
     return new Response(
-      JSON.stringify(productIdeas),
+      JSON.stringify({
+        ...productIdeas,
+        trace_id: traceId,
+        session_id: sessionId,
+        duration_ms: durationMs,
+        ok: true,
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
+    const durationMs = Math.round(performance.now() - startTime);
     console.error('Error in generate-product-ideas:', error);
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Failed to generate product ideas'
+        error: error instanceof Error ? error.message : 'Failed to generate product ideas',
+        trace_id: traceId,
+        session_id: sessionId,
+        duration_ms: durationMs,
+        ok: false,
       }),
       { 
         status: 500, 

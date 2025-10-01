@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -10,8 +11,22 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-id, x-trace-id, x-env, x-retry',
 };
+
+const requestSchema = z.object({
+  businessId: z.string().uuid().optional(),
+  type: z.string().min(1),
+  platforms: z.array(z.string()).min(1),
+  businessName: z.string().optional(),
+  tagline: z.string().optional(),
+  audience: z.string().optional(),
+  background: z.string().optional(),
+  motivation: z.string().optional(),
+  tone: z.string().optional(),
+  firstName: z.string().optional(),
+  products: z.array(z.string()).optional(),
+});
 
 // Rate limiting function
 async function checkRateLimit(userId: string): Promise<boolean> {
@@ -34,6 +49,10 @@ async function logUsage(userId: string) {
 }
 
 serve(async (req) => {
+  const startTime = performance.now();
+  const sessionId = req.headers.get('X-Session-Id') || 'unknown';
+  const traceId = req.headers.get('X-Trace-Id') || 'unknown';
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -57,7 +76,14 @@ serve(async (req) => {
           // Check rate limit for authenticated users
           const canProceed = await checkRateLimit(user.id);
           if (!canProceed) {
-            return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please wait before trying again.' }), {
+            const durationMs = Math.round(performance.now() - startTime);
+            return new Response(JSON.stringify({ 
+              error: 'Rate limit exceeded. Please wait before trying again.',
+              trace_id: traceId,
+              session_id: sessionId,
+              duration_ms: durationMs,
+              ok: false,
+            }), {
               status: 429,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
@@ -73,14 +99,25 @@ serve(async (req) => {
     }
 
     const requestBody = await req.json();
-    const { businessId, type, platforms, background, motivation, tone, firstName, businessName, audience, bio, tagline, products } = requestBody;
-
-    if (!type || !platforms?.length) {
-      return new Response(JSON.stringify({ error: 'Missing required fields: type, platforms' }), {
+    
+    // Validate input
+    const validationResult = requestSchema.safeParse(requestBody);
+    if (!validationResult.success) {
+      const durationMs = Math.round(performance.now() - startTime);
+      return new Response(JSON.stringify({
+        error: 'Invalid input',
+        field_errors: validationResult.error.flatten().fieldErrors,
+        trace_id: traceId,
+        session_id: sessionId,
+        duration_ms: durationMs,
+        ok: false,
+      }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    
+    const { businessId, type, platforms, background, motivation, tone, firstName, businessName, audience, tagline, products } = validationResult.data;
 
     // For anonymous users, we need to use the provided business data in the request
     // For authenticated users, we can fetch from the database
@@ -114,7 +151,7 @@ serve(async (req) => {
       business = {
         business_name: businessName,
         audience: audience || 'your target audience',
-        bio: bio || background || '',
+        bio: background || '',
         tagline: tagline || ''
       };
     }
@@ -404,16 +441,28 @@ Generate platform-optimized content for each platform that uses the business nam
     // Log usage
     await logUsage(user.id);
 
+    const durationMs = Math.round(performance.now() - startTime);
     return new Response(JSON.stringify({
       campaign,
-      items
+      items,
+      trace_id: traceId,
+      session_id: sessionId,
+      duration_ms: durationMs,
+      ok: true,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
+    const durationMs = Math.round(performance.now() - startTime);
     console.error('Error in generate-campaign function:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+    return new Response(JSON.stringify({ 
+      error: 'Internal server error',
+      trace_id: traceId,
+      session_id: sessionId,
+      duration_ms: durationMs,
+      ok: false,
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
