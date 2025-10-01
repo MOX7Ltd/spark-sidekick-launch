@@ -113,7 +113,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
   };
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6 animate-fade-in">
+    <div className="w-full max-w-screen-sm mx-auto px-3 sm:px-4 py-6 animate-fade-in">
       {/* Progress dots */}
       <div className="flex justify-center gap-2 mb-8">
         {[...Array(totalQuestions)].map((_, i) => (
@@ -132,10 +132,10 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
 
       {/* Question 1: Name (Combined First & Last) */}
       {currentQuestion === 1 && (
-        <Card className="border-2 border-primary/20 animate-fade-in-up">
-          <CardContent className="p-6 space-y-6">
+        <Card className="border-2 border-primary/20 animate-fade-in-up max-w-full">
+          <CardContent className="p-4 sm:p-6 space-y-6 max-w-full">
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold">What's your name?</h2>
+              <h2 className="text-xl sm:text-2xl font-bold break-words">What's your name?</h2>
               <p className="text-muted-foreground">
                 We'll use it to personalize your business
               </p>
@@ -147,7 +147,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="First name *"
-                  className="h-14 text-lg"
+                  className="h-12 sm:h-14 text-base sm:text-lg"
                   autoFocus
                 />
               </div>
@@ -157,7 +157,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Last name (optional)"
-                  className="h-14 text-lg"
+                  className="h-12 sm:h-14 text-base sm:text-lg"
                 />
               </div>
             </div>
@@ -165,8 +165,8 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
             {firstName.length > 0 && (
               <>
                 <div className="flex items-center gap-2 text-primary animate-bounce-in">
-                  <Check className="w-5 h-5" />
-                  <span className="font-medium">Amazing — your idea is already taking shape ✨</span>
+                  <Check className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                  <span className="font-medium text-sm sm:text-base break-words">Amazing — your idea is already taking shape ✨</span>
                 </div>
                 
                 <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
@@ -195,21 +195,22 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
               </>
             )}
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-2 sm:gap-3 pt-4">
               <Button 
                 variant="outline"
                 size="lg"
                 onClick={onBack}
-                className="flex-1 h-12"
+                className="flex-1 h-11 sm:h-12 text-sm sm:text-base whitespace-nowrap"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
+                <ArrowLeft className="mr-1 sm:mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Back</span>
+                <span className="sm:hidden">Back</span>
               </Button>
               <Button 
                 size="lg"
                 onClick={handleNext}
                 disabled={!canProceed()}
-                className="flex-1 h-12"
+                className="flex-1 h-11 sm:h-12 text-sm sm:text-base whitespace-nowrap"
               >
                 Continue →
               </Button>
@@ -220,10 +221,10 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
 
       {/* Question 2: Your Why (Optional) */}
       {currentQuestion === 2 && (
-        <Card className="border-2 border-primary/20 animate-fade-in-up">
-          <CardContent className="p-6 space-y-6">
+        <Card className="border-2 border-primary/20 animate-fade-in-up max-w-full">
+          <CardContent className="p-4 sm:p-6 space-y-6 max-w-full">
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold">Why do you want to start this business?</h2>
+              <h2 className="text-xl sm:text-2xl font-bold break-words">Why do you want to start this business?</h2>
               <p className="text-muted-foreground">
                 What's driving you to make this happen?
               </p>
@@ -251,8 +252,8 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
 
             {motivation.length >= 10 && (
               <div className="flex items-center gap-2 text-primary animate-bounce-in">
-                <Sparkles className="w-5 h-5" />
-                <span className="font-medium">Your why is powerful! This will connect with people 🔥</span>
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                <span className="font-medium text-sm sm:text-base break-words">Your why is powerful! This will connect with people 🔥</span>
               </div>
             )}
 
@@ -262,21 +263,21 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
               <p className="pl-4">• "I want to help others like me who are struggling"</p>
             </div>
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-2 pt-4">
               <Button 
                 variant="outline"
                 size="lg"
                 onClick={() => setCurrentQuestion(1)}
-                className="flex-1 h-12"
+                className="h-11 sm:h-12 px-3 sm:px-4 text-sm sm:text-base whitespace-nowrap"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
+                <ArrowLeft className="mr-1 h-4 w-4" />
+                <span className="hidden sm:inline">Back</span>
               </Button>
               <Button 
                 variant="ghost"
                 size="lg"
                 onClick={handleSkip}
-                className="flex-1 h-12"
+                className="flex-1 h-11 sm:h-12 text-sm sm:text-base whitespace-nowrap"
               >
                 Skip
               </Button>
@@ -284,7 +285,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
                 size="lg"
                 onClick={handleNext}
                 disabled={motivation.length === 0}
-                className="flex-1 h-12"
+                className="flex-1 h-11 sm:h-12 text-sm sm:text-base whitespace-nowrap"
               >
                 Continue →
               </Button>
@@ -295,10 +296,10 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
 
       {/* Question 3: Your Story */}
       {currentQuestion === 3 && (
-        <Card className="border-2 border-primary/20 animate-fade-in-up">
-          <CardContent className="p-6 space-y-6">
+        <Card className="border-2 border-primary/20 animate-fade-in-up max-w-full">
+          <CardContent className="p-4 sm:p-6 space-y-6 max-w-full">
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold">What makes you ready to start this business?</h2>
+              <h2 className="text-xl sm:text-2xl font-bold break-words">What makes you ready to start this business?</h2>
               <p className="text-muted-foreground">
                 This is where your experience, passion, or personal story shines through
               </p>
@@ -326,8 +327,8 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
 
             {expertise.length >= 10 && (
               <div className="flex items-center gap-2 text-primary animate-bounce-in">
-                <Sparkles className="w-5 h-5" />
-                <span className="font-medium">Amazing! Your story is what makes this special ✨</span>
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                <span className="font-medium text-sm sm:text-base break-words">Amazing! Your story is what makes this special ✨</span>
               </div>
             )}
 
@@ -337,21 +338,22 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
               <p className="pl-4">• "I love running and have coached beginners for years"</p>
             </div>
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-2 sm:gap-3 pt-4">
               <Button 
                 variant="outline"
                 size="lg"
                 onClick={() => setCurrentQuestion(2)}
-                className="flex-1 h-12"
+                className="flex-1 h-11 sm:h-12 text-sm sm:text-base whitespace-nowrap"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
+                <ArrowLeft className="mr-1 sm:mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Back</span>
+                <span className="sm:hidden">Back</span>
               </Button>
               <Button 
                 size="lg"
                 onClick={handleNext}
                 disabled={!canProceed()}
-                className="flex-1 h-12"
+                className="flex-1 h-11 sm:h-12 text-sm sm:text-base whitespace-nowrap"
               >
                 Continue →
               </Button>

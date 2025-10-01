@@ -354,7 +354,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
   };
 
   return (
-    <div className="w-full max-w-md mx-auto px-4 py-6 animate-fade-in">
+    <div className="w-full max-w-screen-sm mx-auto px-3 sm:px-4 py-6 animate-fade-in">
       {/* Progress Bar */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
@@ -371,10 +371,10 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
 
       {/* Step 1: Do you have a business name? */}
       {currentStep === 1 && (
-        <Card className="border-2">
-          <CardContent className="pt-6 space-y-6">
+        <Card className="border-2 max-w-full">
+          <CardContent className="pt-4 sm:pt-6 space-y-4 sm:space-y-6 max-w-full">
             <div className="space-y-2">
-              <h3 className="text-2xl font-bold text-center">Do you already have a business name?</h3>
+              <h3 className="text-xl sm:text-2xl font-bold text-center break-words">Do you already have a business name?</h3>
               <p className="text-sm text-muted-foreground text-center">
                 We can help you polish it or create something fresh
               </p>
@@ -384,10 +384,10 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
               <Button
                 onClick={() => handleHasNameChoice(true)}
                 variant="outline"
-                className="w-full h-auto py-4 text-left justify-start hover:border-primary hover:bg-primary/5"
+                className="w-full h-auto py-3 sm:py-4 text-left justify-start hover:border-primary hover:bg-primary/5 max-w-full"
               >
-                <div>
-                  <div className="font-semibold mb-1">Yes, I have a name</div>
+                <div className="break-words max-w-full">
+                  <div className="font-semibold mb-1 text-sm sm:text-base">Yes, I have a name</div>
                   <div className="text-xs text-muted-foreground">I'll show you alternatives too</div>
                 </div>
               </Button>
@@ -395,10 +395,10 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
               <Button
                 onClick={() => handleHasNameChoice(false)}
                 variant="outline"
-                className="w-full h-auto py-4 text-left justify-start hover:border-primary hover:bg-primary/5"
+                className="w-full h-auto py-3 sm:py-4 text-left justify-start hover:border-primary hover:bg-primary/5 max-w-full"
               >
-                <div>
-                  <div className="font-semibold mb-1">No, help me create one</div>
+                <div className="break-words max-w-full">
+                  <div className="font-semibold mb-1 text-sm sm:text-base">No, help me create one</div>
                   <div className="text-xs text-muted-foreground">Let's brainstorm together</div>
                 </div>
               </Button>
@@ -409,10 +409,10 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
 
       {/* Step 1.5: Enter existing name */}
       {currentStep === 1.5 && (
-        <Card className="border-2">
-          <CardContent className="pt-6 space-y-6">
+        <Card className="border-2 max-w-full">
+          <CardContent className="pt-4 sm:pt-6 space-y-4 sm:space-y-6 max-w-full">
             <div className="space-y-2">
-              <h3 className="text-2xl font-bold">What's your business name?</h3>
+              <h3 className="text-xl sm:text-2xl font-bold break-words">What's your business name?</h3>
               <p className="text-sm text-muted-foreground">
                 We'll also show you some alternative ideas — just in case!
               </p>
@@ -436,24 +436,25 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
               </p>
             )}
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-2 sm:gap-3 pt-2">
               <Button
                 variant="outline"
                 onClick={() => setCurrentStep(1)}
-                className="flex-1"
+                className="flex-1 whitespace-nowrap"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-1 sm:mr-2 h-4 w-4" />
                 Back
               </Button>
               <Button
                 onClick={handleExistingNameSubmit}
                 disabled={!canProceed() || isGeneratingNames}
-                className="flex-1"
+                className="flex-1 whitespace-nowrap"
               >
                 {isGeneratingNames ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
+                    <span className="hidden sm:inline">Generating...</span>
+                    <span className="sm:hidden">Gen...</span>
                   </>
                 ) : (
                   'Continue'
@@ -466,10 +467,10 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
 
       {/* Step 2: Name style selection */}
       {currentStep === 2 && (
-        <Card className="border-2">
-          <CardContent className="pt-6 space-y-6">
+        <Card className="border-2 max-w-full">
+          <CardContent className="pt-4 sm:pt-6 space-y-4 sm:space-y-6 max-w-full">
             <div className="space-y-2">
-              <h3 className="text-2xl font-bold">What vibe should your business name have?</h3>
+              <h3 className="text-xl sm:text-2xl font-bold break-words">What vibe should your business name have?</h3>
               <p className="text-sm text-muted-foreground">
                 This helps us create names that feel right for you
               </p>
@@ -484,14 +485,14 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                     onClick={() => handleNameStyleSelect(style.id)}
                     disabled={isGeneratingNames}
                     variant="outline"
-                    className={`w-full h-auto py-4 text-left justify-start hover:border-primary hover:bg-primary/5 ${
+                    className={`w-full h-auto py-3 sm:py-4 text-left justify-start hover:border-primary hover:bg-primary/5 max-w-full ${
                       isGeneratingNames ? 'opacity-50' : ''
                     }`}
                   >
-                    <Icon className="h-5 w-5 mr-3 flex-shrink-0" />
-                    <div className="flex-1">
-                      <div className="font-semibold mb-1">{style.name}</div>
-                      <div className="text-xs text-muted-foreground">{style.description}</div>
+                    <Icon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold mb-1 text-sm sm:text-base break-words">{style.name}</div>
+                      <div className="text-xs text-muted-foreground break-words">{style.description}</div>
                     </div>
                   </Button>
                 );
@@ -519,17 +520,17 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
 
       {/* Step 3: Name selection */}
       {currentStep === 3 && (
-        <Card className="border-2">
-          <CardContent className="pt-6 space-y-6">
+        <Card className="border-2 max-w-full">
+          <CardContent className="pt-4 sm:pt-6 space-y-4 sm:space-y-6 max-w-full">
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-2xl font-bold">Pick your favorite name</h3>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="text-xl sm:text-2xl font-bold break-words">Pick your favorite name</h3>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleRegenerateNames}
                   disabled={isGeneratingNames}
-                  className="text-xs"
+                  className="text-xs self-start sm:self-auto whitespace-nowrap"
                 >
                   {isGeneratingNames ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -547,22 +548,22 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
               {/* Show existing name if entered */}
               {hasExistingName && existingName && (
                 <div
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                  className={`p-3 sm:p-4 rounded-lg border-2 cursor-pointer transition-all max-w-full ${
                     selectedName === existingName ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
                   }`}
                   onClick={() => setSelectedName(existingName)}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-lg">{existingName}</span>
+                        <span className="font-semibold text-base sm:text-lg break-words">{existingName}</span>
                         {selectedName === existingName && (
-                          <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                          <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
                             <Check className="h-3 w-3 text-primary-foreground" />
                           </div>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">Your original name</p>
+                      <p className="text-xs text-muted-foreground break-words">Your original name</p>
                     </div>
                   </div>
                 </div>
@@ -571,7 +572,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
               {nameOptions.map((option, index) => (
                 <div
                   key={index}
-                  className={`p-4 rounded-lg border-2 transition-all relative ${
+                  className={`p-3 sm:p-4 rounded-lg border-2 transition-all relative max-w-full ${
                     selectedName === option.name ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
                   } ${regeneratingIndex === index ? 'opacity-50 pointer-events-none' : ''}`}
                 >
@@ -585,22 +586,22 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                     onClick={() => setSelectedName(option.name)}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-semibold text-lg">{option.name}</span>
+                          <span className="font-semibold text-base sm:text-lg break-words">{option.name}</span>
                           {selectedName === option.name && (
-                            <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                            <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
                               <Check className="h-3 w-3 text-primary-foreground" />
                             </div>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground italic mb-2">{option.tagline}</p>
+                        <p className="text-xs text-muted-foreground italic mb-2 break-words">{option.tagline}</p>
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <Button
                           variant="ghost"
                           size="sm"
-                          className={`h-8 w-8 p-0 ${likedNames.has(option.name) ? 'text-green-600 bg-green-50' : 'text-muted-foreground'}`}
+                          className={`h-8 w-8 p-0 whitespace-nowrap ${likedNames.has(option.name) ? 'text-green-600 bg-green-50' : 'text-muted-foreground'}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleLikeName(option.name);
@@ -611,7 +612,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive whitespace-nowrap"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleRejectName(index);
@@ -632,19 +633,19 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
               </p>
             )}
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-2 sm:gap-3 pt-2">
               <Button
                 variant="outline"
                 onClick={() => setCurrentStep(hasExistingName ? 1.5 : 2)}
-                className="flex-1"
+                className="flex-1 whitespace-nowrap"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-1 sm:mr-2 h-4 w-4" />
                 Back
               </Button>
               <Button
                 onClick={handleNameConfirm}
                 disabled={!canProceed()}
-                className="flex-1"
+                className="flex-1 whitespace-nowrap"
               >
                 Continue
               </Button>
@@ -655,10 +656,10 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
 
       {/* Step 4: Logo style and generation */}
       {currentStep === 4 && (
-        <Card className="border-2">
-          <CardContent className="pt-6 space-y-6">
+        <Card className="border-2 max-w-full">
+          <CardContent className="pt-4 sm:pt-6 space-y-4 sm:space-y-6 max-w-full">
             <div className="space-y-2">
-              <h3 className="text-2xl font-bold">Let's match your business with a logo style</h3>
+              <h3 className="text-xl sm:text-2xl font-bold break-words">Let's match your business with a logo style</h3>
               <p className="text-sm text-muted-foreground">
                 Choose a style and we'll generate options for you
               </p>
@@ -675,17 +676,17 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                       onClick={() => handleLogoStyleSelect(logo.id)}
                       disabled={isGeneratingLogos}
                       variant="outline"
-                      className={`w-full h-auto py-3 text-left justify-start hover:border-primary hover:bg-primary/5 ${
+                      className={`w-full h-auto py-3 text-left justify-start hover:border-primary hover:bg-primary/5 max-w-full ${
                         selectedLogoStyle === logo.id ? 'border-primary bg-primary/5' : ''
                       } ${isGeneratingLogos ? 'opacity-50' : ''}`}
                     >
                       <div
-                        className={`w-12 h-12 rounded-lg bg-gradient-to-br ${logo.gradient} flex items-center justify-center mr-3 flex-shrink-0`}
+                        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br ${logo.gradient} flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0`}
                       >
-                        <Icon className="h-5 w-5 text-white" />
+                        <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                       </div>
-                      <div className="flex-1">
-                        <div className="font-semibold">{logo.name}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm sm:text-base break-words">{logo.name}</div>
                       </div>
                     </Button>
                   );
@@ -752,14 +753,14 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                       />
                     </div>
                     {/* Business Name */}
-                    <h2 className="text-2xl font-bold text-center">{selectedName}</h2>
+                    <h2 className="text-xl sm:text-2xl font-bold text-center break-words">{selectedName}</h2>
                     {/* Tagline */}
-                    <p className="text-sm text-muted-foreground text-center italic">
+                    <p className="text-sm text-muted-foreground text-center italic break-words">
                       {nameOptions.find(opt => opt.name === selectedName)?.tagline || 'Helping you succeed'}
                     </p>
                     {/* About snippet */}
                     <div className="pt-4 border-t">
-                      <p className="text-xs text-muted-foreground text-center">
+                      <p className="text-xs text-muted-foreground text-center break-words">
                         {aboutYou.expertise.slice(0, 120)}...
                       </p>
                     </div>
@@ -771,14 +772,14 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
               </div>
             )}
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-2 sm:gap-3 pt-2">
               <Button
                 variant="outline"
                 onClick={() => setCurrentStep(3)}
                 disabled={isGeneratingLogos}
-                className="flex-1"
+                className="flex-1 whitespace-nowrap"
               >
-                <ArrowLeft className="mr-2 h-4 w-4" />
+                <ArrowLeft className="mr-1 sm:mr-2 h-4 w-4" />
                 Back
               </Button>
               {generatedLogos.length > 0 && (
@@ -787,7 +788,8 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                   disabled={!canProceed()}
                   className="flex-1"
                 >
-                  See Your Business 💡
+                  <span className="hidden sm:inline">See Your Business 💡</span>
+                  <span className="sm:hidden">See It 💡</span>
                 </Button>
               )}
             </div>
