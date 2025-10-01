@@ -284,26 +284,39 @@ serve(async (req) => {
     }
 
     async function generateLogo(businessName: string, style: string) {
-      const response = await fetch('https://ai.gateway.lovable.dev/v1/images/generations', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${lovableApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'dall-e-3',
-          prompt: `Generate a logo for ${businessName} in the style of ${style}. The logo should be simple and memorable.`,
-          n: 1,
-          size: '1024x1024',
-        }),
-      });
+      try {
+        const response = await fetch(aiGatewayUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${lovableApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash-image-preview',
+            messages: [
+              {
+                role: 'user',
+                content: `Create a simple, clean, brandable logo for the business "${businessName}" in a ${style || 'modern'} style. Use a neutral background and ensure high contrast. Output a square composition suitable for app icons and social avatars.`,
+              },
+            ],
+            modalities: ['image', 'text'],
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error(`AI gateway error: ${response.status}`);
+        if (!response.ok) {
+          const errorBody = await response.text();
+          console.error(`[generate-identity] AI image gateway error ${response.status}:`, errorBody);
+          // Non-blocking: return null to avoid failing the entire flow
+          return null;
+        }
+
+        const data = await response.json();
+        const imageUrl: string | undefined = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        return imageUrl || null;
+      } catch (err) {
+        console.error('[generate-identity] generateLogo error:', err);
+        return null; // Non-blocking
       }
-
-      const data = await response.json();
-      return data.data[0].url;
     }
 
     const [business, nameOptions, tagline, logoUrl, products] = await Promise.all([
