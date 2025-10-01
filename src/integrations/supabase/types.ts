@@ -221,6 +221,33 @@ export type Database = {
         }
         Relationships: []
       }
+      idempotent_responses: {
+        Row: {
+          created_at: string
+          fn: string
+          idempotency_key: string
+          request_hash: string
+          response: Json
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          fn: string
+          idempotency_key: string
+          request_hash: string
+          response: Json
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          fn?: string
+          idempotency_key?: string
+          request_hash?: string
+          response?: Json
+          session_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -250,7 +277,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_old_idempotent_responses: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
