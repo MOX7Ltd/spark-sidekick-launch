@@ -177,7 +177,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
           What do you want to make money from?
         </p>
         <p className="text-sm text-muted-foreground">
-          Describe your offer in plain words. We'll turn the idea into sellable products after you launch.
+          Describe your offer in plain words. Our A.I. will turn the idea into sellable products for you.
         </p>
       </div>
 
@@ -225,7 +225,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
           <Card className="border-2 border-dashed border-primary/30">
             <CardContent className="p-6 text-center space-y-4">
               <p className="font-medium text-foreground">
-                What a great idea, do you want to see some products that your new business could sell?
+                Do you want to see what your products might look like?
               </p>
               <p className="text-sm text-muted-foreground">
                 Use 👍 to mark ideas you like, 👎 to generate a replacement, or the refresh icon to try a different variation.
