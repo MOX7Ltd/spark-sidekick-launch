@@ -5,9 +5,11 @@ import { CustomerStorefront } from './CustomerStorefront';
 import { Rocket, Sparkles, CheckCircle, Heart, Eye, Settings } from 'lucide-react';
 
 interface Product {
+  id?: string;
   title: string;
-  type: string;
-  price: string;
+  type?: string;
+  format?: string;
+  price?: string;
   description: string;
 }
 
@@ -38,7 +40,12 @@ interface StarterPackRevealProps {
       caption: string;
     };
   };
-  products?: Product[];
+  products?: Array<{
+    id?: string;
+    title: string;
+    format?: string;
+    description: string;
+  }>;
   onUnlock: () => void;
   onBack: () => void;
 }
@@ -75,14 +82,14 @@ export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, 
       )}
 
       <div className="text-center mb-8">
-        <div className="w-20 h-20 mx-auto mb-6 bg-gradient-hero rounded-full flex items-center justify-center animate-bounce-in">
-          <Rocket className="w-10 h-10 text-white" />
+        <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center animate-bounce-in">
+          <Sparkles className="w-10 h-10 text-white animate-pulse" />
         </div>
-        <h2 className="text-4xl md:text-5xl font-bold mb-4">
-          🔥 Your business is ready to launch!
+        <h2 className="text-4xl md:text-5xl font-bold mb-4 animate-fade-in">
+          🎉 Your business is alive!
         </h2>
-        <p className="text-xl text-muted-foreground mb-4 max-w-2xl mx-auto">
-          This is exactly what customers will see when they visit your link from social media.
+        <p className="text-xl text-muted-foreground mb-4 max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          This is just the beginning — your business is already looking real! This is what customers will see when they visit your storefront.
         </p>
         
         {/* View Toggle */}
@@ -153,11 +160,11 @@ export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, 
                 <Button 
                 variant="starter" 
                 size="xl" 
-                className="w-full mb-4"
+                className="w-full mb-4 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all"
                 onClick={onUnlock}
               >
-                <Heart className="mr-2 h-5 w-5" />
-                Publish {businessIdentity.name}
+                <Rocket className="mr-2 h-5 w-5" />
+                Now let's show the world 🚀
               </Button>
 
               <div className="text-center">

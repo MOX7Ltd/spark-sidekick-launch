@@ -21,18 +21,24 @@ import {
 
 interface OnboardingData {
   idea: string;
+  products?: Array<{
+    id: string;
+    title: string;
+    format: string;
+    description: string;
+  }>;
   aboutYou: {
     firstName: string;
     lastName: string;
     expertise: string;
     motivation: string;
     styles: string[];
+    vibe: string;
     profilePicture?: string;
     includeFirstName: boolean;
     includeLastName: boolean;
   };
   audiences: string[];
-  styleCategory: string;
   businessIdentity: {
     name: string;
     logo: string;
@@ -40,7 +46,7 @@ interface OnboardingData {
     bio: string;
     colors: string[];
     logoSVG: string;
-    nameOptions: Array<{name: string; style: string; tagline: string}>;
+    nameOptions: Array<{name: string; style?: string; archetype?: string; tagline: string}>;
   };
   introCampaign?: {
     shortPost: {

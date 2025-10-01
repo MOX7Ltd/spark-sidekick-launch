@@ -10,18 +10,24 @@ import { useToast } from '@/hooks/use-toast';
 
 interface OnboardingData {
   idea: string;
+  products?: Array<{
+    id: string;
+    title: string;
+    format: string;
+    description: string;
+  }>;
   aboutYou: {
     firstName: string;
     lastName: string;
     expertise: string;
     motivation: string;
     styles: string[];
+    vibe: string;
     profilePicture?: string;
     includeFirstName: boolean;
     includeLastName: boolean;
   };
   audiences: string[];
-  styleCategory: string;
   businessIdentity: {
     name: string;
     logo: string;
@@ -31,12 +37,6 @@ interface OnboardingData {
     logoSVG: string;
     nameOptions: Array<{name: string; style?: string; archetype?: string; tagline: string}>;
   };
-  products?: Array<{
-    title: string;
-    type: string;
-    price: string;
-    description: string;
-  }>;
   introCampaign?: {
     shortPost: {
       caption: string;
@@ -63,17 +63,20 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentStep]);
 
-  const handleStepOne = (idea: string) => {
-    setFormData(prev => ({ ...prev, idea }));
+  // Stage 1: Idea + Products
+  const handleStepOne = (idea: string, products: any[]) => {
+    setFormData(prev => ({ ...prev, idea, products }));
     setCurrentStep(2);
   };
 
+  // Stage 2: About You (First name, Last name, Why, Story, Vibe)
   const handleStepAboutYou = (aboutYou: { 
     firstName: string; 
     lastName: string;
     expertise: string;
     motivation: string;
     styles: string[];
+    vibe: string;
     profilePicture?: string;
     includeFirstName: boolean;
     includeLastName: boolean;
@@ -82,26 +85,28 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     setCurrentStep(3); // Go to audience select
   };
 
+  // Stage 3: Audience Selection
   const handleAudienceSelect = (audiences: string[]) => {
     setFormData(prev => ({ ...prev, audiences }));
-    setCurrentStep(4); // Go to social post preview
+    setCurrentStep(4); // Go to business identity
   };
 
-  const handleSocialPostContinue = () => {
-    setCurrentStep(5); // Go to business identity
-  };
-
+  // Stage 4: Business Identity (Name + Logo)
   const handleBusinessIdentity = (businessIdentity: OnboardingData['businessIdentity']) => {
     setFormData(prev => ({ ...prev, businessIdentity }));
-    setCurrentStep(6); // Go to final reveal
+    setCurrentStep(5); // Go to shopfront preview
   };
 
-  const handleUnlock = () => {
-    // In a real app, this would trigger Stripe checkout
+  // Stage 5: Shopfront Preview (Celebration)
+  const handleShopfrontContinue = () => {
+    setCurrentStep(6); // Go to social media posts
+  };
+
+  // Stage 6: Social Media Posts (Final Step)
+  const handleSocialPostsComplete = () => {
     if (onComplete && formData.idea && formData.aboutYou && formData.audiences && formData.businessIdentity) {
       onComplete(formData as OnboardingData);
     }
-    console.log('Triggering Stripe checkout with:', formData);
   };
 
   const goBack = () => {
@@ -114,6 +119,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     <div className="min-h-[80vh] py-8">
       <div className="container mx-auto px-4">
         <div className="min-h-[60vh] flex items-center justify-center">
+          {/* Stage 1: Your Idea (Products) */}
           {currentStep === 1 && (
             <StepOne 
               onNext={handleStepOne}
@@ -121,6 +127,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
             />
           )}
           
+          {/* Stage 2: About You */}
           {currentStep === 2 && (
             <StepAboutYouMobile 
               onNext={handleStepAboutYou}
@@ -130,6 +137,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
             />
           )}
 
+          {/* Stage 3: Audience Selection */}
           {currentStep === 3 && (
             <StepTwoMultiSelect 
               onNext={handleAudienceSelect}
@@ -139,30 +147,28 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
             />
           )}
 
-          {currentStep === 4 && formData.aboutYou && formData.idea && formData.audiences && (
-            <SocialPostPreview
-              firstName={formData.aboutYou.firstName}
-              expertise={formData.aboutYou.expertise}
-              motivation={formData.aboutYou.motivation}
-              styles={formData.aboutYou.styles}
-              audiences={formData.audiences}
-              idea={formData.idea}
-              onContinue={handleSocialPostContinue}
-            />
-          )}
-          
-          {currentStep === 5 && (
+          {/* Stage 4: Business Identity (Name + Logo) */}
+          {currentStep === 4 && (
             <StepBusinessIdentity
               onNext={handleBusinessIdentity}
               onBack={goBack}
               initialValue={formData.businessIdentity}
-              idea={formData.idea}
-              aboutYou={formData.aboutYou}
+              idea={formData.idea || ''}
+              aboutYou={formData.aboutYou || {
+                firstName: '',
+                lastName: '',
+                expertise: '',
+                motivation: '',
+                styles: [],
+                includeFirstName: false,
+                includeLastName: false
+              }}
               audience={formData.audiences?.[0] || ''}
             />
           )}
           
-          {currentStep === 6 && formData.idea && formData.aboutYou && formData.audiences && formData.businessIdentity && (
+          {/* Stage 5: Shopfront Preview (Celebration) */}
+          {currentStep === 5 && formData.idea && formData.aboutYou && formData.audiences && formData.businessIdentity && (
             <StarterPackReveal
               idea={formData.idea}
               aboutYou={formData.aboutYou}
@@ -170,8 +176,21 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
               businessIdentity={formData.businessIdentity}
               introCampaign={formData.introCampaign}
               products={formData.products}
-              onUnlock={handleUnlock}
+              onUnlock={handleShopfrontContinue}
               onBack={goBack}
+            />
+          )}
+
+          {/* Stage 6: Social Media Kickstart (Final Step) */}
+          {currentStep === 6 && formData.aboutYou && formData.idea && formData.audiences && (
+            <SocialPostPreview
+              firstName={formData.aboutYou.firstName}
+              expertise={formData.aboutYou.expertise}
+              motivation={formData.aboutYou.motivation}
+              styles={formData.aboutYou.styles}
+              audiences={formData.audiences}
+              idea={formData.idea}
+              onContinue={handleSocialPostsComplete}
             />
           )}
         </div>

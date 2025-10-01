@@ -9,7 +9,7 @@ import { generateProductIdeas, type ProductIdea } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 interface StepOneProps {
-  onNext: (idea: string) => void;
+  onNext: (idea: string, products: ProductIdea[]) => void;
   initialValue?: string;
 }
 
@@ -44,8 +44,8 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (idea.trim().length >= 12) {
-      onNext(idea.trim());
+    if (idea.trim().length >= 12 && products.length > 0) {
+      onNext(idea.trim(), products);
     }
   };
 

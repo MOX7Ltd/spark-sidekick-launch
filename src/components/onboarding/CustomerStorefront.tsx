@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { ShoppingCart, User, Star, Sparkles } from 'lucide-react';
 
 interface Product {
+  id?: string;
   title: string;
-  type: string;
-  price: string;
+  type?: string;
+  format?: string;
+  price?: string;
   description: string;
 }
 
@@ -38,7 +40,12 @@ interface CustomerStorefrontProps {
       caption: string;
     };
   };
-  products?: Product[];
+  products?: Array<{
+    id?: string;
+    title: string;
+    format?: string;
+    description: string;
+  }>;
 }
 
 export const CustomerStorefront = ({ idea, aboutYou, audience, businessIdentity, introCampaign, products: providedProducts }: CustomerStorefrontProps) => {

@@ -234,9 +234,9 @@ export const SocialPostPreview = ({
         <Button 
           size="lg" 
           onClick={onContinue}
-          className="h-14 px-8 text-lg group"
+          className="h-14 px-8 text-lg group bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all"
         >
-          Continue Building
+          Your SideHive business is ready to launch! 🎉
           <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
         </Button>
       </div>
