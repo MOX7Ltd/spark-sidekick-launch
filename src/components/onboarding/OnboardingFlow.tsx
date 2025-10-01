@@ -22,7 +22,6 @@ interface OnboardingData {
     expertise: string;
     motivation: string;
     styles: string[];
-    vibe: string;
     profilePicture?: string;
     includeFirstName: boolean;
     includeLastName: boolean;
@@ -69,14 +68,13 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     setCurrentStep(2);
   };
 
-  // Stage 2: About You (First name, Last name, Why, Story, Vibe)
+  // Stage 2: About You (Name, Why, Story, Vibe & Style)
   const handleStepAboutYou = (aboutYou: { 
     firstName: string; 
     lastName: string;
     expertise: string;
     motivation: string;
     styles: string[];
-    vibe: string;
     profilePicture?: string;
     includeFirstName: boolean;
     includeLastName: boolean;

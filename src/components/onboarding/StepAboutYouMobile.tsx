@@ -12,7 +12,6 @@ interface StepAboutYouMobileProps {
     expertise: string;
     motivation: string;
     styles: string[];
-    vibe: string;
     profilePicture?: string;
     includeFirstName: boolean;
     includeLastName: boolean;
@@ -24,7 +23,6 @@ interface StepAboutYouMobileProps {
     expertise?: string;
     motivation?: string;
     styles?: string[];
-    vibe?: string;
     profilePicture?: string;
     includeFirstName?: boolean;
     includeLastName?: boolean;
@@ -32,22 +30,14 @@ interface StepAboutYouMobileProps {
   isLoading?: boolean;
 }
 
-const styleOptions = [
-  { value: 'Professional', label: 'Professional', emoji: '🎯' },
-  { value: 'Friendly', label: 'Friendly', emoji: '💬' },
-  { value: 'Playful', label: 'Playful', emoji: '✨' },
-  { value: 'Inspirational', label: 'Inspirational', emoji: '💡' },
-  { value: 'Bold', label: 'Bold & Direct', emoji: '⚡' },
-  { value: 'Educational', label: 'Educational', emoji: '🎓' },
-];
-
-const vibeOptions = [
+const vibeStyleOptions = [
   { value: 'Professional', label: 'Professional', emoji: '🎯', description: 'Clear, credible, and trustworthy' },
   { value: 'Playful', label: 'Playful', emoji: '✨', description: 'Fun, approachable, and energetic' },
   { value: 'Bold', label: 'Bold', emoji: '⚡', description: 'Confident and attention-grabbing' },
   { value: 'Visionary', label: 'Visionary', emoji: '🚀', description: 'Future-focused and innovative' },
   { value: 'Friendly', label: 'Friendly', emoji: '💬', description: 'Warm and approachable' },
   { value: 'Educational', label: 'Educational', emoji: '🎓', description: 'Informative and helpful' },
+  { value: 'Inspirational', label: 'Inspirational', emoji: '💡', description: 'Motivating and uplifting' },
 ];
 
 export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: StepAboutYouMobileProps) => {
@@ -56,13 +46,13 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
   const [lastName, setLastName] = useState(initialValue?.lastName || '');
   const [expertise, setExpertise] = useState(initialValue?.expertise || '');
   const [motivation, setMotivation] = useState(initialValue?.motivation || '');
-  const [vibe, setVibe] = useState(initialValue?.vibe || '');
   const [styles, setStyles] = useState<string[]>(initialValue?.styles || []);
-  const [includeNameInBusiness, setIncludeNameInBusiness] = useState(initialValue?.includeFirstName || false);
+  const [includeFirstName, setIncludeFirstName] = useState(initialValue?.includeFirstName || false);
+  const [includeLastName, setIncludeLastName] = useState(initialValue?.includeLastName || false);
   const [isListening, setIsListening] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const totalQuestions = 6;
+  const totalQuestions = 4;
 
   const startVoiceInput = (field: 'expertise' | 'motivation') => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -113,18 +103,15 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
         lastName, 
         expertise, 
         motivation, 
-        styles, 
-        vibe,
-        includeFirstName: includeNameInBusiness, 
-        includeLastName: lastName.length > 0 
+        styles,
+        includeFirstName, 
+        includeLastName 
       });
     }
   };
 
   const handleSkip = () => {
     if (currentQuestion === 2) {
-      setLastName('');
-    } else if (currentQuestion === 3) {
       setMotivation('');
     }
     handleNext();
@@ -132,11 +119,9 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
 
   const canProceed = () => {
     if (currentQuestion === 1) return firstName.length > 0;
-    if (currentQuestion === 2) return true; // Last name is optional
-    if (currentQuestion === 3) return true; // Why is optional/skippable
-    if (currentQuestion === 4) return expertise.length >= 10;
-    if (currentQuestion === 5) return vibe.length > 0;
-    if (currentQuestion === 6) return styles.length > 0;
+    if (currentQuestion === 2) return true; // Why is optional/skippable
+    if (currentQuestion === 3) return expertise.length >= 10;
+    if (currentQuestion === 4) return styles.length > 0;
     return false;
   };
 
@@ -158,7 +143,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
         ))}
       </div>
 
-      {/* Question 1: Name */}
+      {/* Question 1: Name (Combined First & Last) */}
       {currentQuestion === 1 && (
         <Card className="border-2 border-primary/20 animate-fade-in-up">
           <CardContent className="p-6 space-y-6">
@@ -169,30 +154,57 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
               </p>
             </div>
 
-            <Input
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Your first name..."
-              className="h-14 text-lg"
-              autoFocus
-            />
+            <div className="space-y-4">
+              <div>
+                <Input
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="First name *"
+                  className="h-14 text-lg"
+                  autoFocus
+                />
+              </div>
+              
+              <div>
+                <Input
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Last name (optional)"
+                  className="h-14 text-lg"
+                />
+              </div>
+            </div>
 
             {firstName.length > 0 && (
               <>
                 <div className="flex items-center gap-2 text-primary animate-bounce-in">
                   <Check className="w-5 h-5" />
-                  <span className="font-medium">Perfect — that's going to make your business shine! ✨</span>
+                  <span className="font-medium">Amazing — your idea is already taking shape ✨</span>
                 </div>
                 
-                <label className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={includeNameInBusiness}
-                    onChange={(e) => setIncludeNameInBusiness(e.target.checked)}
-                    className="w-5 h-5 rounded border-2 border-primary text-primary focus:ring-2 focus:ring-primary"
-                  />
-                  <span className="text-sm font-medium">Include my name in my business name</span>
-                </label>
+                <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                  <p className="text-sm font-medium">Include in business name:</p>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={includeFirstName}
+                      onChange={(e) => setIncludeFirstName(e.target.checked)}
+                      className="w-5 h-5 rounded border-2 border-primary text-primary focus:ring-2 focus:ring-primary"
+                    />
+                    <span className="text-sm">First name ({firstName})</span>
+                  </label>
+                  {lastName && (
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={includeLastName}
+                        onChange={(e) => setIncludeLastName(e.target.checked)}
+                        className="w-5 h-5 rounded border-2 border-primary text-primary focus:ring-2 focus:ring-primary"
+                      />
+                      <span className="text-sm">Last name ({lastName})</span>
+                    </label>
+                  )}
+                </div>
               </>
             )}
 
@@ -219,64 +231,8 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
         </Card>
       )}
 
-      {/* Question 2: Last Name (Optional) */}
+      {/* Question 2: Your Why (Optional) */}
       {currentQuestion === 2 && (
-        <Card className="border-2 border-primary/20 animate-fade-in-up">
-          <CardContent className="p-6 space-y-6">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold">What's your last name?</h2>
-              <p className="text-muted-foreground">
-                Optional — we'll use it if you want your name in your business name
-              </p>
-            </div>
-
-            <Input
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              placeholder="Your last name (optional)..."
-              className="h-14 text-lg"
-              autoFocus
-            />
-
-            {lastName.length > 0 && (
-              <div className="flex items-center gap-2 text-primary animate-bounce-in">
-                <Check className="w-5 h-5" />
-                <span className="font-medium">Got it! This gives us more options for your business name ✨</span>
-              </div>
-            )}
-
-            <div className="flex gap-3 pt-4">
-              <Button 
-                variant="outline"
-                size="lg"
-                onClick={() => setCurrentQuestion(1)}
-                className="flex-1 h-12"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
-              <Button 
-                variant="ghost"
-                size="lg"
-                onClick={handleSkip}
-                className="flex-1 h-12"
-              >
-                Skip
-              </Button>
-              <Button 
-                size="lg"
-                onClick={handleNext}
-                className="flex-1 h-12"
-              >
-                Continue →
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Question 3: Your Why (Optional) */}
-      {currentQuestion === 3 && (
         <Card className="border-2 border-primary/20 animate-fade-in-up">
           <CardContent className="p-6 space-y-6">
             <div className="space-y-2">
@@ -323,7 +279,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
               <Button 
                 variant="outline"
                 size="lg"
-                onClick={() => setCurrentQuestion(2)}
+                onClick={() => setCurrentQuestion(1)}
                 className="flex-1 h-12"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -350,8 +306,8 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
         </Card>
       )}
 
-      {/* Question 4: Your Story */}
-      {currentQuestion === 4 && (
+      {/* Question 3: Your Story */}
+      {currentQuestion === 3 && (
         <Card className="border-2 border-primary/20 animate-fade-in-up">
           <CardContent className="p-6 space-y-6">
             <div className="space-y-2">
@@ -398,7 +354,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
               <Button 
                 variant="outline"
                 size="lg"
-                onClick={() => setCurrentQuestion(3)}
+                onClick={() => setCurrentQuestion(2)}
                 className="flex-1 h-12"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -417,24 +373,24 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
         </Card>
       )}
 
-      {/* Question 5: Business Vibe */}
-      {currentQuestion === 5 && (
+      {/* Question 4: Vibe & Style (Consolidated Multi-Select) */}
+      {currentQuestion === 4 && (
         <Card className="border-2 border-primary/20 animate-fade-in-up">
           <CardContent className="p-6 space-y-6">
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold">What vibe do you want your business to have?</h2>
+              <h2 className="text-2xl font-bold">What vibe & style do you want?</h2>
               <p className="text-muted-foreground">
-                This shapes your business name, logo, and how you show up
+                This shapes your name, logo, posts, and how you show up. Pick as many as you like!
               </p>
             </div>
 
             <div className="space-y-2">
-              {vibeOptions.map((option) => {
-                const isSelected = vibe === option.value;
+              {vibeStyleOptions.map((option) => {
+                const isSelected = styles.includes(option.value);
                 return (
                   <button
                     key={option.value}
-                    onClick={() => setVibe(option.value)}
+                    onClick={() => toggleStyle(option.value)}
                     className={`w-full p-4 rounded-lg text-left transition-all border-2 ${
                       isSelected
                         ? 'border-primary bg-primary/5 scale-[1.02] shadow-lg' 
@@ -454,72 +410,14 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
               })}
             </div>
 
-            {vibe && (
-              <div className="flex items-center gap-2 text-primary animate-bounce-in">
-                <Sparkles className="w-5 h-5" />
-                <span className="font-medium">Perfect — your vibe is coming through! ✨</span>
-              </div>
-            )}
-
-            <div className="flex gap-3 pt-4">
-              <Button 
-                variant="outline"
-                size="lg"
-                onClick={() => setCurrentQuestion(4)}
-                className="flex-1 h-12"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
-              <Button 
-                size="lg"
-                onClick={handleNext}
-                disabled={!canProceed()}
-                className="flex-1 h-12"
-              >
-                Continue →
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Question 6: Communication Style */}
-      {currentQuestion === 6 && (
-        <Card className="border-2 border-primary/20 animate-fade-in-up">
-          <CardContent className="p-6 space-y-6">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold">How do you like to communicate?</h2>
-              <p className="text-muted-foreground">
-                Pick all that match your style (tap as many as you like)
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              {styleOptions.map((option) => {
-                const isSelected = styles.includes(option.value);
-                return (
-                  <button
-                    key={option.value}
-                    onClick={() => toggleStyle(option.value)}
-                    className={`px-5 py-3 rounded-full text-base font-medium transition-all ${
-                      isSelected
-                        ? 'bg-primary text-primary-foreground scale-105 shadow-lg' 
-                        : 'bg-muted hover:bg-muted/80 text-foreground'
-                    }`}
-                  >
-                    <span className="mr-2">{option.emoji}</span>
-                    {option.label}
-                    {isSelected && <Check className="inline-block ml-2 w-4 h-4" />}
-                  </button>
-                );
-              })}
-            </div>
-
             {styles.length > 0 && (
               <div className="flex items-center gap-2 text-primary animate-bounce-in">
                 <Sparkles className="w-5 h-5" />
-                <span className="font-medium">Perfect! Now let's find your audience 🎯</span>
+                <span className="font-medium">
+                  {styles.length === 1 
+                    ? 'Perfect — your vibe is coming through! ✨' 
+                    : 'This is looking fantastic — let\'s add the finishing touches 🚀'}
+                </span>
               </div>
             )}
 
@@ -527,7 +425,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
               <Button 
                 variant="outline"
                 size="lg"
-                onClick={() => setCurrentQuestion(5)}
+                onClick={() => setCurrentQuestion(3)}
                 className="flex-1 h-12"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
@@ -537,9 +435,9 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
                 size="lg"
                 onClick={handleNext}
                 disabled={!canProceed() || isLoading}
-                className="flex-1 h-12 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all"
+                className="flex-1 h-12"
               >
-                {isLoading ? 'Generating...' : 'Perfect — now let\'s give your business a name and a look! →'}
+                {isLoading ? 'Generating...' : 'Perfect — now who\'s this for? →'}
               </Button>
             </div>
           </CardContent>

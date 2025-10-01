@@ -127,7 +127,7 @@ export const StepTwoMultiSelect = ({ onNext, onBack, initialValue, isLoading = f
             disabled={!isValid || isLoading}
             className="flex-1 h-12 text-base bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all disabled:opacity-50"
           >
-            {isLoading ? 'Generating your business...' : 'Your business is taking shape — ready to see it live? 🚀'}
+            {isLoading ? 'Generating your business...' : 'Perfect — now let\'s give your business a name! →'}
           </Button>
         </div>
       </form>

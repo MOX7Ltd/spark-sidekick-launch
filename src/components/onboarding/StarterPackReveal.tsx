@@ -52,7 +52,6 @@ interface StarterPackRevealProps {
 
 export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, introCampaign, products, onUnlock, onBack }: StarterPackRevealProps) => {
   const [showConfetti, setShowConfetti] = useState(false);
-  const [viewMode, setViewMode] = useState<'customer' | 'edit'>('customer');
 
   useEffect(() => {
     // Trigger confetti animation on mount
@@ -62,7 +61,7 @@ export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, 
   }, []);
 
   return (
-    <div className="max-w-4xl mx-auto animate-slide-up">
+    <div className="max-w-3xl mx-auto px-4 py-8 animate-fade-in">
       {/* Confetti Elements */}
       {showConfetti && (
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-50">
@@ -81,129 +80,88 @@ export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, 
         </div>
       )}
 
-      <div className="text-center mb-8">
-        <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center animate-bounce-in">
+      <div className="text-center mb-8 space-y-4">
+        <div className="w-20 h-20 mx-auto bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center animate-bounce-in">
           <Sparkles className="w-10 h-10 text-white animate-pulse" />
         </div>
-        <h2 className="text-4xl md:text-5xl font-bold mb-4 animate-fade-in">
+        <h2 className="text-4xl md:text-5xl font-bold animate-fade-in">
           🎉 Your business is alive!
         </h2>
-        <p className="text-xl text-muted-foreground mb-4 max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          This is just the beginning — your business is already looking real! This is what customers will see when they visit your storefront.
+        <p className="text-xl text-muted-foreground max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          Here's your new business taking shape — this is just the beginning!
         </p>
-        
-        {/* View Toggle */}
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <Button
-            variant={viewMode === 'customer' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('customer')}
-            className="gap-2"
-          >
-            <Eye className="w-4 h-4" />
-            See as Customer
-          </Button>
-          <Button
-            variant={viewMode === 'edit' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('edit')}
-            className="gap-2"
-          >
-            <Settings className="w-4 h-4" />
-            Edit Details
-          </Button>
-        </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[1.5fr,1fr] items-start">
-        {/* Storefront Preview - Customer Facing */}
-        <div>
-          <CustomerStorefront
-            idea={idea}
-            aboutYou={aboutYou}
-            audience={audience}
-            businessIdentity={businessIdentity}
-            introCampaign={introCampaign}
-            products={products}
-          />
-        </div>
+      {/* Simplified Storefront Header Preview */}
+      <Card className="border-2 border-primary/20 overflow-hidden mb-8 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+        <CardContent className="p-8">
+          {/* Logo & Business Name */}
+          <div className="flex flex-col items-center text-center mb-6">
+            {businessIdentity.logoSVG && (
+              <div 
+                className="w-24 h-24 mb-4"
+                dangerouslySetInnerHTML={{ __html: businessIdentity.logoSVG }}
+              />
+            )}
+            <h3 className="text-3xl font-bold mb-2">{businessIdentity.name}</h3>
+            {businessIdentity.tagline && (
+              <p className="text-lg text-muted-foreground">{businessIdentity.tagline}</p>
+            )}
+          </div>
 
-        {/* Unlock Panel */}
-        <div className="space-y-6">
-          <Card className="border-primary/20 bg-gradient-subtle">
-            <CardContent className="p-6">
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 mx-auto bg-gradient-accent rounded-full flex items-center justify-center">
-                  <Sparkles className="w-8 h-8 text-white" />
-                </div>
-                
-                <h3 className="text-2xl font-bold">Starter Pack</h3>
-                <div className="text-3xl font-bold text-brand-orange">$10</div>
-                <p className="text-muted-foreground">One-time payment to launch</p>
-              </div>
+          {/* About Section */}
+          {businessIdentity.bio && (
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase mb-2">About</h4>
+              <p className="text-base leading-relaxed">{businessIdentity.bio}</p>
+            </div>
+          )}
 
-              <div className="space-y-3 my-6">
-                {[
-                  'Publish your live storefront instantly',
-                  'Own & edit your business identity',
-                  'Post campaigns directly to social media',
-                  'Accept payments & start earning',
-                  'Access to Campaign Builder dashboard'
-                ].map((feature, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-sm">{feature}</span>
+          {/* Products Preview */}
+          {products && products.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold text-muted-foreground uppercase mb-3">What We Offer</h4>
+              <div className="space-y-3">
+                {products.slice(0, 3).map((product, idx) => (
+                  <div key={idx} className="p-4 bg-muted/30 rounded-lg">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <h5 className="font-semibold mb-1">{product.title}</h5>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+                      </div>
+                      {product.format && (
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full whitespace-nowrap">
+                          {product.format}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-                <Button 
-                variant="starter" 
-                size="xl" 
-                className="w-full mb-4 bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all"
-                onClick={onUnlock}
-              >
-                <Rocket className="mr-2 h-5 w-5" />
-                Now let's show the world 🚀
-              </Button>
-
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">
-                  🚀 Go live in 60 seconds<br />
-                  💳 Secure payment via Stripe<br />
-                  📈 Start earning immediately
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Testimonial/Social Proof */}
-          <Card className="bg-muted/30">
-            <CardContent className="p-4">
-              <div className="text-center space-y-2">
-                <div className="flex justify-center space-x-1 text-accent">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <span key={i}>⭐</span>
-                  ))}
-                </div>
-                <p className="text-sm italic">
-                  "Seeing my full business preview convinced me instantly. From idea to published storefront in 15 minutes!"
-                </p>
-                <p className="text-xs text-muted-foreground">- Alex M., Entrepreneur</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Back Button */}
-          <div className="text-center">
-            <Button 
-              variant="ghost" 
-              onClick={onBack}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              ← Want to change something?
-            </Button>
-          </div>
+      {/* Continue Button */}
+      <div className="text-center space-y-4">
+        <Button 
+          size="lg"
+          onClick={onUnlock}
+          className="h-14 px-8 text-lg bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all"
+        >
+          <Rocket className="mr-2 h-5 w-5" />
+          Next — See how to launch with social media! 🚀
+        </Button>
+        
+        <div>
+          <Button 
+            variant="ghost" 
+            onClick={onBack}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            ← Want to change something?
+          </Button>
         </div>
       </div>
     </div>
