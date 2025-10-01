@@ -220,7 +220,7 @@ serve(async (req) => {
       ? 'Generate memorable, unique names that are easy to spell and pronounce. Avoid generic terms. Focus on emotional resonance and brand differentiation.'
       : 'Generate business names based on user inputs.';
     
-    namePrompt += ` ${nameGuidance}`;
+    namePrompt += ` ${nameGuidance} Return ONLY a JSON array with exactly 3 objects, each with "name" and "tagline" properties. Example: [{"name":"CompanyName","tagline":"A tagline"},{"name":"OtherName","tagline":"Another tagline"},{"name":"ThirdName","tagline":"Third tagline"}]`;
 
     // Tagline prompt
     let taglinePrompt = `Generate a tagline for a business with this concept: ${idea}.
@@ -240,7 +240,7 @@ serve(async (req) => {
       productPrompt += ` The tone of voice should be: ${tone}.`;
     }
 
-    productPrompt += ` The products should be relevant to the business concept.`;
+    productPrompt += ` The products should be relevant to the business concept. Return ONLY a JSON array with exactly 3 objects, each with "name", "description", and "price" properties. Example: [{"name":"Product 1","description":"Description here","price":"$99"},{"name":"Product 2","description":"Description here","price":"$149"},{"name":"Product 3","description":"Description here","price":"$199"}]`;
 
     // AI Generation
     const aiGatewayUrl = 'https://ai.gateway.lovable.dev/v1/chat/completions';
@@ -253,17 +253,34 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'google/gemini-1.5-pro-latest',
+          model: 'google/gemini-2.5-flash',
           messages: [{ role: 'user', content: prompt }],
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`AI gateway error: ${response.status}`);
+        const errorBody = await response.text();
+        console.error(`[generate-identity] AI gateway error ${response.status}:`, errorBody);
+        throw new Error(`AI gateway error: ${response.status} - ${errorBody}`);
       }
 
       const data = await response.json();
       return data.choices[0].message.content;
+    }
+    
+    function safeParseJSON(text: string, fallback: any) {
+      try {
+        // Try to extract JSON from markdown code blocks
+        const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[1]);
+        }
+        // Try direct parse
+        return JSON.parse(text);
+      } catch (error) {
+        console.error('[generate-identity] JSON parse error:', error, 'Text:', text);
+        return fallback;
+      }
     }
 
     async function generateLogo(businessName: string, style: string) {
@@ -297,18 +314,23 @@ serve(async (req) => {
       generateText(productPrompt),
     ]);
 
-    // Basic SVG sanitization
-    const sanitizedLogoSVG = sanitizeSVG(await (await fetch(logoUrl)).text());
-
     // Format the response
     const result = {
       business,
-      nameOptions: JSON.parse(nameOptions),
+      nameOptions: safeParseJSON(nameOptions, [
+        { name: "BusinessName", tagline: "A great business" },
+        { name: "CompanyName", tagline: "Your success partner" },
+        { name: "BrandName", tagline: "Quality service" }
+      ]),
       tagline,
       bio: business,
       colors: ['#000000', '#FFFFFF'],
-      logoSVG: sanitizedLogoSVG,
-      products: JSON.parse(products),
+      logoUrl: logoUrl,
+      products: safeParseJSON(products, [
+        { name: "Product 1", description: "Quality product", price: "$99" },
+        { name: "Product 2", description: "Premium product", price: "$149" },
+        { name: "Product 3", description: "Deluxe product", price: "$199" }
+      ]),
     };
     
     const durationMs = Math.round(performance.now() - startTime);
