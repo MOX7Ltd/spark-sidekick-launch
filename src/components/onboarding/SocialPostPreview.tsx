@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Instagram, Linkedin, ArrowRight, Copy, RefreshCw } from 'lucide-react';
+import { Sparkles, Instagram, Linkedin, ArrowRight, Copy, RefreshCw, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { generateCampaign } from '@/lib/api';
 
 interface SocialPostPreviewProps {
   firstName: string;
@@ -22,8 +23,57 @@ export const SocialPostPreview = ({
   onContinue 
 }: SocialPostPreviewProps) => {
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [shortPost, setShortPost] = useState<{ caption: string; hashtags: string[] } | null>(null);
+  const [longPost, setLongPost] = useState<{ caption: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
   
+  useEffect(() => {
+    generatePosts();
+  }, []);
+
+  const generatePosts = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const response = await generateCampaign({
+        type: 'intro',
+        platforms: ['instagram', 'linkedin'],
+        businessName: idea,
+        background: expertise,
+        motivation: motivation,
+        tone: styles.join(', ')
+      });
+
+      if (response.items && response.items.length >= 2) {
+        const short = response.items.find(item => item.platform === 'instagram');
+        const long = response.items.find(item => item.platform === 'linkedin');
+        
+        if (short) {
+          const hashtagMatch = short.content.match(/(#\w+)/g) || [];
+          const captionWithoutHashtags = short.content.replace(/(#\w+)/g, '').trim();
+          setShortPost({ caption: captionWithoutHashtags, hashtags: hashtagMatch });
+        }
+        
+        if (long) {
+          setLongPost({ caption: long.content });
+        }
+      }
+    } catch (err) {
+      console.error('Error generating posts:', err);
+      setError('Failed to generate posts. Please try again.');
+      toast({
+        title: "Generation failed",
+        description: "We couldn't generate your posts. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleCopy = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
     toast({
@@ -32,35 +82,38 @@ export const SocialPostPreview = ({
     });
   };
 
-  const handleRegenerate = () => {
+  const handleRegenerate = async () => {
     setIsRegenerating(true);
-    // In a real implementation, this would call the API to regenerate posts
-    setTimeout(() => {
-      setIsRegenerating(false);
-      toast({
-        title: "Posts refreshed!",
-        description: "Your social posts have been regenerated",
-      });
-    }, 1500);
+    await generatePosts();
+    setIsRegenerating(false);
+    toast({
+      title: "Posts refreshed!",
+      description: "Your social posts have been regenerated",
+    });
   };
   
-  // Generate authentic, human social posts
-  const generateShortPost = () => {
-    const styleVibe = styles.includes('Playful') ? '✨' : styles.includes('Bold') ? '🔥' : '💡';
-    return {
-      caption: `Hey everyone! ${firstName} here ${styleVibe}\n\nI'm taking the leap and starting something new – ${idea.toLowerCase()}.\n\nIt's scary and exciting at the same time, but I've been thinking about this for a while now. ${expertise}\n\n${motivation || "I'm ready to see where this journey takes me."}\n\nWho's with me? Drop a comment if you've ever felt that pull to try something new 👇`,
-      hashtags: ['#NewBeginnings', '#SideHustle', '#EntrepreneurJourney', '#SmallBusiness', '#StartingOut']
-    };
-  };
+  if (isLoading) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto" />
+          <h2 className="text-2xl font-bold">Creating your story...</h2>
+          <p className="text-muted-foreground">This will just take a moment</p>
+        </div>
+      </div>
+    );
+  }
 
-  const generateLongPost = () => {
-    return {
-      caption: `I've been sitting on an idea for months (maybe longer if I'm being honest).\n\nToday, I'm finally doing something about it.\n\nI'm launching ${idea.toLowerCase()}, and here's why:\n\n${expertise} This isn't just something I know how to do – it's something I genuinely care about.\n\n${motivation || "I realized I was waiting for the 'perfect time' that was never going to come."}\n\nSo here's what I'm building:\nA business that helps people in a real way. No fluff, no pretending I have it all figured out. Just honest work and a genuine desire to make this thing succeed.\n\nI'll be sharing the journey – the wins, the challenges, and everything in between.\n\nIf you've ever thought about starting something, this is your sign. You don't need to have everything figured out. You just need to start.\n\nLet's build something together.\n\n- ${firstName}`
-    };
-  };
-
-  const shortPost = generateShortPost();
-  const longPost = generateLongPost();
+  if (error || !shortPost || !longPost) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <div className="text-center space-y-4">
+          <p className="text-destructive">{error || 'Something went wrong'}</p>
+          <Button onClick={generatePosts}>Try Again</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 animate-fade-in">
