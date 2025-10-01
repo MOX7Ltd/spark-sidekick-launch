@@ -32,12 +32,11 @@ interface OnboardingData {
     lastName: string;
     expertise: string;
     motivation: string;
-    styles: string[];
-    vibe: string;
     profilePicture?: string;
     includeFirstName: boolean;
     includeLastName: boolean;
   };
+  vibes: string[];
   audiences: string[];
   businessIdentity: {
     name: string;

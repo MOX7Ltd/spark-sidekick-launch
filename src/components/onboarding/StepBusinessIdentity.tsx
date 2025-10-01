@@ -44,11 +44,11 @@ interface StepBusinessIdentityProps {
     lastName: string;
     expertise: string;
     motivation: string;
-    styles: string[];
     includeFirstName: boolean;
     includeLastName: boolean;
   };
   audience: string;
+  vibes?: string[];
 }
 
 const nameStyleOptions = [
@@ -68,7 +68,7 @@ const logoStyles = [
   { id: 'retro', name: 'Retro', gradient: 'from-amber-600 to-red-600', icon: Star },
 ];
 
-export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, aboutYou, audience }: StepBusinessIdentityProps) => {
+export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, aboutYou, audience, vibes = [] }: StepBusinessIdentityProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [hasExistingName, setHasExistingName] = useState<boolean | null>(null);
   const [existingName, setExistingName] = useState('');
@@ -114,7 +114,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
         lastName: aboutYou.lastName,
         includeFirstName: aboutYou.includeFirstName,
         includeLastName: aboutYou.includeLastName,
-        tone: aboutYou.styles.join(', '),
+        tone: vibes.join(', '),
         namingPreference: 'anonymous',
         bannedWords: [],
         rejectedNames: [existingName]
@@ -186,7 +186,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
         lastName: aboutYou.lastName,
         includeFirstName: selectedNameStyle === 'personal' ? true : aboutYou.includeFirstName,
         includeLastName: selectedNameStyle === 'personal' ? true : aboutYou.includeLastName,
-        tone: selectedNameStyle || aboutYou.styles.join(', '),
+        tone: selectedNameStyle || vibes.join(', '),
         namingPreference: selectedNameStyle === 'personal' ? 'with_personal_name' : 'anonymous',
         bannedWords,
         rejectedNames
@@ -234,7 +234,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
         lastName: aboutYou.lastName,
         includeFirstName: selectedNameStyle === 'personal' ? true : aboutYou.includeFirstName,
         includeLastName: selectedNameStyle === 'personal' ? true : aboutYou.includeLastName,
-        tone: selectedNameStyle || aboutYou.styles.join(', '),
+        tone: selectedNameStyle || vibes.join(', '),
         namingPreference: selectedNameStyle === 'personal' ? 'with_personal_name' : 'anonymous',
         bannedWords: [...bannedWords, ...wordsInName],
         rejectedNames: [...rejectedNames, rejectedOption.name, ...existingNames]

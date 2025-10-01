@@ -131,9 +131,9 @@ export const SocialPostPreview = ({
         <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4 animate-bounce-in">
           <Sparkles className="w-8 h-8 text-primary animate-glow-pulse" />
         </div>
-        <h2 className="text-3xl font-bold">Your story just came alive ✨</h2>
+        <h2 className="text-3xl font-bold">Look what you could post tomorrow! ✨</h2>
         <p className="text-lg text-muted-foreground">
-          Here's how you could introduce your business to the world
+          AI-generated posts ready to promote your new business
         </p>
       </div>
 
@@ -236,7 +236,7 @@ export const SocialPostPreview = ({
           onClick={onContinue}
           className="h-14 px-8 text-lg group bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all"
         >
-          Your SideHive business is ready to launch! 🎉
+          Almost there — let's make it official! 🎉
           <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
         </Button>
       </div>
