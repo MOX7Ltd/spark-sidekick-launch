@@ -189,14 +189,13 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
           )}
 
           {/* Stage 7: Social Media Kickstart */}
-          {currentStep === 7 && formData.aboutYou && formData.idea && formData.audiences && formData.vibes && (
+          {currentStep === 7 && formData.aboutYou && formData.businessIdentity && formData.audiences && formData.vibes && formData.products && (
             <SocialPostPreview
-              firstName={formData.aboutYou.firstName}
-              expertise={formData.aboutYou.expertise}
-              motivation={formData.aboutYou.motivation}
-              styles={formData.vibes}
+              aboutYou={formData.aboutYou}
+              vibes={formData.vibes}
               audiences={formData.audiences}
-              idea={formData.idea}
+              businessIdentity={formData.businessIdentity}
+              products={formData.products}
               onContinue={handleSocialPostsComplete}
             />
           )}

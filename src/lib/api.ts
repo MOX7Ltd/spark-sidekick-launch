@@ -55,6 +55,7 @@ export interface GenerateCampaignRequest {
   audience?: string;
   bio?: string;
   tagline?: string;
+  products?: string[];
 }
 
 export interface GenerateCampaignResponse {

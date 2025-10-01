@@ -73,7 +73,7 @@ serve(async (req) => {
     }
 
     const requestBody = await req.json();
-    const { businessId, type, platforms, background, motivation, tone, firstName, businessName, audience, bio, tagline } = requestBody;
+    const { businessId, type, platforms, background, motivation, tone, firstName, businessName, audience, bio, tagline, products } = requestBody;
 
     if (!type || !platforms?.length) {
       return new Response(JSON.stringify({ error: 'Missing required fields: type, platforms' }), {
@@ -198,10 +198,15 @@ ${firstName ? `- First Name: ${firstName}` : ''}
 - Business Name: ${business.business_name}
 - Background/Expertise: ${background || business.bio}
 ${motivation ? `- Personal Motivation: ${motivation}` : ''}
+${tagline ? `- Tagline: ${tagline}` : ''}
+${products && products.length > 0 ? `- Products/Services: ${products.join(', ')}` : ''}
+- Target Audience: ${audience || business.audience}
 - Tone/Style: ${tone || 'friendly'}
 - Platforms: ${platforms.join(', ')}
 
 Create both a short celebratory version AND a longer authentic story-driven version for each platform. ${firstName ? `Use the first name "${firstName}" when introducing yourself in the posts.` : ''}
+
+${products && products.length > 0 ? 'IMPORTANT: Naturally mention at least ONE of the products/services in the posts to give concrete examples of what you offer.' : ''}
 
 REMEMBER: Transform the user's raw inputs into polished narrative. If they say "I've raised 5 children", write "raising five kids" or "as a parent of five". Never copy-paste their exact phrasing mid-sentence.
 
