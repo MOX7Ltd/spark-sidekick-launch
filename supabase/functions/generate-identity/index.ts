@@ -186,7 +186,11 @@ serve(async (req) => {
     businessPrompt += ` The description should be 2-3 short sentences.`;
 
     // Name options prompt
-    let namePrompt = `Generate 3 business names based on user inputs.`;
+    let namePrompt = `Generate 3 business names for a business about: ${idea}.`;
+    
+    if (audience) {
+      namePrompt += ` The target audience is: ${audience}.`;
+    }
 
     if (firstName && lastName && (includeFirstName || includeLastName)) {
       namePrompt += ` The user's name is ${firstName} ${lastName}.`;
