@@ -8,7 +8,7 @@ const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-id, x-trace-id, x-env, x-retry',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-id, x-trace-id, x-env, x-retry, x-idempotency-key, x-feature-flags',
 };
 
 const requestSchema = z.object({
@@ -19,12 +19,16 @@ const requestSchema = z.object({
   exclude_ids: z.array(z.string()).optional(),
 });
 
+console.log('[generate-product-ideas] Function started and deployed successfully');
+
 serve(async (req) => {
   const startTime = performance.now();
   const sessionId = req.headers.get('X-Session-Id') || 'unknown';
   const traceId = req.headers.get('X-Trace-Id') || 'unknown';
   const idempotencyKey = req.headers.get('X-Idempotency-Key') || traceId;
   const featureFlags = parseFeatureFlags(req.headers);
+  
+  console.log(`[generate-product-ideas] ${req.method} request - Session: ${sessionId}, Trace: ${traceId}`);
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
