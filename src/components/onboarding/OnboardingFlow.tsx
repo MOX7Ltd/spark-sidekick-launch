@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { ProgressBar } from './ProgressBar';
 import { StepOne } from './StepOne';
 import { StepAboutYou } from './StepAboutYou';
 import { StepTwoMultiSelect } from './StepTwoMultiSelect';
@@ -58,17 +57,6 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   const [formData, setFormData] = useState<Partial<OnboardingData>>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
-
-  const stepLabels = [
-    'Your Idea',
-    'About You',
-    'Target Audience',
-    'Business Style',
-    'Business Identity',
-    'Launch Ready'
-  ];
-
-  const totalSteps = stepLabels.length;
 
   // Scroll to top whenever the step changes
   useEffect(() => {
@@ -215,14 +203,6 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   return (
     <div className="min-h-[80vh] py-8">
       <div className="container mx-auto px-4">
-        {currentStep < 5 && (
-          <ProgressBar 
-            currentStep={currentStep} 
-            totalSteps={totalSteps} 
-            stepLabels={stepLabels}
-          />
-        )}
-        
         <div className="min-h-[60vh] flex items-center justify-center">
           {currentStep === 1 && (
             <StepOne 
