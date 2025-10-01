@@ -90,13 +90,6 @@ export const StepThreeExpandedNew = ({ onNext, onBack, initialValue, idea, about
         audiences: [audience],
         vibes: [],
         aboutYou,
-        motivation: aboutYou.motivation,
-        firstName: aboutYou.firstName,
-        lastName: aboutYou.lastName,
-        includeFirstName: aboutYou.includeFirstName,
-        includeLastName: aboutYou.includeLastName,
-        tone: aboutYou.styles.join(', '),
-        namingPreference: (aboutYou.includeFirstName || aboutYou.includeLastName) ? 'with_personal_name' : 'anonymous',
         bannedWords,
         rejectedNames
       });
@@ -151,13 +144,6 @@ export const StepThreeExpandedNew = ({ onNext, onBack, initialValue, idea, about
           audiences: [audience],
           vibes: [],
           aboutYou,
-          motivation: aboutYou.motivation,
-          firstName: aboutYou.firstName,
-          lastName: aboutYou.lastName,
-          includeFirstName: aboutYou.includeFirstName,
-          includeLastName: aboutYou.includeLastName,
-          tone: aboutYou.styles.join(', '),
-          namingPreference: (aboutYou.includeFirstName || aboutYou.includeLastName) ? 'with_personal_name' : 'anonymous',
           bannedWords: [...bannedWords, ...wordsInName],
           rejectedNames: [...rejectedNames, rejectedOption.name, ...existingNames]
         });
