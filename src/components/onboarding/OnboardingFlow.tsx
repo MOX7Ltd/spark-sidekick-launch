@@ -166,7 +166,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
                 includeFirstName: false,
                 includeLastName: false
               }}
-              audience={formData.audiences?.[0] || ''}
+              audience={(formData.audiences || []).join(', ')}
               vibes={formData.vibes || []}
             />
           )}
