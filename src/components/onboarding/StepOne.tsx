@@ -182,7 +182,10 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
           <Card className="border-2 border-dashed border-primary/30">
             <CardContent className="p-6 text-center space-y-4">
               <p className="font-medium text-foreground">
-                Want to see product ideas you could sell?
+                What a great idea, do you want to see some products that your new business could sell?
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Use 👍 to mark ideas you like, 👎 to generate a replacement, or the refresh icon to try a different variation.
               </p>
               <Button
                 type="button"
@@ -293,22 +296,18 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
           </div>
         )}
 
-        <div className="pt-2">
-          <Button 
-            type="submit" 
-            size="lg" 
-            className="w-full h-12 text-base font-semibold"
-            disabled={!isValid}
-          >
-            Next step
-          </Button>
-          
-          {!isValid && (
-            <p className="text-center text-sm text-muted-foreground mt-3">
-              Describe your idea (at least 12 characters) to continue
-            </p>
-          )}
-        </div>
+        {hasGenerated && (
+          <div className="pt-2">
+            <Button 
+              type="submit" 
+              size="lg" 
+              className="w-full h-12 text-base font-semibold"
+              disabled={!isValid}
+            >
+              Next step - tell us a bit about yourself
+            </Button>
+          </div>
+        )}
       </form>
     </div>
   );
