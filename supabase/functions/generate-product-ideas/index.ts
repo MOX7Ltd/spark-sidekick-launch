@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
-import { checkIdempotency, storeIdempotentResponse, hashRequest } from '../_shared/idempotency.ts';
+import { checkIdempotency, storeIdempotentResponse, hashRequest, parseFeatureFlags } from '../_shared/idempotency.ts';
 import { normalizeOnboardingInput } from '../_shared/normalize.ts';
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
@@ -24,6 +24,7 @@ serve(async (req) => {
   const sessionId = req.headers.get('X-Session-Id') || 'unknown';
   const traceId = req.headers.get('X-Trace-Id') || 'unknown';
   const idempotencyKey = req.headers.get('X-Idempotency-Key') || traceId;
+  const featureFlags = parseFeatureFlags(req.headers);
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -91,6 +92,15 @@ Rules:
 - Generate exactly ${max_ideas} unique product ideas.
 ${exclude_ids.length > 0 ? `- Do NOT generate ideas similar to these IDs: ${exclude_ids.join(', ')}` : ''}`;
 
+    // Use feature flag for better product generation
+    const useBetterPrompt = featureFlags.includes('better_product_gen');
+    const finalSystemPrompt = useBetterPrompt 
+      ? systemPrompt + '\n\nFocus on highly specific, actionable product ideas that solve real problems. Emphasize outcomes over formats.'
+      : systemPrompt;
+    
+    console.log('[generate-product-ideas] Feature flags:', featureFlags);
+    console.log('[generate-product-ideas] Using better prompt:', useBetterPrompt);
+
     const userPrompt = `Generate ${max_ideas} revenue-ready product ideas for this business concept: "${idea_text}"
 
 ${normalized.audiences && normalized.audiences.length > 0 ? `Target audience: ${normalized.audiences.join(', ')}` : ''}
@@ -117,7 +127,7 @@ Return a JSON object with this exact structure:
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: systemPrompt },
+          { role: 'system', content: finalSystemPrompt },
           { role: 'user', content: userPrompt }
         ],
         response_format: { type: "json_object" }
@@ -159,6 +169,7 @@ Return a JSON object with this exact structure:
       idempotency_key: idempotencyKey,
       duration_ms: durationMs,
       applied_defaults: normalized.appliedDefaults.length > 0 ? normalized.appliedDefaults : undefined,
+      feature_flags: featureFlags,
       deduped: false,
       ok: true,
     };

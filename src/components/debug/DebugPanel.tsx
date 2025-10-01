@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Flag } from 'lucide-react';
 import { getSessionId } from '@/lib/telemetry';
 import { getRecentEvents } from '@/lib/frontendEventLogger';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { getAllFeatureFlags, getLocalOverrides, setLocalOverride, clearLocalOverride } from '@/lib/featureFlags';
 
 interface DebugInfo {
   step?: string;
@@ -20,11 +22,35 @@ interface DebugPanelProps {
 export function DebugPanel({ info }: DebugPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [events, setEvents] = useState<any[]>([]);
+  const [flags, setFlags] = useState<Record<string, boolean>>({});
+  const [localOverrides, setLocalOverrides] = useState<Record<string, boolean>>({});
   
   // Only show in development
   if (import.meta.env.MODE === 'production') {
     return null;
   }
+  
+  // Load feature flags on mount and when panel opens
+  useEffect(() => {
+    if (isOpen) {
+      loadFlags();
+    }
+  }, [isOpen]);
+  
+  const loadFlags = async () => {
+    const allFlags = await getAllFeatureFlags();
+    setFlags(allFlags);
+    setLocalOverrides(getLocalOverrides());
+  };
+  
+  const toggleLocalFlag = (key: string, enabled: boolean) => {
+    if (enabled) {
+      setLocalOverride(key, true);
+    } else {
+      clearLocalOverride(key);
+    }
+    loadFlags();
+  };
   
   // Refresh events when panel opens
   useEffect(() => {
@@ -84,6 +110,36 @@ export function DebugPanel({ info }: DebugPanelProps) {
                 </div>
               </div>
             )}
+            
+            <div>
+              <div className="font-bold text-muted-foreground mb-2 flex items-center gap-2">
+                <Flag className="h-3 w-3" />
+                Feature Flags
+              </div>
+              <div className="space-y-2">
+                {Object.keys(flags).length === 0 && (
+                  <div className="text-muted-foreground italic">No flags loaded</div>
+                )}
+                {Object.entries(flags).map(([key, enabled]) => {
+                  const isOverridden = key in localOverrides;
+                  return (
+                    <div key={key} className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                      <div className="flex flex-col gap-1 flex-1 min-w-0">
+                        <span className="font-bold text-[10px] truncate">{key}</span>
+                        {isOverridden && (
+                          <span className="text-[9px] text-yellow-500">Local override</span>
+                        )}
+                      </div>
+                      <Switch
+                        checked={enabled}
+                        onCheckedChange={(checked) => toggleLocalFlag(key, checked)}
+                        className="ml-2"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
             
             <div>
               <div className="font-bold text-muted-foreground mb-2">Recent Events (Last 5)</div>

@@ -11,6 +11,7 @@ export interface LogEventParams {
   payloadKeys?: string[];
   errorCode?: string;
   errorMessage?: string;
+  featureFlags?: string[];
 }
 
 export async function logEvent(params: LogEventParams): Promise<void> {

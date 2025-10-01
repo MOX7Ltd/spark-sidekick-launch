@@ -4,6 +4,16 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+export interface IdempotencyResult {
+  cached: boolean;
+  response: any;
+}
+
+export function parseFeatureFlags(headers: Headers): string[] {
+  const flagsHeader = headers.get('x-feature-flags') || '';
+  return flagsHeader.split(',').filter(f => f.trim().length > 0);
+}
+
 export async function hashRequest(body: any): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(JSON.stringify(body));

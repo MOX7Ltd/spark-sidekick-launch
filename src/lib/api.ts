@@ -4,6 +4,7 @@ import { logEvent } from './eventLogger';
 import { callWithRetry } from './apiClient';
 import { createAbortable, cleanupAbortable } from './abortManager';
 import { bumpVersion } from './versionManager';
+import { getAllFeatureFlags, getFeatureFlagsHeader } from './featureFlags';
 
 export interface GenerateIdentityRequest {
   idea: string;
@@ -72,11 +73,14 @@ export async function generateBusinessIdentity(request: GenerateIdentityRequest)
   const traceId = generateTraceId();
   bumpVersion('business-identity');
   
+  const flags = await getAllFeatureFlags();
+  
   const { data, error } = await supabase.functions.invoke('generate-identity', {
     body: request,
     headers: {
       ...getTelemetryHeaders(),
       'X-Idempotency-Key': traceId,
+      'X-Feature-Flags': getFeatureFlagsHeader(flags),
     },
   });
 
@@ -92,11 +96,14 @@ export async function generateCampaign(request: GenerateCampaignRequest): Promis
   const traceId = generateTraceId();
   bumpVersion('campaign');
   
+  const flags = await getAllFeatureFlags();
+  
   const { data, error } = await supabase.functions.invoke('generate-campaign', {
     body: request,
     headers: {
       ...getTelemetryHeaders(),
       'X-Idempotency-Key': traceId,
+      'X-Feature-Flags': getFeatureFlagsHeader(flags),
     },
   });
 
@@ -138,11 +145,14 @@ export async function generateLogos(businessName: string, style: string): Promis
   const traceId = generateTraceId();
   bumpVersion('logos');
   
+  const flags = await getAllFeatureFlags();
+  
   const { data, error } = await supabase.functions.invoke('generate-logos', {
     body: { businessName, style },
     headers: {
       ...getTelemetryHeaders(),
       'X-Idempotency-Key': traceId,
+      'X-Feature-Flags': getFeatureFlagsHeader(flags),
     },
   });
 
@@ -174,11 +184,14 @@ export async function generateProductIdeas(request: GenerateProductIdeasRequest)
   const traceId = generateTraceId();
   bumpVersion('products');
   
+  const flags = await getAllFeatureFlags();
+  
   const { data, error } = await supabase.functions.invoke('generate-product-ideas', {
     body: request,
     headers: {
       ...getTelemetryHeaders(),
       'X-Idempotency-Key': traceId,
+      'X-Feature-Flags': getFeatureFlagsHeader(flags),
     },
   });
 
@@ -219,4 +232,9 @@ export async function getUserBusiness(userId: string) {
   }
 
   return data;
+}
+
+export async function getFeatureFlag(key: string): Promise<boolean> {
+  const flags = await getAllFeatureFlags();
+  return flags[key] ?? false;
 }

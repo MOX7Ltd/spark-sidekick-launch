@@ -1,12 +1,12 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { checkIdempotency, storeIdempotentResponse, hashRequest } from '../_shared/idempotency.ts';
+import { checkIdempotency, storeIdempotentResponse, hashRequest, parseFeatureFlags } from '../_shared/idempotency.ts';
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-id, x-trace-id, x-env, x-retry',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-id, x-trace-id, x-env, x-retry, x-feature-flags',
 };
 
 serve(async (req) => {
@@ -14,6 +14,7 @@ serve(async (req) => {
   const sessionId = req.headers.get('X-Session-Id') || 'unknown';
   const traceId = req.headers.get('X-Trace-Id') || 'unknown';
   const idempotencyKey = req.headers.get('X-Idempotency-Key') || traceId;
+  const featureFlags = parseFeatureFlags(req.headers);
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -22,6 +23,8 @@ serve(async (req) => {
   try {
     const requestBody = await req.json();
     const { businessName, style } = requestBody;
+    
+    console.log('[generate-logos] Feature flags:', featureFlags);
     
     // Check for cached response
     const cachedResponse = await checkIdempotency(sessionId, idempotencyKey, 'logos');
@@ -114,6 +117,7 @@ serve(async (req) => {
       session_id: sessionId,
       idempotency_key: idempotencyKey,
       duration_ms: durationMs,
+      feature_flags: featureFlags,
       deduped: false,
       ok: true,
     };
@@ -138,6 +142,7 @@ serve(async (req) => {
       session_id: sessionId,
       idempotency_key: idempotencyKey,
       duration_ms: durationMs,
+      feature_flags: featureFlags,
       ok: false,
     }), {
       status: 500,

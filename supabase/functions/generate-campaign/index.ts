@@ -2,7 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
-import { checkIdempotency, storeIdempotentResponse, hashRequest } from '../_shared/idempotency.ts';
+import { checkIdempotency, storeIdempotentResponse, hashRequest, parseFeatureFlags } from '../_shared/idempotency.ts';
 import { normalizeOnboardingInput } from '../_shared/normalize.ts';
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
@@ -13,7 +13,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-id, x-trace-id, x-env, x-retry',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-id, x-trace-id, x-env, x-retry, x-feature-flags',
 };
 
 const requestSchema = z.object({
@@ -55,6 +55,7 @@ serve(async (req) => {
   const sessionId = req.headers.get('X-Session-Id') || 'unknown';
   const traceId = req.headers.get('X-Trace-Id') || 'unknown';
   const idempotencyKey = req.headers.get('X-Idempotency-Key') || traceId;
+  const featureFlags = parseFeatureFlags(req.headers);
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -62,6 +63,7 @@ serve(async (req) => {
 
   try {
     console.log('Attempting to verify user authentication...');
+    console.log('[generate-campaign] Feature flags:', featureFlags);
     
     // Check for cached response
     const cachedResponse = await checkIdempotency(sessionId, idempotencyKey, 'campaign');
@@ -469,6 +471,7 @@ Generate platform-optimized content for each platform that uses the business nam
       idempotency_key: idempotencyKey,
       duration_ms: durationMs,
       applied_defaults: normalized.appliedDefaults.length > 0 ? normalized.appliedDefaults : undefined,
+      feature_flags: featureFlags,
       deduped: false,
       ok: true,
     };

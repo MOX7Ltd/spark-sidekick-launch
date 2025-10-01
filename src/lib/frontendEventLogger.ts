@@ -5,6 +5,7 @@ export interface LogFrontendEventParams {
   eventType: 'step_transition' | 'user_action' | 'error';
   step: string;
   payload?: Record<string, any>;
+  featureFlags?: string[];
 }
 
 // In-memory store for recent events (for debug panel)
@@ -24,13 +25,18 @@ export async function logFrontendEvent(params: LogFrontendEventParams): Promise<
 
   // Log to Supabase events table
   try {
+    const payloadKeys = params.payload ? Object.keys(params.payload) : [];
+    if (params.featureFlags && params.featureFlags.length > 0) {
+      payloadKeys.push('feature_flags');
+    }
+    
     const { error } = await supabase.from('events').insert({
       session_id: sessionId,
       trace_id: traceId,
       step: params.step,
       action: params.eventType,
       ok: params.eventType !== 'error',
-      payload_keys: params.payload ? Object.keys(params.payload) : [],
+      payload_keys: payloadKeys,
       error_message: params.eventType === 'error' ? params.payload?.message : null,
       error_code: params.eventType === 'error' ? params.payload?.errorCode : null,
     });
