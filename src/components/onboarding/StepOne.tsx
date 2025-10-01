@@ -32,7 +32,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
     "This is how people could actually buy into your idea 👏",
     "Your idea has serious potential 💡",
     "You're building something special ✨",
-    "Let's make this happen 🔥"
+    "Nice work — you've just taken your first step toward making this real! 🔥"
   ];
 
   useEffect(() => {
@@ -52,12 +52,12 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   const isValid = idea.trim().length >= 12;
   
   const inspirationChips = [
-    "Local running club with paid weekly sessions",
-    "Meal-prep plans for gym beginners",
-    "Notion templates for freelancers",
-    "Photography mini-sessions (weekends)",
-    "Kids' homework + study skills workshop",
-    "Digital crochet patterns shop",
+    "Online coaching program for beginners",
+    "Meal-prep subscription boxes",
+    "Digital templates for small businesses",
+    "Weekend fitness bootcamps",
+    "Virtual tutoring sessions",
+    "Handmade product shop",
   ];
 
   const handleChipClick = (chip: string) => {
@@ -258,8 +258,8 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
           </CardContent>
         </Card>
 
-        {/* Inspiration Chips */}
-        {!hasGenerated && (
+        {/* Inspiration Chips - Auto-hide when user starts typing */}
+        {!hasGenerated && idea.length === 0 && (
           <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             <p className="text-sm font-medium text-muted-foreground text-center">
               Need inspiration? Tap an idea:
@@ -287,10 +287,10 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 <Lightbulb className="w-8 h-8 text-primary" />
               </div>
               <p className="font-semibold text-lg">
-                Ready to see what this could become?
+                Let's see what this could become 💡
               </p>
               <p className="text-sm text-muted-foreground">
-                Use 👍 to mark ideas you like, 👎 to try another, or ↻ to shuffle variations
+                Tap 👍 to save ideas you like, 👎 to replace, or 🔄 to refresh for new variations
               </p>
               <Button
                 type="button"
@@ -314,7 +314,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 ) : (
                   <>
                     <Sparkles className="w-5 h-5 mr-2" />
-                    Generate Product Ideas
+                    ✨ Generate product ideas you could sell
                   </>
                 )}
               </Button>

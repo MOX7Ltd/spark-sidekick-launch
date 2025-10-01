@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Instagram, Linkedin, ArrowRight } from 'lucide-react';
+import { Sparkles, Instagram, Linkedin, ArrowRight, Copy, RefreshCw } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface SocialPostPreviewProps {
   firstName: string;
@@ -20,6 +21,28 @@ export const SocialPostPreview = ({
   idea,
   onContinue 
 }: SocialPostPreviewProps) => {
+  const { toast } = useToast();
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  
+  const handleCopy = (text: string, type: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied!",
+      description: `${type} copied to clipboard`,
+    });
+  };
+
+  const handleRegenerate = () => {
+    setIsRegenerating(true);
+    // In a real implementation, this would call the API to regenerate posts
+    setTimeout(() => {
+      setIsRegenerating(false);
+      toast({
+        title: "Posts refreshed!",
+        description: "Your social posts have been regenerated",
+      });
+    }, 1500);
+  };
   
   // Generate authentic, human social posts
   const generateShortPost = () => {
@@ -74,8 +97,18 @@ export const SocialPostPreview = ({
               </div>
             </div>
 
-            <div className="mt-4 pt-4 border-t text-xs text-muted-foreground">
-              Perfect for Instagram, Facebook, or Twitter – quick and engaging
+            <div className="mt-4 pt-4 border-t flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">
+                Perfect for Instagram, Facebook, or Twitter
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleCopy(`${shortPost.caption}\n\n${shortPost.hashtags.join(' ')}`, 'Quick Launch Post')}
+              >
+                <Copy className="w-4 h-4 mr-1" />
+                Copy
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -95,17 +128,41 @@ export const SocialPostPreview = ({
               </p>
             </div>
 
-            <div className="mt-4 pt-4 border-t text-xs text-muted-foreground">
-              A deeper, more personal introduction – great for LinkedIn or a blog post
+            <div className="mt-4 pt-4 border-t flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">
+                Great for LinkedIn or a blog post
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleCopy(longPost.caption, 'Origin Story Post')}
+              >
+                <Copy className="w-4 h-4 mr-1" />
+                Copy
+              </Button>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-muted/50 border-dashed animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-          <CardContent className="p-6 text-center space-y-3">
-            <p className="text-sm text-muted-foreground">
-              <strong className="text-foreground">These are just starting points!</strong> You can customize, edit, and refine them later in your dashboard. They're designed to feel authentic and personal – just like your business.
-            </p>
+          <CardContent className="p-6 space-y-4">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">
+                <strong className="text-foreground">These are just starting points!</strong> You can customize, edit, and refine them anytime in your dashboard. They're designed to feel authentic and personal – just like your business.
+              </p>
+            </div>
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRegenerate}
+                disabled={isRegenerating}
+                className="gap-2"
+              >
+                <RefreshCw className={`w-4 h-4 ${isRegenerating ? 'animate-spin' : ''}`} />
+                {isRegenerating ? 'Regenerating...' : 'Regenerate Posts'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

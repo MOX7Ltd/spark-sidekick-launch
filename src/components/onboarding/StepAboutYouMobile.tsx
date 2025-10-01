@@ -45,10 +45,11 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
   const [expertise, setExpertise] = useState(initialValue?.expertise || '');
   const [motivation, setMotivation] = useState(initialValue?.motivation || '');
   const [styles, setStyles] = useState<string[]>(initialValue?.styles || []);
+  const [includeNameInBusiness, setIncludeNameInBusiness] = useState(initialValue?.includeFirstName || false);
   const [isListening, setIsListening] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const totalQuestions = 3;
+  const totalQuestions = 4;
 
   const startVoiceInput = (field: 'expertise' | 'motivation') => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -100,14 +101,14 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
         expertise, 
         motivation, 
         styles, 
-        includeFirstName: false, 
+        includeFirstName: includeNameInBusiness, 
         includeLastName: false 
       });
     }
   };
 
   const handleSkip = () => {
-    if (currentQuestion === 2) {
+    if (currentQuestion === 3) {
       setMotivation('');
     }
     handleNext();
@@ -116,7 +117,8 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
   const canProceed = () => {
     if (currentQuestion === 1) return firstName.length > 0;
     if (currentQuestion === 2) return expertise.length >= 10;
-    if (currentQuestion === 3) return styles.length > 0;
+    if (currentQuestion === 3) return true; // Can skip motivation
+    if (currentQuestion === 4) return styles.length > 0;
     return false;
   };
 
@@ -143,9 +145,9 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
         <Card className="border-2 border-primary/20 animate-fade-in-up">
           <CardContent className="p-6 space-y-6">
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold">What should we call you?</h2>
+              <h2 className="text-2xl font-bold">What's your name?</h2>
               <p className="text-muted-foreground">
-                Just your first name is perfect 😊
+                We'll use it to personalize your business
               </p>
             </div>
 
@@ -158,10 +160,22 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
             />
 
             {firstName.length > 0 && (
-              <div className="flex items-center gap-2 text-primary animate-bounce-in">
-                <Check className="w-5 h-5" />
-                <span className="font-medium">Nice one! ✨</span>
-              </div>
+              <>
+                <div className="flex items-center gap-2 text-primary animate-bounce-in">
+                  <Check className="w-5 h-5" />
+                  <span className="font-medium">Perfect — that's going to make your business shine! ✨</span>
+                </div>
+                
+                <label className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={includeNameInBusiness}
+                    onChange={(e) => setIncludeNameInBusiness(e.target.checked)}
+                    className="w-5 h-5 rounded border-2 border-primary text-primary focus:ring-2 focus:ring-primary"
+                  />
+                  <span className="text-sm font-medium">Include my name in my business name</span>
+                </label>
+              </>
             )}
 
             <div className="flex gap-3 pt-4">
@@ -187,14 +201,14 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
         </Card>
       )}
 
-      {/* Question 2: Expertise */}
+      {/* Question 2: Your Story */}
       {currentQuestion === 2 && (
         <Card className="border-2 border-primary/20 animate-fade-in-up">
           <CardContent className="p-6 space-y-6">
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold">What's something you're great at or love doing?</h2>
+              <h2 className="text-2xl font-bold">What makes you ready to start this business?</h2>
               <p className="text-muted-foreground">
-                This helps us make your business unique to you
+                This is where your experience, passion, or personal story shines through
               </p>
             </div>
 
@@ -202,7 +216,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
               <Textarea
                 value={expertise}
                 onChange={(e) => setExpertise(e.target.value)}
-                placeholder="I'm really good at..."
+                placeholder="Share your story..."
                 className="min-h-[120px] text-base resize-none pr-12"
                 autoFocus
               />
@@ -221,14 +235,14 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
             {expertise.length >= 10 && (
               <div className="flex items-center gap-2 text-primary animate-bounce-in">
                 <Sparkles className="w-5 h-5" />
-                <span className="font-medium">Perfect! This will help us personalize your business ✨</span>
+                <span className="font-medium">Amazing! Your story is what makes this special ✨</span>
               </div>
             )}
 
             <div className="text-xs text-muted-foreground space-y-1">
               <p>💡 Examples:</p>
-              <p className="pl-4">• "I've been designing websites for friends for years"</p>
-              <p className="pl-4">• "I love crafts and want to turn that into income"</p>
+              <p className="pl-4">• "I've raised 5 kids and know the chaos of family life"</p>
+              <p className="pl-4">• "I love running and have coached beginners for years"</p>
             </div>
 
             <div className="flex gap-3 pt-4">
@@ -254,12 +268,87 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
         </Card>
       )}
 
-      {/* Question 3: Tone & Style */}
+      {/* Question 3: Your Why */}
       {currentQuestion === 3 && (
         <Card className="border-2 border-primary/20 animate-fade-in-up">
           <CardContent className="p-6 space-y-6">
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold">What vibe feels right to you?</h2>
+              <h2 className="text-2xl font-bold">Why do you want to start this business?</h2>
+              <p className="text-muted-foreground">
+                What's driving you to make this happen?
+              </p>
+            </div>
+
+            <div className="relative">
+              <Textarea
+                value={motivation}
+                onChange={(e) => setMotivation(e.target.value)}
+                placeholder="I want to..."
+                className="min-h-[120px] text-base resize-none pr-12"
+                autoFocus
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="absolute top-2 right-2"
+                onClick={() => startVoiceInput('motivation')}
+                disabled={isListening}
+              >
+                <Mic className={`h-5 w-5 ${isListening ? 'text-red-500 animate-pulse' : ''}`} />
+              </Button>
+            </div>
+
+            {motivation.length >= 10 && (
+              <div className="flex items-center gap-2 text-primary animate-bounce-in">
+                <Sparkles className="w-5 h-5" />
+                <span className="font-medium">Your why is powerful! This will connect with people 🔥</span>
+              </div>
+            )}
+
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p>💡 Examples:</p>
+              <p className="pl-4">• "I want more freedom and flexibility in my life"</p>
+              <p className="pl-4">• "I want to help others like me who are struggling"</p>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button 
+                variant="outline"
+                size="lg"
+                onClick={() => setCurrentQuestion(2)}
+                className="flex-1 h-12"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+              </Button>
+              <Button 
+                variant="ghost"
+                size="lg"
+                onClick={handleSkip}
+                className="flex-1 h-12"
+              >
+                Skip
+              </Button>
+              <Button 
+                size="lg"
+                onClick={handleNext}
+                disabled={motivation.length === 0}
+                className="flex-1 h-12"
+              >
+                Continue →
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Question 4: Tone & Style */}
+      {currentQuestion === 4 && (
+        <Card className="border-2 border-primary/20 animate-fade-in-up">
+          <CardContent className="p-6 space-y-6">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold">What vibe do you want your business to have?</h2>
               <p className="text-muted-foreground">
                 Pick all that match your style (tap as many as you like)
               </p>
@@ -289,7 +378,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
             {styles.length > 0 && (
               <div className="flex items-center gap-2 text-primary animate-bounce-in">
                 <Sparkles className="w-5 h-5" />
-                <span className="font-medium">Great choices! We're getting to know you 🔥</span>
+                <span className="font-medium">Perfect — your vibe is coming through! ✨</span>
               </div>
             )}
 
@@ -297,7 +386,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
               <Button 
                 variant="outline"
                 size="lg"
-                onClick={() => setCurrentQuestion(2)}
+                onClick={() => setCurrentQuestion(3)}
                 className="flex-1 h-12"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
