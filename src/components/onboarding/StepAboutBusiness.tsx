@@ -70,31 +70,31 @@ export const StepAboutBusiness = ({
   const isValid = selectedVibes.length > 0 && selectedAudiences.length > 0;
 
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-8 animate-fade-in pb-8">
+    <div className="w-full max-w-3xl mx-auto space-y-6 md:space-y-8 animate-fade-in pb-8 px-4">
       <div className="text-center space-y-2">
         <div className="flex items-center justify-center space-x-2">
-          <Sparkles className="h-7 w-7 text-primary" />
-          <h2 className="text-3xl font-bold text-foreground">About Your Business</h2>
+          <Sparkles className="h-6 w-6 md:h-7 md:w-7 text-primary" />
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground">About Your Business</h2>
         </div>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-base md:text-lg text-muted-foreground px-2">
           Tell us about your business vibe and who you'll serve
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
         {/* Vibe & Style Section */}
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           <div className="space-y-1">
-            <h3 className="text-xl font-semibold flex items-center gap-2">
-              <Palette className="h-5 w-5 text-primary" />
+            <h3 className="text-lg md:text-xl font-semibold flex items-center gap-2">
+              <Palette className="h-4 w-4 md:h-5 md:w-5 text-primary" />
               Vibe & Style
             </h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs md:text-sm text-muted-foreground">
               How do you want your business to feel? (Select all that apply)
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
             {vibeOptions.map((option) => {
               const Icon = option.icon;
               const isSelected = selectedVibes.includes(option.id);
@@ -109,14 +109,14 @@ export const StepAboutBusiness = ({
                   }`}
                   onClick={() => toggleVibe(option.id)}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex flex-col items-center text-center gap-2">
-                      <div className={`p-2 rounded-lg bg-gradient-to-br ${option.color} text-white`}>
-                        <Icon className="h-5 w-5" />
+                  <CardContent className="p-3 md:p-4">
+                    <div className="flex flex-col items-center text-center gap-1.5 md:gap-2">
+                      <div className={`p-1.5 md:p-2 rounded-lg bg-gradient-to-br ${option.color} text-white`}>
+                        <Icon className="h-4 w-4 md:h-5 md:w-5" />
                       </div>
                       <div className="space-y-0.5">
-                        <div className="font-semibold text-sm">{option.label}</div>
-                        <div className="text-xs text-muted-foreground">{option.description}</div>
+                        <div className="font-semibold text-xs md:text-sm">{option.label}</div>
+                        <div className="text-[10px] md:text-xs text-muted-foreground line-clamp-2">{option.description}</div>
                       </div>
                     </div>
                   </CardContent>
@@ -143,18 +143,18 @@ export const StepAboutBusiness = ({
         </div>
 
         {/* Target Audience Section */}
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           <div className="space-y-1">
-            <h3 className="text-xl font-semibold flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
+            <h3 className="text-lg md:text-xl font-semibold flex items-center gap-2">
+              <Users className="h-4 w-4 md:h-5 md:w-5 text-primary" />
               Target Audience
             </h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs md:text-sm text-muted-foreground">
               Who are you here to help? (Select all that apply)
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
             {audienceOptions.map((option) => {
               const Icon = option.icon;
               const isSelected = selectedAudiences.includes(option.id);
@@ -169,14 +169,14 @@ export const StepAboutBusiness = ({
                   }`}
                   onClick={() => toggleAudience(option.id)}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex flex-col items-center text-center gap-2">
-                      <div className={`p-2 rounded-lg bg-gradient-to-br ${option.color} text-white`}>
-                        <Icon className="h-5 w-5" />
+                  <CardContent className="p-3 md:p-4">
+                    <div className="flex flex-col items-center text-center gap-1.5 md:gap-2">
+                      <div className={`p-1.5 md:p-2 rounded-lg bg-gradient-to-br ${option.color} text-white`}>
+                        <Icon className="h-4 w-4 md:h-5 md:w-5" />
                       </div>
                       <div className="space-y-0.5">
-                        <div className="font-semibold text-sm">{option.label}</div>
-                        <div className="text-xs text-muted-foreground">{option.description}</div>
+                        <div className="font-semibold text-xs md:text-sm">{option.label}</div>
+                        <div className="text-[10px] md:text-xs text-muted-foreground line-clamp-2">{option.description}</div>
                       </div>
                     </div>
                   </CardContent>
@@ -204,19 +204,19 @@ export const StepAboutBusiness = ({
 
         {isValid && (
           <div className="text-center animate-fade-in">
-            <p className="text-sm text-primary font-medium">
+            <p className="text-xs md:text-sm text-primary font-medium px-2">
               🔥 Perfect! This will help us create content that resonates
             </p>
           </div>
         )}
 
-        <div className="flex gap-4 pt-4">
+        <div className="flex flex-col sm:flex-row gap-3 md:gap-4 pt-4">
           <Button 
             type="button"
             variant="outline"
             size="lg"
             onClick={onBack}
-            className="flex-1 h-12 text-base"
+            className="w-full sm:flex-1 h-12 text-sm md:text-base"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
@@ -226,7 +226,7 @@ export const StepAboutBusiness = ({
             type="submit"
             size="lg"
             disabled={!isValid || isLoading}
-            className="flex-1 h-12 text-base bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all disabled:opacity-50"
+            className="w-full sm:flex-1 h-12 text-sm md:text-base bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all disabled:opacity-50"
           >
             {isLoading ? 'Processing...' : 'Perfect — now let\'s give your business a name! →'}
           </Button>

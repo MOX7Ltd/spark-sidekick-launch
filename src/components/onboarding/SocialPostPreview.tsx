@@ -126,13 +126,13 @@ export const SocialPostPreview = ({
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 animate-fade-in">
-      <div className="text-center mb-8 space-y-3">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4 animate-bounce-in">
-          <Sparkles className="w-8 h-8 text-primary animate-glow-pulse" />
+    <div className="max-w-2xl mx-auto px-4 py-6 md:py-8 animate-fade-in">
+      <div className="text-center mb-6 md:mb-8 space-y-2 md:space-y-3">
+        <div className="inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-primary/10 rounded-full mb-2 md:mb-4 animate-bounce-in">
+          <Sparkles className="w-6 h-6 md:w-8 md:h-8 text-primary animate-glow-pulse" />
         </div>
-        <h2 className="text-3xl font-bold">Look what you could post tomorrow! ✨</h2>
-        <p className="text-lg text-muted-foreground">
+        <h2 className="text-2xl md:text-3xl font-bold px-2">Look what you could post tomorrow! ✨</h2>
+        <p className="text-base md:text-lg text-muted-foreground px-4">
           AI-generated posts ready to promote your new business
         </p>
       </div>
@@ -230,14 +230,14 @@ export const SocialPostPreview = ({
         </Card>
       </div>
 
-      <div className="mt-8 text-center">
+      <div className="mt-6 md:mt-8 text-center">
         <Button 
           size="lg" 
           onClick={onContinue}
-          className="h-14 px-8 text-lg group bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all"
+          className="w-full md:w-auto h-12 md:h-14 px-6 md:px-8 text-base md:text-lg group bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all"
         >
           Almost there — let's make it official! 🎉
-          <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+          <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5 group-hover:translate-x-1 transition-transform" />
         </Button>
       </div>
     </div>
