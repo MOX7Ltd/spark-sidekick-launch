@@ -5,20 +5,10 @@ import { Sparkles, Instagram, Linkedin, ArrowRight, Copy, RefreshCw, Loader2 } f
 import { useToast } from '@/hooks/use-toast';
 import { generateCampaign } from '@/lib/api';
 
-interface ProductIdea {
-  title: string;
-  description?: string;
-}
+import type { ProductIdea, AboutYou } from '@/types/onboarding';
 
 interface SocialPostPreviewProps {
-  aboutYou: {
-    firstName: string;
-    lastName: string;
-    expertise: string;
-    motivation: string;
-    includeFirstName?: boolean;
-    includeLastName?: boolean;
-  };
+  aboutYou: AboutYou;
   vibes: string[];
   audiences: string[];
   businessIdentity: {
@@ -68,13 +58,11 @@ export const SocialPostPreview = ({
         type: 'intro',
         platforms: ['instagram', 'linkedin'],
         businessName: businessIdentity.name,
-        tagline: businessIdentity.tagline,
-        audience: audiences.join(', '),
-        background: aboutYou.expertise,
-        motivation: aboutYou.motivation,
-        tone: vibes.join(', '),
-        firstName: displayName || aboutYou.firstName,
-        products: products.map(p => p.title).slice(0, 3) // Pass top 3 product titles
+        tagline: businessIdentity.tagline || '',
+        bio: aboutYou.expertise,
+        audiences,
+        vibes,
+        products: products.slice(0, 3)
       });
 
       console.log('Campaign response:', response);

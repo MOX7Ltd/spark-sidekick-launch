@@ -6,49 +6,10 @@ import { SocialPostPreview } from './SocialPostPreview';
 import { StepBusinessIdentity } from './StepBusinessIdentity';
 import { StarterPackReveal } from './StarterPackReveal';
 import { StarterPackCheckout } from './StarterPackCheckout';
-import { generateBusinessIdentity, generateCampaign, GenerateIdentityRequest, GenerateCampaignRequest } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
 import { DebugPanel } from '@/components/debug/DebugPanel';
-
-interface OnboardingData {
-  idea: string;
-  products?: Array<{
-    id: string;
-    title: string;
-    format: string;
-    description: string;
-  }>;
-  aboutYou: {
-    firstName: string;
-    lastName: string;
-    expertise: string;
-    motivation: string;
-    profilePicture?: string;
-    includeFirstName: boolean;
-    includeLastName: boolean;
-  };
-  vibes: string[];
-  audiences: string[];
-  businessIdentity: {
-    name: string;
-    logo: string;
-    tagline: string;
-    bio: string;
-    colors: string[];
-    logoSVG: string;
-    nameOptions: Array<{name: string; style?: string; archetype?: string; tagline: string}>;
-  };
-  introCampaign?: {
-    shortPost: {
-      caption: string;
-      hashtags: string[];
-    };
-    longPost: {
-      caption: string;
-    };
-  };
-}
+import type { OnboardingData } from '@/types/onboarding';
 
 interface OnboardingFlowProps {
   onComplete?: (data: OnboardingData) => void;
@@ -132,7 +93,8 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
       step: 'StepBusinessIdentity',
       payload: { 
         action: 'submit_business_identity',
-        businessName: businessIdentity.name
+        businessName: businessIdentity.name,
+        logoSource: businessIdentity.logoSource
       }
     });
     setFormData(prev => ({ ...prev, businessIdentity }));
@@ -226,7 +188,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
                 includeFirstName: false,
                 includeLastName: false
               }}
-              audience={(formData.audiences || []).join(', ')}
+              audiences={formData.audiences || []}
               vibes={formData.vibes || []}
             />
           )}
@@ -234,16 +196,9 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
           {/* Stage 5: Shopfront Preview (Celebration) */}
           {currentStep === 5 && formData.idea && formData.aboutYou && formData.audiences && formData.businessIdentity && (
             <StarterPackReveal
-              idea={formData.idea}
-              aboutYou={{
-                ...formData.aboutYou,
-                styles: formData.vibes || []
-              }}
-              audience={formData.audiences[0]}
               businessIdentity={formData.businessIdentity}
-              introCampaign={formData.introCampaign}
-              products={formData.products}
-              onUnlock={handleShopfrontContinue}
+              products={formData.products || []}
+              onContinue={handleShopfrontContinue}
               onBack={goBack}
             />
           )}

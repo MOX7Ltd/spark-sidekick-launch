@@ -8,49 +8,18 @@ import {
   Hexagon, RefreshCw, Loader2, ThumbsUp, ThumbsDown, ArrowLeft, 
   Briefcase, Smile, Minimize2, Eye, User, Upload
 } from 'lucide-react';
-import { regenerateBusinessNames, regenerateSingleName, generateLogos, generateBusinessIdentity, type NameSuggestion as ApiNameSuggestion } from '@/lib/api';
+import { regenerateBusinessNames, regenerateSingleName, generateLogos, generateBusinessIdentity } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
-
-interface NameSuggestion {
-  name: string;
-  style?: string;
-  archetype?: string;
-  tagline: string;
-}
+import type { BusinessIdentity, AboutYou } from '@/types/onboarding';
 
 interface StepBusinessIdentityProps {
-  onNext: (businessIdentity: { 
-    name: string; 
-    logo: string; 
-    tagline: string; 
-    bio: string; 
-    colors: string[]; 
-    logoSVG: string; 
-    nameOptions: NameSuggestion[];
-    logoSource?: 'uploaded' | 'generated';
-  }) => void;
+  onNext: (businessIdentity: BusinessIdentity) => void;
   onBack: () => void;
-  initialValue?: { 
-    name: string; 
-    logo: string; 
-    tagline?: string; 
-    bio?: string; 
-    colors?: string[]; 
-    logoSVG?: string; 
-    nameOptions?: NameSuggestion[];
-    logoSource?: 'uploaded' | 'generated';
-  };
+  initialValue?: Partial<BusinessIdentity>;
   idea: string;
-  aboutYou: {
-    firstName: string;
-    lastName: string;
-    expertise: string;
-    motivation: string;
-    includeFirstName: boolean;
-    includeLastName: boolean;
-  };
-  audience: string;
-  vibes?: string[];
+  aboutYou: AboutYou;
+  audiences: string[];
+  vibes: string[];
 }
 
 const nameStyleOptions = [
@@ -70,12 +39,12 @@ const logoStyles = [
   { id: 'retro', name: 'Retro', gradient: 'from-amber-600 to-red-600', icon: Star },
 ];
 
-export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, aboutYou, audience, vibes = [] }: StepBusinessIdentityProps) => {
+export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, aboutYou, audiences, vibes = [] }: StepBusinessIdentityProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [hasExistingName, setHasExistingName] = useState<boolean | null>(null);
   const [existingName, setExistingName] = useState('');
   const [selectedNameStyle, setSelectedNameStyle] = useState('');
-  const [nameOptions, setNameOptions] = useState<NameSuggestion[]>([]);
+  const [nameOptions, setNameOptions] = useState<BusinessIdentity['nameOptions']>([]);
   const [selectedName, setSelectedName] = useState('');
   const [hasExistingLogo, setHasExistingLogo] = useState<boolean | null>(null);
   const [uploadedLogo, setUploadedLogo] = useState('');
@@ -88,7 +57,17 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
   const [regeneratingLogoIndex, setRegeneratingLogoIndex] = useState<number | null>(null);
   const [likedNames, setLikedNames] = useState<Set<string>>(new Set());
   const [rejectedNames, setRejectedNames] = useState<string[]>([]);
-  const [bannedWords, setBannedWords] = useState<string[]>([]);
+  const [bannedWords, setBannedWords] = useState<string[]>(() => {
+    // Initialize banned words based on name inclusion flags
+    const banned: string[] = [];
+    if (!aboutYou.includeFirstName && aboutYou.firstName) {
+      banned.push(aboutYou.firstName.toLowerCase());
+    }
+    if (!aboutYou.includeLastName && aboutYou.lastName) {
+      banned.push(aboutYou.lastName.toLowerCase());
+    }
+    return banned;
+  });
   const [likedLogos, setLikedLogos] = useState<Set<number>>(new Set());
   const [generatedBio, setGeneratedBio] = useState<string>('');
   const [generatedColors, setGeneratedColors] = useState<string[]>([]);
@@ -116,22 +95,16 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
       // Call full identity generation to get bio, colors, and alternative names
       const fullIdentity = await generateBusinessIdentity({
         idea,
-        audience,
-        experience: aboutYou.expertise,
-        motivation: aboutYou.motivation,
-        firstName: aboutYou.firstName,
-        lastName: aboutYou.lastName,
-        includeFirstName: aboutYou.includeFirstName,
-        includeLastName: aboutYou.includeLastName,
-        tone: vibes.join(', '),
-        namingPreference: 'anonymous',
-        bannedWords: [],
-        rejectedNames: [existingName]
+        audiences,
+        vibes,
+        aboutYou,
+        rejectedNames: [existingName],
+        bannedWords
       });
       
       // Store the generated bio and colors for later use
       setGeneratedBio(fullIdentity.bio || '');
-      setGeneratedColors(fullIdentity.colors || ['#6B7280', '#374151', '#1F2937']);
+      setGeneratedColors(fullIdentity.colors || []);
       setNameOptions(fullIdentity.nameOptions || []);
       setSelectedName(existingName); // Pre-select their existing name
       setCurrentStep(3); // Go to name selection
@@ -160,22 +133,16 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
       // Call full identity generation to get bio, colors, and names
       const fullIdentity = await generateBusinessIdentity({
         idea,
-        audience,
-        experience: aboutYou.expertise,
-        motivation: aboutYou.motivation,
-        firstName: aboutYou.firstName,
-        lastName: aboutYou.lastName,
-        includeFirstName: aboutYou.includeFirstName,
-        includeLastName: aboutYou.includeLastName,
-        tone: vibes.join(', '),
-        namingPreference: styleId === 'personal' ? 'with_personal_name' : 'anonymous',
-        bannedWords: [],
+        audiences,
+        vibes,
+        aboutYou,
+        bannedWords,
         rejectedNames: []
       });
       
       // Store the generated bio and colors for later use
       setGeneratedBio(fullIdentity.bio || '');
-      setGeneratedColors(fullIdentity.colors || ['#6B7280', '#374151', '#1F2937']);
+      setGeneratedColors(fullIdentity.colors || []);
       setNameOptions(fullIdentity.nameOptions || []);
       setCurrentStep(3); // Go to name selection
     } catch (error) {
@@ -195,15 +162,9 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     try {
       const newNames = await regenerateBusinessNames({
         idea,
-        audience,
-        experience: aboutYou.expertise,
-        motivation: aboutYou.motivation,
-        firstName: aboutYou.firstName,
-        lastName: aboutYou.lastName,
-        includeFirstName: aboutYou.includeFirstName,
-        includeLastName: aboutYou.includeLastName,
-        tone: vibes.join(', '),
-        namingPreference: selectedNameStyle === 'personal' ? 'with_personal_name' : 'anonymous',
+        audiences,
+        vibes,
+        aboutYou,
         bannedWords,
         rejectedNames
       });
@@ -243,15 +204,9 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
       
       const newName = await regenerateSingleName({
         idea,
-        audience,
-        experience: aboutYou.expertise,
-        motivation: aboutYou.motivation,
-        firstName: aboutYou.firstName,
-        lastName: aboutYou.lastName,
-        includeFirstName: aboutYou.includeFirstName,
-        includeLastName: aboutYou.includeLastName,
-        tone: vibes.join(', '),
-        namingPreference: selectedNameStyle === 'personal' ? 'with_personal_name' : 'anonymous',
+        audiences,
+        vibes,
+        aboutYou,
         bannedWords: [...bannedWords, ...wordsInName],
         rejectedNames: [...rejectedNames, rejectedOption.name, ...existingNames]
       });
@@ -326,17 +281,14 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     if (!uploadedLogo) return;
     const selectedNameOption = nameOptions.find(opt => opt.name === selectedName);
     
-    // Generate complementary color palette for uploaded logo
-    const uploadedColors = ['#6B7280', '#9CA3AF', '#D1D5DB']; // Neutral grey palette
-    
     onNext({
       name: selectedName,
-      logo: 'uploaded',
+      nameOptions,
       tagline: selectedNameOption?.tagline || 'Helping you succeed',
       bio: generatedBio || aboutYou.expertise,
-      colors: uploadedColors,
+      colors: generatedColors.length > 0 ? generatedColors : [],
+      logoUrl: uploadedLogo,
       logoSVG: uploadedLogo,
-      nameOptions: nameOptions,
       logoSource: 'uploaded'
     });
   };
@@ -347,7 +299,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     setIsGeneratingLogos(true);
     
     try {
-      const logos = await generateLogos(selectedName, styleId);
+      const logos = await generateLogos(selectedName, styleId, vibes);
       setGeneratedLogos(logos);
       setSelectedLogoIndex(null);
       setLikedLogos(new Set());
@@ -374,7 +326,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     
     setIsGeneratingLogos(true);
     try {
-      const logos = await generateLogos(selectedName, selectedLogoStyle);
+      const logos = await generateLogos(selectedName, selectedLogoStyle, vibes);
       setGeneratedLogos(logos);
       setSelectedLogoIndex(null);
       setLikedLogos(new Set());
@@ -398,7 +350,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     setRegeneratingLogoIndex(index);
     
     try {
-      const newLogos = await generateLogos(selectedName, selectedLogoStyle);
+      const newLogos = await generateLogos(selectedName, selectedLogoStyle, vibes);
       
       setGeneratedLogos(prev => {
         const updated = [...prev];
@@ -451,12 +403,12 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     
     onNext({
       name: selectedName,
-      logo: selectedLogoStyle,
+      nameOptions,
       tagline: selectedNameOption?.tagline || 'Helping you succeed',
       bio: generatedBio || aboutYou.expertise,
-      colors: generatedColors.length > 0 ? generatedColors : ['#6B7280', '#374151', '#1F2937'],
+      colors: generatedColors.length > 0 ? generatedColors : [],
+      logoUrl: finalLogo,
       logoSVG: finalLogo,
-      nameOptions: nameOptions,
       logoSource: 'generated'
     });
   };

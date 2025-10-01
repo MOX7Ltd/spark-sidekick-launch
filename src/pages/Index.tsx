@@ -18,45 +18,7 @@ import {
   TrendingUp,
   Clock
 } from 'lucide-react';
-
-interface OnboardingData {
-  idea: string;
-  products?: Array<{
-    id: string;
-    title: string;
-    format: string;
-    description: string;
-  }>;
-  aboutYou: {
-    firstName: string;
-    lastName: string;
-    expertise: string;
-    motivation: string;
-    profilePicture?: string;
-    includeFirstName: boolean;
-    includeLastName: boolean;
-  };
-  vibes: string[];
-  audiences: string[];
-  businessIdentity: {
-    name: string;
-    logo: string;
-    tagline: string;
-    bio: string;
-    colors: string[];
-    logoSVG: string;
-    nameOptions: Array<{name: string; style?: string; archetype?: string; tagline: string}>;
-  };
-  introCampaign?: {
-    shortPost: {
-      caption: string;
-      hashtags: string[];
-    };
-    longPost: {
-      caption: string;
-    };
-  };
-}
+import type { OnboardingData } from '@/types/onboarding';
 
 const Index = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);

@@ -5,71 +5,30 @@ import { callWithRetry } from './apiClient';
 import { createAbortable, cleanupAbortable } from './abortManager';
 import { bumpVersion } from './versionManager';
 import { getAllFeatureFlags, getFeatureFlagsHeader } from './featureFlags';
+import type { 
+  GenerateIdentityRequest,
+  GenerateLogosRequest,
+  GenerateCampaignRequest,
+  NameOption,
+  ProductIdea
+} from '@/types/onboarding';
 
-export interface GenerateIdentityRequest {
-  idea: string;
-  audience: string;
-  experience?: string;
-  motivation?: string;
-  namingPreference?: 'with_personal_name' | 'anonymous' | 'custom';
-  firstName?: string;
-  lastName?: string;
-  includeFirstName?: boolean;
-  includeLastName?: boolean;
-  tone?: string;
-  styleCategory?: string;
-  bannedWords?: string[];
-  rejectedNames?: string[];
-  regenerateNamesOnly?: boolean;
-  regenerateSingleName?: boolean;
-}
+// For backwards compatibility during migration
+export type NameSuggestion = NameOption;
+export type Product = ProductIdea;
+export type { ProductIdea } from '@/types/onboarding';
 
-export interface NameSuggestion {
-  name: string;
-  style?: string;
-  archetype?: string;
-  tagline: string;
-}
-
-export interface Product {
-  title: string;
-  type: string;
-  price: string;
-  description: string;
-}
-
-export interface GenerateIdentityResponse {
+interface GenerateIdentityResponseInternal {
   business: any;
-  nameOptions: NameSuggestion[];
+  nameOptions: NameOption[];
   tagline: string;
   bio: string;
   colors: string[];
   logoSVG: string;
-  products: Product[];
+  products: ProductIdea[];
 }
 
-export interface GenerateCampaignRequest {
-  businessId?: string;
-  type: 'intro' | 'quick_win' | 'conversion' | 'custom';
-  platforms: string[];
-  background?: string;
-  motivation?: string;
-  tone?: string;
-  firstName?: string;
-  // For anonymous users
-  businessName?: string;
-  audience?: string;
-  bio?: string;
-  tagline?: string;
-  products?: string[];
-}
-
-export interface GenerateCampaignResponse {
-  campaign: any;
-  items: any[];
-}
-
-export async function generateBusinessIdentity(request: GenerateIdentityRequest): Promise<GenerateIdentityResponse> {
+export async function generateBusinessIdentity(request: GenerateIdentityRequest): Promise<GenerateIdentityResponseInternal> {
   const traceId = generateTraceId();
   bumpVersion('business-identity');
   
@@ -92,7 +51,12 @@ export async function generateBusinessIdentity(request: GenerateIdentityRequest)
   return data;
 }
 
-export async function generateCampaign(request: GenerateCampaignRequest): Promise<GenerateCampaignResponse> {
+export interface GenerateCampaignResponseInternal {
+  campaign: any;
+  items: any[];
+}
+
+export async function generateCampaign(request: GenerateCampaignRequest): Promise<GenerateCampaignResponseInternal> {
   const traceId = generateTraceId();
   bumpVersion('campaign');
   
@@ -115,7 +79,7 @@ export async function generateCampaign(request: GenerateCampaignRequest): Promis
   return data;
 }
 
-export async function regenerateBusinessNames(request: GenerateIdentityRequest): Promise<NameSuggestion[]> {
+export async function regenerateBusinessNames(request: GenerateIdentityRequest): Promise<NameOption[]> {
   const { data, error } = await supabase.functions.invoke('generate-identity', {
     body: { ...request, regenerateNamesOnly: true }
   });
@@ -128,7 +92,7 @@ export async function regenerateBusinessNames(request: GenerateIdentityRequest):
   return data.nameOptions;
 }
 
-export async function regenerateSingleName(request: GenerateIdentityRequest): Promise<NameSuggestion> {
+export async function regenerateSingleName(request: GenerateIdentityRequest): Promise<NameOption> {
   const { data, error } = await supabase.functions.invoke('generate-identity', {
     body: { ...request, regenerateSingleName: true }
   });
@@ -141,14 +105,14 @@ export async function regenerateSingleName(request: GenerateIdentityRequest): Pr
   return data.nameOption;
 }
 
-export async function generateLogos(businessName: string, style: string): Promise<string[]> {
+export async function generateLogos(businessName: string, style: string, vibes: string[] = []): Promise<string[]> {
   const traceId = generateTraceId();
   bumpVersion('logos');
   
   const flags = await getAllFeatureFlags();
   
   const { data, error } = await supabase.functions.invoke('generate-logos', {
-    body: { businessName, style },
+    body: { businessName, style, vibes },
     headers: {
       ...getTelemetryHeaders(),
       'X-Idempotency-Key': traceId,
@@ -162,13 +126,6 @@ export async function generateLogos(businessName: string, style: string): Promis
   }
 
   return data.logos;
-}
-
-export interface ProductIdea {
-  id: string;
-  title: string;
-  format: string;
-  description: string;
 }
 
 export interface GenerateProductIdeasRequest {

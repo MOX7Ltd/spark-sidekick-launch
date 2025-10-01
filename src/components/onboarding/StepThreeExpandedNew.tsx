@@ -87,8 +87,9 @@ export const StepThreeExpandedNew = ({ onNext, onBack, initialValue, idea, about
     try {
       const newNames = await regenerateBusinessNames({
         idea,
-        audience,
-        experience: aboutYou.expertise,
+        audiences: [audience],
+        vibes: [],
+        aboutYou,
         motivation: aboutYou.motivation,
         firstName: aboutYou.firstName,
         lastName: aboutYou.lastName,
@@ -147,8 +148,9 @@ export const StepThreeExpandedNew = ({ onNext, onBack, initialValue, idea, about
         
         const newName = await regenerateSingleName({
           idea,
-          audience,
-          experience: aboutYou.expertise,
+          audiences: [audience],
+          vibes: [],
+          aboutYou,
           motivation: aboutYou.motivation,
           firstName: aboutYou.firstName,
           lastName: aboutYou.lastName,

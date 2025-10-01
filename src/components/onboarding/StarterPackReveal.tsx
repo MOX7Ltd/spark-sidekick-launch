@@ -1,61 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Rocket, Sparkles } from 'lucide-react';
-
-interface Product {
-  id?: string;
-  title: string;
-  type?: string;
-  format?: string;
-  price?: string;
-  description: string;
-}
+import { Sparkles } from 'lucide-react';
+import type { BusinessIdentity, ProductIdea } from '@/types/onboarding';
 
 interface StarterPackRevealProps {
-  idea: string;
-  aboutYou: {
-    firstName: string;
-    lastName: string;
-    expertise: string;
-    motivation: string;
-    styles: string[];
-  };
-  audience: string;
-  businessIdentity: {
-    name: string;
-    logo: string;
-    tagline?: string;
-    bio?: string;
-    colors?: string[];
-    logoSVG?: string;
-  };
-  introCampaign?: {
-    shortPost: {
-      caption: string;
-      hashtags: string[];
-    };
-    longPost: {
-      caption: string;
-    };
-  };
-  products?: Array<{
-    id?: string;
-    title: string;
-    format?: string;
-    description: string;
-  }>;
-  onUnlock: () => void;
+  businessIdentity: BusinessIdentity;
+  products: ProductIdea[];
+  onContinue: () => void;
   onBack: () => void;
 }
 
-export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, introCampaign, products, onUnlock, onBack }: StarterPackRevealProps) => {
+export const StarterPackReveal = ({ businessIdentity, products, onContinue, onBack }: StarterPackRevealProps) => {
   const [showConfetti, setShowConfetti] = useState(false);
-
-  // Use generated bio or compose fallback
-  const composedBio = businessIdentity.bio || 
-    `${aboutYou.firstName} brings ${aboutYou.expertise} to help ${audience}. ${aboutYou.motivation}`;
 
   // Use brand colors for confetti if available
   const confettiColors = businessIdentity.colors && businessIdentity.colors.length > 0
@@ -97,20 +54,27 @@ export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, 
           🎉 Your business is coming alive!
         </h2>
         <p className="text-base md:text-xl text-muted-foreground max-w-2xl mx-auto animate-fade-in px-4" style={{ animationDelay: '0.1s' }}>
-          Here's what your shopfront could look like...
+          Here's your storefront header preview
         </p>
       </div>
 
-      {/* Simplified Storefront Header Preview */}
+      {/* Shopfront Header Preview v2 - Header Only */}
       <Card className="border-2 border-primary/20 overflow-hidden mb-6 md:mb-8 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
         <CardContent className="p-6 md:p-8">
           {/* Logo & Business Name */}
           <div className="flex flex-col items-center text-center mb-4 md:mb-6">
-            {businessIdentity.logoSVG && (
-              <div 
-                className="w-20 h-20 md:w-24 md:h-24 mb-3 md:mb-4"
-                dangerouslySetInnerHTML={{ __html: businessIdentity.logoSVG }}
-              />
+            {(businessIdentity.logoUrl || businessIdentity.logoSVG) && (
+              <div className="w-20 h-20 md:w-24 md:h-24 mb-3 md:mb-4">
+                {businessIdentity.logoSVG?.startsWith('<svg') ? (
+                  <div dangerouslySetInnerHTML={{ __html: businessIdentity.logoSVG }} />
+                ) : (
+                  <img 
+                    src={businessIdentity.logoUrl || businessIdentity.logoSVG} 
+                    alt={businessIdentity.name}
+                    className="w-full h-full object-contain"
+                  />
+                )}
+              </div>
             )}
             <h3 className="text-2xl md:text-3xl font-bold mb-2">{businessIdentity.name}</h3>
             {businessIdentity.tagline && (
@@ -121,22 +85,8 @@ export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, 
           {/* About Section */}
           <div className="mb-4 md:mb-6">
             <h4 className="text-xs md:text-sm font-semibold text-muted-foreground uppercase mb-2">About</h4>
-            <p className="text-sm md:text-base leading-relaxed">{composedBio}</p>
+            <p className="text-sm md:text-base leading-relaxed">{businessIdentity.bio}</p>
           </div>
-
-          {/* Audience Tags */}
-          {audience && (
-            <div className="mb-4 md:mb-6">
-              <h4 className="text-xs md:text-sm font-semibold text-muted-foreground uppercase mb-2">Target Audience</h4>
-              <div className="flex flex-wrap gap-2">
-                {audience.split(',').map((aud, idx) => (
-                  <Badge key={idx} variant="secondary" className="text-xs">
-                    {aud.trim()}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Products Preview */}
           {products && products.length > 0 && (
@@ -144,7 +94,7 @@ export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, 
               <h4 className="text-xs md:text-sm font-semibold text-muted-foreground uppercase mb-2 md:mb-3">What We Offer</h4>
               <div className="space-y-2 md:space-y-3">
                 {products.slice(0, 3).map((product, idx) => (
-                  <div key={idx} className="p-3 md:p-4 bg-muted/30 rounded-lg">
+                  <div key={product.id || idx} className="p-3 md:p-4 bg-muted/30 rounded-lg">
                     <div className="flex items-start justify-between gap-3 md:gap-4">
                       <div className="flex-1">
                         <h5 className="font-semibold text-sm md:text-base mb-1">{product.title}</h5>
@@ -168,11 +118,11 @@ export const StarterPackReveal = ({ idea, aboutYou, audience, businessIdentity, 
       <div className="text-center space-y-3 md:space-y-4">
         <Button 
           size="lg"
-          onClick={onUnlock}
+          onClick={onContinue}
           className="w-full md:w-auto h-12 md:h-14 px-6 md:px-8 text-base md:text-lg bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all"
         >
           <Sparkles className="mr-2 h-4 w-4 md:h-5 md:w-5" />
-          Great — now let's create your launch posts!
+          Next: Generate launch posts
         </Button>
         
         <div>
