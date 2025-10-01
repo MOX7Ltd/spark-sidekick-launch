@@ -203,7 +203,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   };
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6 animate-fade-in">
+    <div className="w-full max-w-screen-sm mx-auto px-3 sm:px-4 py-6 animate-fade-in">
       {/* Progress indicator - Step 1 */}
       <div className="flex justify-center gap-2 mb-8">
         <div className="w-8 h-2 rounded-full bg-primary" />
@@ -213,12 +213,12 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Main Input Card */}
-        <Card className="border-2 border-primary/20 animate-fade-in-up">
-          <CardContent className="p-6 space-y-4">
+        <Card className="border-2 border-primary/20 animate-fade-in-up max-w-full">
+          <CardContent className="p-4 sm:p-6 space-y-4 max-w-full">
             <div className="space-y-2">
               <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-6 h-6 text-primary animate-pulse" />
-                <h2 className="text-2xl font-bold">What do you want to make money from?</h2>
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-primary animate-pulse" />
+                <h2 className="text-xl sm:text-2xl font-bold break-words">What do you want to make money from?</h2>
               </div>
               <p className="text-sm text-muted-foreground">
                 Describe your offer in plain words. Our A.I. will turn the idea into sellable products for you.
@@ -251,8 +251,8 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
 
             {idea.length >= 12 && !hasGenerated && (
               <div className="flex items-center gap-2 text-primary animate-bounce-in">
-                <CheckCircle className="w-5 h-5" />
-                <span className="font-medium">What a great idea! Ready to see some product ideas that you could sell... 🚀</span>
+                <CheckCircle className="w-5 h-5 shrink-0" />
+                <span className="font-medium break-words">What a great idea! Ready to see some product ideas that you could sell... 🚀</span>
               </div>
             )}
           </CardContent>
@@ -281,8 +281,8 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
 
         {/* Generate Product Ideas Button */}
         {!hasGenerated && isValid && (
-          <Card className="border-2 border-dashed border-primary/30 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            <CardContent className="p-6 text-center space-y-4">
+          <Card className="border-2 border-dashed border-primary/30 animate-fade-in-up max-w-full" style={{ animationDelay: '0.2s' }}>
+            <CardContent className="p-4 sm:p-6 text-center space-y-4 max-w-full">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-2">
                 <Lightbulb className="w-8 h-8 text-primary" />
               </div>
@@ -297,12 +297,12 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 onClick={handleGenerateProducts}
                 disabled={isGenerating}
                 size="lg"
-                className="w-full h-14 text-base"
+                className="w-full min-h-[3.5rem] h-auto text-sm sm:text-base px-4 py-3"
               >
                 {isGenerating ? (
                   <>
-                    <Zap className="w-5 h-5 mr-2 animate-pulse" />
-                    <span className="flex items-center gap-1">
+                    <Zap className="w-5 h-5 mr-2 animate-pulse shrink-0" />
+                    <span className="flex items-center gap-1 text-center">
                       Turning your idea into reality
                       <span className="flex gap-0.5">
                         <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
@@ -313,8 +313,8 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-5 h-5 mr-2" />
-                    ✨ Generate product ideas you could sell
+                    <Sparkles className="w-5 h-5 mr-2 shrink-0" />
+                    <span className="text-center">✨ Generate product ideas you could sell</span>
                   </>
                 )}
               </Button>
@@ -337,24 +337,24 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
           <div className="space-y-4 animate-fade-in">
             {/* Motivational Message */}
             {motivationalMessage && products.length > 0 && (
-              <Card className="bg-primary/5 border-2 border-primary/20 animate-bounce-in">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Zap className="w-5 h-5 text-primary animate-pulse" />
-                      <p className="font-semibold">{motivationalMessage}</p>
+              <Card className="bg-primary/5 border-2 border-primary/20 animate-bounce-in max-w-full">
+                <CardContent className="p-3 sm:p-4 max-w-full">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-primary animate-pulse shrink-0" />
+                      <p className="font-semibold text-sm sm:text-base break-words">{motivationalMessage}</p>
                     </div>
-                    <Badge variant="outline" className="flex items-center gap-1 bg-background">
+                    <Badge variant="outline" className="flex items-center gap-1 bg-background shrink-0 self-start sm:self-auto">
                       <CheckCircle className="w-3 h-3 text-primary" />
-                      Step 1 done ✨
+                      <span className="whitespace-nowrap">Step 1 done ✨</span>
                     </Badge>
                   </div>
                 </CardContent>
               </Card>
             )}
             
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h3 className="text-sm sm:text-base font-bold break-words">
                 Here's how your idea could start making money 💡
               </h3>
               <Button
@@ -363,6 +363,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 size="sm"
                 onClick={handleGenerateProducts}
                 disabled={isGenerating}
+                className="self-start sm:self-auto whitespace-nowrap"
               >
                 <RefreshCw className={`w-4 h-4 mr-1 ${isGenerating ? 'animate-spin' : ''}`} />
                 Refresh all
@@ -373,8 +374,8 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
               {isGenerating && products.length === 0 ? (
                 // Loading skeletons
                 Array.from({ length: 4 }).map((_, idx) => (
-                  <Card key={idx} className="border-primary/20">
-                    <CardContent className="p-4 space-y-3">
+                  <Card key={idx} className="border-primary/20 max-w-full">
+                    <CardContent className="p-3 sm:p-4 space-y-3 max-w-full">
                       <Skeleton className="h-5 w-3/4" />
                       <Skeleton className="h-4 w-1/4" />
                       <Skeleton className="h-12 w-full" />
@@ -385,14 +386,14 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 products.map((product, idx) => (
                   <Card 
                     key={product.id} 
-                    className={`border-2 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-lg ${
+                    className={`border-2 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-lg max-w-full ${
                       fadingOutId === product.id ? 'animate-fade-out' : 'animate-fade-in-up'
                     } ${showConfetti === product.id ? 'animate-glow-pulse' : ''}`}
                     style={{ 
                       animationDelay: `${idx * 0.1}s`
                     }}
                   >
-                    <CardContent className="p-4">
+                    <CardContent className="p-3 sm:p-4 max-w-full">
                       {regeneratingIds.has(product.id) ? (
                         <div className="space-y-3">
                           <Skeleton className="h-5 w-3/4" />
@@ -402,9 +403,9 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                       ) : (
                         <>
                           <div className="mb-3">
-                            <h4 className="font-semibold text-base mb-1">{product.title}</h4>
-                            <Badge variant="outline" className="text-xs">{product.format}</Badge>
-                            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                            <h4 className="font-semibold text-sm sm:text-base mb-1 break-words">{product.title}</h4>
+                            <Badge variant="outline" className="text-xs whitespace-nowrap">{product.format}</Badge>
+                            <p className="text-sm text-muted-foreground mt-2 leading-relaxed break-words">
                               {product.description}
                             </p>
                           </div>
@@ -415,17 +416,17 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                               variant="ghost"
                               size="sm"
                               onClick={(e) => handleThumbsUp(product.id, e)}
-                              className="flex-1 hover:bg-primary/10 hover:scale-105 transition-all"
+                              className="flex-1 hover:bg-primary/10 hover:scale-105 transition-all min-h-[2.25rem] h-auto py-2"
                             >
-                              <ThumbsUp className="w-4 h-4 mr-1" />
-                              Looks good
+                              <ThumbsUp className="w-4 h-4 mr-1 shrink-0" />
+                              <span className="text-center">Looks good</span>
                             </Button>
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
                               onClick={() => handleThumbsDown(product.id)}
-                              className="hover:bg-destructive/10 hover:scale-110 transition-all"
+                              className="hover:bg-destructive/10 hover:scale-110 transition-all whitespace-nowrap"
                             >
                               <ThumbsDown className="w-4 h-4" />
                             </Button>
@@ -434,7 +435,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleRefreshProduct(product.id)}
-                              className="hover:bg-accent/10 hover:scale-110 transition-all"
+                              className="hover:bg-accent/10 hover:scale-110 transition-all whitespace-nowrap"
                             >
                               <RefreshCw className="w-4 h-4" />
                             </Button>
@@ -455,18 +456,18 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
 
         {/* Next Button - Only shows after generation */}
         {hasGenerated && products.length > 0 && (
-          <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-2 border-primary/20 animate-fade-in-up">
-            <CardContent className="p-6 space-y-3">
-              <p className="text-center font-medium">
+          <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-2 border-primary/20 animate-fade-in-up max-w-full">
+            <CardContent className="p-4 sm:p-6 space-y-3 max-w-full">
+              <p className="text-center font-medium break-words">
                 Your idea is taking shape! ✨
               </p>
               <Button 
                 type="submit" 
                 size="lg" 
-                className="w-full h-14 text-base font-semibold"
+                className="w-full min-h-[3.5rem] h-auto text-sm sm:text-base font-semibold px-4 py-3"
                 disabled={!isValid}
               >
-                Next Step → Tell us about yourself
+                <span className="text-center">Next Step → Tell us about yourself</span>
               </Button>
             </CardContent>
           </Card>
