@@ -2,6 +2,8 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { checkIdempotency, storeIdempotentResponse, hashRequest } from '../_shared/idempotency.ts';
+import { normalizeOnboardingInput, shouldIncludeName } from '../_shared/normalize.ts';
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -82,6 +84,7 @@ serve(async (req) => {
   const startTime = performance.now();
   const sessionId = req.headers.get('X-Session-Id') || 'unknown';
   const traceId = req.headers.get('X-Trace-Id') || 'unknown';
+  const idempotencyKey = req.headers.get('X-Idempotency-Key') || traceId;
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -89,6 +92,19 @@ serve(async (req) => {
 
   try {
     console.log('Edge function called with headers:', req.headers.get('authorization') ? 'Authorization present' : 'No authorization');
+    
+    // Check for cached response
+    const cachedResponse = await checkIdempotency(sessionId, idempotencyKey, 'identity');
+    if (cachedResponse) {
+      console.log('Returning cached identity for idempotency key:', idempotencyKey);
+      return new Response(JSON.stringify({
+        ...cachedResponse,
+        deduped: true,
+        idempotency_key: idempotencyKey,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     // Try to authenticate, but allow anonymous users
     let user = null;
@@ -131,23 +147,30 @@ serve(async (req) => {
     const requestBody = await req.json();
     console.log('Request body received:', requestBody);
     
+    // Normalize inputs with defaults
+    const normalized = normalizeOnboardingInput(requestBody);
+    const namePrefs = shouldIncludeName(normalized.aboutYou);
+    
     const { 
       idea, 
       audience, 
       experience, 
       motivation,
-      namingPreference, 
-      firstName, 
-      lastName,
-      includeFirstName = false,
-      includeLastName = false,
-      tone, 
+      namingPreference,
+      tone,
       styleCategory,
       regenerateNamesOnly,
       regenerateSingleName,
       bannedWords = [],
       rejectedNames = []
     } = requestBody;
+    
+    const firstName = namePrefs.firstName;
+    const lastName = namePrefs.lastName;
+    const includeFirstName = namePrefs.includeFirst;
+    const includeLastName = namePrefs.includeLast;
+    const vibes = normalized.vibes;
+    const audiences = normalized.audiences;
 
     // Debug logging for name inclusion parameters
     console.log('===== NAME PARAMETERS DEBUG =====');
@@ -156,6 +179,7 @@ serve(async (req) => {
     console.log('lastName:', lastName);
     console.log('includeFirstName:', includeFirstName);
     console.log('includeLastName:', includeLastName);
+    console.log('Normalized:', normalized);
     console.log('================================');
 
     if (!idea || !audience) {
@@ -638,19 +662,28 @@ Return ONLY valid JSON with no markdown formatting:
     const combinedNameOptions = [...trackA, ...trackB];
 
     const durationMs = Math.round(performance.now() - startTime);
-    return new Response(JSON.stringify({
+    const responseData = {
       business,
       nameOptions: combinedNameOptions,
       tagline: generatedData.tagline,
       bio: generatedData.bio,
       colors: generatedData.colors,
       logoSVG: generatedData.logoSVG,
-      products,
+      products: products,
       trace_id: traceId,
       session_id: sessionId,
+      idempotency_key: idempotencyKey,
       duration_ms: durationMs,
+      applied_defaults: normalized.appliedDefaults.length > 0 ? normalized.appliedDefaults : undefined,
+      deduped: false,
       ok: true,
-    }), {
+    };
+    
+    // Store for idempotency
+    const requestHash = await hashRequest(requestBody);
+    await storeIdempotentResponse(sessionId, idempotencyKey, 'identity', requestHash, responseData);
+    
+    return new Response(JSON.stringify(responseData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
@@ -661,6 +694,7 @@ Return ONLY valid JSON with no markdown formatting:
       error: 'Internal server error',
       trace_id: traceId,
       session_id: sessionId,
+      idempotency_key: idempotencyKey,
       duration_ms: durationMs,
       ok: false,
     }), {

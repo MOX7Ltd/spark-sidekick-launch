@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkIdempotency, storeIdempotentResponse, hashRequest } from '../_shared/idempotency.ts';
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
@@ -12,13 +13,28 @@ serve(async (req) => {
   const startTime = performance.now();
   const sessionId = req.headers.get('X-Session-Id') || 'unknown';
   const traceId = req.headers.get('X-Trace-Id') || 'unknown';
+  const idempotencyKey = req.headers.get('X-Idempotency-Key') || traceId;
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { businessName, style } = await req.json();
+    const requestBody = await req.json();
+    const { businessName, style } = requestBody;
+    
+    // Check for cached response
+    const cachedResponse = await checkIdempotency(sessionId, idempotencyKey, 'logos');
+    if (cachedResponse) {
+      console.log('Returning cached logos for idempotency key:', idempotencyKey);
+      return new Response(JSON.stringify({
+        ...cachedResponse,
+        deduped: true,
+        idempotency_key: idempotencyKey,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     if (!businessName || typeof businessName !== 'string') {
       const durationMs = Math.round(performance.now() - startTime);
@@ -26,6 +42,7 @@ serve(async (req) => {
         error: 'Business name is required',
         trace_id: traceId,
         session_id: sessionId,
+        idempotency_key: idempotencyKey,
         duration_ms: durationMs,
         ok: false,
       }), {
@@ -91,13 +108,21 @@ serve(async (req) => {
     console.log('Generated', logos.length, 'logos');
 
     const durationMs = Math.round(performance.now() - startTime);
-    return new Response(JSON.stringify({ 
+    const responseData = {
       logos,
       trace_id: traceId,
       session_id: sessionId,
+      idempotency_key: idempotencyKey,
       duration_ms: durationMs,
+      deduped: false,
       ok: true,
-    }), {
+    };
+    
+    // Store for idempotency
+    const requestHash = await hashRequest(requestBody);
+    await storeIdempotentResponse(sessionId, idempotencyKey, 'logos', requestHash, responseData);
+    
+    return new Response(JSON.stringify(responseData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
@@ -111,6 +136,7 @@ serve(async (req) => {
       details: errorDetails,
       trace_id: traceId,
       session_id: sessionId,
+      idempotency_key: idempotencyKey,
       duration_ms: durationMs,
       ok: false,
     }), {

@@ -2,6 +2,8 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { checkIdempotency, storeIdempotentResponse, hashRequest } from '../_shared/idempotency.ts';
+import { normalizeOnboardingInput } from '../_shared/normalize.ts';
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -52,6 +54,7 @@ serve(async (req) => {
   const startTime = performance.now();
   const sessionId = req.headers.get('X-Session-Id') || 'unknown';
   const traceId = req.headers.get('X-Trace-Id') || 'unknown';
+  const idempotencyKey = req.headers.get('X-Idempotency-Key') || traceId;
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -59,6 +62,19 @@ serve(async (req) => {
 
   try {
     console.log('Attempting to verify user authentication...');
+    
+    // Check for cached response
+    const cachedResponse = await checkIdempotency(sessionId, idempotencyKey, 'campaign');
+    if (cachedResponse) {
+      console.log('Returning cached campaign for idempotency key:', idempotencyKey);
+      return new Response(JSON.stringify({
+        ...cachedResponse,
+        deduped: true,
+        idempotency_key: idempotencyKey,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     const authHeader = req.headers.get('authorization');
     
     let user = null;
@@ -118,6 +134,9 @@ serve(async (req) => {
     }
     
     const { businessId, type, platforms, background, motivation, tone, firstName, businessName, audience, tagline, products } = validationResult.data;
+    
+    // Normalize inputs
+    const normalized = normalizeOnboardingInput({ audiences: audience ? [audience] : [], vibes: tone ? [tone] : [], products: products || [] });
 
     // For anonymous users, we need to use the provided business data in the request
     // For authenticated users, we can fetch from the database
@@ -442,14 +461,23 @@ Generate platform-optimized content for each platform that uses the business nam
     await logUsage(user.id);
 
     const durationMs = Math.round(performance.now() - startTime);
-    return new Response(JSON.stringify({
+    const responseData = {
       campaign,
       items,
       trace_id: traceId,
       session_id: sessionId,
+      idempotency_key: idempotencyKey,
       duration_ms: durationMs,
+      applied_defaults: normalized.appliedDefaults.length > 0 ? normalized.appliedDefaults : undefined,
+      deduped: false,
       ok: true,
-    }), {
+    };
+    
+    // Store for idempotency
+    const requestHash = await hashRequest(requestBody);
+    await storeIdempotentResponse(sessionId, idempotencyKey, 'campaign', requestHash, responseData);
+    
+    return new Response(JSON.stringify(responseData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
@@ -460,6 +488,7 @@ Generate platform-optimized content for each platform that uses the business nam
       error: 'Internal server error',
       trace_id: traceId,
       session_id: sessionId,
+      idempotency_key: idempotencyKey,
       duration_ms: durationMs,
       ok: false,
     }), {

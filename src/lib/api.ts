@@ -2,6 +2,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { getTelemetryHeaders, generateTraceId } from './telemetry';
 import { logEvent } from './eventLogger';
 import { callWithRetry } from './apiClient';
+import { createAbortable, cleanupAbortable } from './abortManager';
+import { bumpVersion } from './versionManager';
 
 export interface GenerateIdentityRequest {
   idea: string;
@@ -67,8 +69,15 @@ export interface GenerateCampaignResponse {
 }
 
 export async function generateBusinessIdentity(request: GenerateIdentityRequest): Promise<GenerateIdentityResponse> {
+  const traceId = generateTraceId();
+  bumpVersion('business-identity');
+  
   const { data, error } = await supabase.functions.invoke('generate-identity', {
-    body: request
+    body: request,
+    headers: {
+      ...getTelemetryHeaders(),
+      'X-Idempotency-Key': traceId,
+    },
   });
 
   if (error) {
@@ -80,8 +89,15 @@ export async function generateBusinessIdentity(request: GenerateIdentityRequest)
 }
 
 export async function generateCampaign(request: GenerateCampaignRequest): Promise<GenerateCampaignResponse> {
+  const traceId = generateTraceId();
+  bumpVersion('campaign');
+  
   const { data, error } = await supabase.functions.invoke('generate-campaign', {
-    body: request
+    body: request,
+    headers: {
+      ...getTelemetryHeaders(),
+      'X-Idempotency-Key': traceId,
+    },
   });
 
   if (error) {
@@ -119,8 +135,15 @@ export async function regenerateSingleName(request: GenerateIdentityRequest): Pr
 }
 
 export async function generateLogos(businessName: string, style: string): Promise<string[]> {
+  const traceId = generateTraceId();
+  bumpVersion('logos');
+  
   const { data, error } = await supabase.functions.invoke('generate-logos', {
-    body: { businessName, style }
+    body: { businessName, style },
+    headers: {
+      ...getTelemetryHeaders(),
+      'X-Idempotency-Key': traceId,
+    },
   });
 
   if (error) {
@@ -148,8 +171,15 @@ export interface GenerateProductIdeasRequest {
 }
 
 export async function generateProductIdeas(request: GenerateProductIdeasRequest): Promise<ProductIdea[]> {
+  const traceId = generateTraceId();
+  bumpVersion('products');
+  
   const { data, error } = await supabase.functions.invoke('generate-product-ideas', {
-    body: request
+    body: request,
+    headers: {
+      ...getTelemetryHeaders(),
+      'X-Idempotency-Key': traceId,
+    },
   });
 
   if (error) {
@@ -157,7 +187,7 @@ export async function generateProductIdeas(request: GenerateProductIdeasRequest)
     throw new Error(error.message || 'Failed to generate product ideas');
   }
 
-  return data.products || [];
+  return data.products || data.ideas || [];
 }
 
 export async function updateBusinessName(businessId: string, businessName: string) {

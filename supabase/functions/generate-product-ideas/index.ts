@@ -1,6 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { checkIdempotency, storeIdempotentResponse, hashRequest } from '../_shared/idempotency.ts';
+import { normalizeOnboardingInput } from '../_shared/normalize.ts';
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
@@ -21,6 +23,7 @@ serve(async (req) => {
   const startTime = performance.now();
   const sessionId = req.headers.get('X-Session-Id') || 'unknown';
   const traceId = req.headers.get('X-Trace-Id') || 'unknown';
+  const idempotencyKey = req.headers.get('X-Idempotency-Key') || traceId;
   
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -28,6 +31,19 @@ serve(async (req) => {
 
   try {
     const requestBody = await req.json();
+    
+    // Check for cached response
+    const cachedResponse = await checkIdempotency(sessionId, idempotencyKey, 'product-ideas');
+    if (cachedResponse) {
+      console.log('Returning cached response for idempotency key:', idempotencyKey);
+      return new Response(JSON.stringify({
+        ...cachedResponse,
+        deduped: true,
+        idempotency_key: idempotencyKey,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     // Validate input
     const validationResult = requestSchema.safeParse(requestBody);
@@ -38,6 +54,7 @@ serve(async (req) => {
         field_errors: validationResult.error.flatten().fieldErrors,
         trace_id: traceId,
         session_id: sessionId,
+        idempotency_key: idempotencyKey,
         duration_ms: durationMs,
         ok: false,
       }), {
@@ -47,6 +64,13 @@ serve(async (req) => {
     }
     
     const { idea_text, audience_tags, tone_tags, max_ideas, exclude_ids = [] } = validationResult.data;
+    
+    // Normalize inputs with defaults
+    const normalized = normalizeOnboardingInput({
+      audiences: audience_tags,
+      vibes: tone_tags,
+      products: []
+    });
     
     console.log('Generating product ideas for:', idea_text);
 
@@ -69,8 +93,8 @@ ${exclude_ids.length > 0 ? `- Do NOT generate ideas similar to these IDs: ${excl
 
     const userPrompt = `Generate ${max_ideas} revenue-ready product ideas for this business concept: "${idea_text}"
 
-${audience_tags && audience_tags.length > 0 ? `Target audience: ${audience_tags.join(', ')}` : ''}
-${tone_tags && tone_tags.length > 0 ? `Tone preferences: ${tone_tags.join(', ')}` : ''}
+${normalized.audiences && normalized.audiences.length > 0 ? `Target audience: ${normalized.audiences.join(', ')}` : ''}
+${normalized.vibes && normalized.vibes.length > 0 ? `Tone preferences: ${normalized.vibes.join(', ')}` : ''}
 
 Return a JSON object with this exact structure:
 {
@@ -128,14 +152,23 @@ Return a JSON object with this exact structure:
     console.log('Generated product ideas:', productIdeas);
 
     const durationMs = Math.round(performance.now() - startTime);
+    const responseData = {
+      ...productIdeas,
+      trace_id: traceId,
+      session_id: sessionId,
+      idempotency_key: idempotencyKey,
+      duration_ms: durationMs,
+      applied_defaults: normalized.appliedDefaults.length > 0 ? normalized.appliedDefaults : undefined,
+      deduped: false,
+      ok: true,
+    };
+    
+    // Store for idempotency
+    const requestHash = await hashRequest(requestBody);
+    await storeIdempotentResponse(sessionId, idempotencyKey, 'product-ideas', requestHash, responseData);
+    
     return new Response(
-      JSON.stringify({
-        ...productIdeas,
-        trace_id: traceId,
-        session_id: sessionId,
-        duration_ms: durationMs,
-        ok: true,
-      }),
+      JSON.stringify(responseData),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
@@ -147,6 +180,7 @@ Return a JSON object with this exact structure:
         error: error instanceof Error ? error.message : 'Failed to generate product ideas',
         trace_id: traceId,
         session_id: sessionId,
+        idempotency_key: idempotencyKey,
         duration_ms: durationMs,
         ok: false,
       }),
