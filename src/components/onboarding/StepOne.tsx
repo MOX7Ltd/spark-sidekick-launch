@@ -252,7 +252,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
             {idea.length >= 12 && !hasGenerated && (
               <div className="flex items-center gap-2 text-primary animate-bounce-in">
                 <CheckCircle className="w-5 h-5" />
-                <span className="font-medium">Looking good! Ready to generate 🚀</span>
+                <span className="font-medium">What a great idea! Ready to see some product ideas that you could sell... 🚀</span>
               </div>
             )}
           </CardContent>
