@@ -374,7 +374,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
             </div>
 
             <p className="text-xs text-muted-foreground text-center">
-              Refine these anytime after signup. Your starter pack turns them into real listings.
+              Refine these anytime after signup. Your starter pack turns them into real products.
             </p>
           </div>
         )}
