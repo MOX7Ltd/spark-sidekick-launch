@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { 
   Check, Palette, Lightbulb, Sparkles, Zap, Target, Heart, Star, 
   Hexagon, RefreshCw, Loader2, ThumbsUp, ThumbsDown, ArrowLeft, 
-  Briefcase, Smile, Minimize2, Eye, User
+  Briefcase, Smile, Minimize2, Eye, User, Upload
 } from 'lucide-react';
 import { regenerateBusinessNames, regenerateSingleName, generateLogos, type NameSuggestion as ApiNameSuggestion } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
@@ -26,7 +26,8 @@ interface StepBusinessIdentityProps {
     bio: string; 
     colors: string[]; 
     logoSVG: string; 
-    nameOptions: NameSuggestion[] 
+    nameOptions: NameSuggestion[];
+    logoSource?: 'uploaded' | 'generated';
   }) => void;
   onBack: () => void;
   initialValue?: { 
@@ -36,7 +37,8 @@ interface StepBusinessIdentityProps {
     bio?: string; 
     colors?: string[]; 
     logoSVG?: string; 
-    nameOptions?: NameSuggestion[] 
+    nameOptions?: NameSuggestion[];
+    logoSource?: 'uploaded' | 'generated';
   };
   idea: string;
   aboutYou: {
@@ -75,18 +77,22 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
   const [selectedNameStyle, setSelectedNameStyle] = useState('');
   const [nameOptions, setNameOptions] = useState<NameSuggestion[]>([]);
   const [selectedName, setSelectedName] = useState('');
+  const [hasExistingLogo, setHasExistingLogo] = useState<boolean | null>(null);
+  const [uploadedLogo, setUploadedLogo] = useState('');
   const [selectedLogoStyle, setSelectedLogoStyle] = useState('');
   const [generatedLogos, setGeneratedLogos] = useState<string[]>([]);
-  const [selectedLogoIndex, setSelectedLogoIndex] = useState(0);
+  const [selectedLogoIndex, setSelectedLogoIndex] = useState<number | null>(null);
   const [isGeneratingNames, setIsGeneratingNames] = useState(false);
   const [isGeneratingLogos, setIsGeneratingLogos] = useState(false);
   const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
+  const [regeneratingLogoIndex, setRegeneratingLogoIndex] = useState<number | null>(null);
   const [likedNames, setLikedNames] = useState<Set<string>>(new Set());
   const [rejectedNames, setRejectedNames] = useState<string[]>([]);
   const [bannedWords, setBannedWords] = useState<string[]>([]);
+  const [likedLogos, setLikedLogos] = useState<Set<number>>(new Set());
   const { toast } = useToast();
 
-  const totalSteps = 4;
+  const totalSteps = 6;
   const progress = (currentStep / totalSteps) * 100;
 
   // Step 1: Do you have a business name?
@@ -277,10 +283,52 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
 
   const handleNameConfirm = () => {
     if (!selectedName) return;
-    setCurrentStep(4); // Go to logo style selection
+    setCurrentStep(4); // Go to "Do you have a logo?" question
   };
 
-  // Step 4: Logo style selection and generation
+  // Step 4: Do you have a logo?
+  const handleHasLogoChoice = (hasLogo: boolean) => {
+    setHasExistingLogo(hasLogo);
+    if (hasLogo) {
+      setCurrentStep(4.5); // Go to logo upload
+    } else {
+      setCurrentStep(5); // Go to logo style selection
+    }
+  };
+
+  // Step 4.5: Handle logo upload
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setUploadedLogo(reader.result as string);
+        toast({
+          title: "✨ Logo uploaded!",
+          description: "You can continue or change it later"
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUploadedLogoSubmit = () => {
+    if (!uploadedLogo) return;
+    const selectedNameOption = nameOptions.find(opt => opt.name === selectedName);
+    
+    onNext({
+      name: selectedName,
+      logo: 'uploaded',
+      tagline: selectedNameOption?.tagline || 'Helping you succeed',
+      bio: aboutYou.expertise,
+      colors: ['#2563eb', '#1d4ed8'],
+      logoSVG: uploadedLogo,
+      nameOptions: nameOptions,
+      logoSource: 'uploaded'
+    });
+  };
+
+  // Step 5: Logo style selection and generation
   const handleLogoStyleSelect = async (styleId: string) => {
     setSelectedLogoStyle(styleId);
     setIsGeneratingLogos(true);
@@ -288,11 +336,13 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     try {
       const logos = await generateLogos(selectedName, styleId);
       setGeneratedLogos(logos);
-      setSelectedLogoIndex(0);
+      setSelectedLogoIndex(null);
+      setLikedLogos(new Set());
+      setCurrentStep(6); // Go to logo selection
       
       toast({
         title: "🎨 Logos generated!",
-        description: "Select your favorite"
+        description: "Pick your favorite"
       });
     } catch (error) {
       toast({
@@ -305,6 +355,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     }
   };
 
+  // Step 6: Logo selection actions
   const handleRegenerateLogos = async () => {
     if (!selectedLogoStyle) return;
     
@@ -312,11 +363,12 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     try {
       const logos = await generateLogos(selectedName, selectedLogoStyle);
       setGeneratedLogos(logos);
-      setSelectedLogoIndex(0);
+      setSelectedLogoIndex(null);
+      setLikedLogos(new Set());
       
       toast({
-        title: "✨ New logos generated!",
-        description: "Select your favorite"
+        title: "✨ Fresh logos just for you!",
+        description: "New logo options generated"
       });
     } catch (error) {
       toast({
@@ -329,8 +381,59 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     }
   };
 
-  const handleFinalSubmit = () => {
-    const finalLogo = generatedLogos[selectedLogoIndex] || '';
+  const handleRejectLogo = async (index: number) => {
+    setRegeneratingLogoIndex(index);
+    
+    try {
+      const newLogos = await generateLogos(selectedName, selectedLogoStyle);
+      
+      setGeneratedLogos(prev => {
+        const updated = [...prev];
+        updated[index] = newLogos[0];
+        return updated;
+      });
+      
+      setLikedLogos(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(index);
+        return newSet;
+      });
+      
+      if (selectedLogoIndex === index) {
+        setSelectedLogoIndex(null);
+      }
+      
+      toast({
+        title: "✨ Fresh logo generated!",
+        description: "Let us know if you like this one better"
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to generate replacement",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setRegeneratingLogoIndex(null);
+    }
+  };
+
+  const handleLikeLogo = (index: number) => {
+    setLikedLogos(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  };
+
+  const handleLogoConfirm = () => {
+    if (selectedLogoIndex === null) return;
+    
+    const finalLogo = generatedLogos[selectedLogoIndex];
     const selectedNameOption = nameOptions.find(opt => opt.name === selectedName);
     
     onNext({
@@ -340,7 +443,8 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
       bio: aboutYou.expertise,
       colors: ['#2563eb', '#1d4ed8'],
       logoSVG: finalLogo,
-      nameOptions: nameOptions
+      nameOptions: nameOptions,
+      logoSource: 'generated'
     });
   };
 
@@ -349,7 +453,10 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     if (currentStep === 1.5) return existingName.trim().length > 0;
     if (currentStep === 2) return selectedNameStyle !== '';
     if (currentStep === 3) return selectedName !== '';
-    if (currentStep === 4) return generatedLogos.length > 0 && selectedLogoStyle !== '';
+    if (currentStep === 4) return hasExistingLogo !== null;
+    if (currentStep === 4.5) return uploadedLogo !== '';
+    if (currentStep === 5) return selectedLogoStyle !== '';
+    if (currentStep === 6) return selectedLogoIndex !== null;
     return false;
   };
 
@@ -654,45 +761,158 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
         </Card>
       )}
 
-      {/* Step 4: Logo style and generation */}
+      {/* Step 4: Do you already have a logo? */}
       {currentStep === 4 && (
         <Card className="border-2 max-w-full">
           <CardContent className="pt-4 sm:pt-6 space-y-4 sm:space-y-6 max-w-full">
             <div className="space-y-2">
-              <h3 className="text-xl sm:text-2xl font-bold break-words">Let's match your business with a logo style</h3>
-              <p className="text-sm text-muted-foreground">
-                Choose a style and we'll generate options for you
+              <h3 className="text-xl sm:text-2xl font-bold text-center break-words">Do you already have a logo?</h3>
+              <p className="text-sm text-muted-foreground text-center">
+                We can use yours or help you create something perfect
               </p>
             </div>
 
-            {/* Logo Style Options */}
-            {generatedLogos.length === 0 && (
-              <div className="space-y-2">
-                {logoStyles.map((logo) => {
-                  const Icon = logo.icon;
-                  return (
-                    <Button
-                      key={logo.id}
-                      onClick={() => handleLogoStyleSelect(logo.id)}
-                      disabled={isGeneratingLogos}
-                      variant="outline"
-                      className={`w-full h-auto py-3 text-left justify-start hover:border-primary hover:bg-primary/5 max-w-full ${
-                        selectedLogoStyle === logo.id ? 'border-primary bg-primary/5' : ''
-                      } ${isGeneratingLogos ? 'opacity-50' : ''}`}
-                    >
-                      <div
-                        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br ${logo.gradient} flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0`}
-                      >
-                        <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+            <div className="space-y-3">
+              <Button
+                onClick={() => handleHasLogoChoice(true)}
+                variant="outline"
+                className="w-full h-auto py-3 sm:py-4 text-left justify-start hover:border-primary hover:bg-primary/5 max-w-full"
+              >
+                <Upload className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 flex-shrink-0" />
+                <div className="break-words max-w-full">
+                  <div className="font-semibold mb-1 text-sm sm:text-base">Yes, I have a logo</div>
+                  <div className="text-xs text-muted-foreground">Upload your existing logo file</div>
+                </div>
+              </Button>
+
+              <Button
+                onClick={() => handleHasLogoChoice(false)}
+                variant="outline"
+                className="w-full h-auto py-3 sm:py-4 text-left justify-start hover:border-primary hover:bg-primary/5 max-w-full"
+              >
+                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 flex-shrink-0" />
+                <div className="break-words max-w-full">
+                  <div className="font-semibold mb-1 text-sm sm:text-base">No, help me create one</div>
+                  <div className="text-xs text-muted-foreground">We'll generate beautiful options</div>
+                </div>
+              </Button>
+            </div>
+
+            <Button
+              variant="outline"
+              onClick={() => setCurrentStep(3)}
+              className="w-full mt-2"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 4.5: Upload logo */}
+      {currentStep === 4.5 && (
+        <Card className="border-2 max-w-full">
+          <CardContent className="pt-4 sm:pt-6 space-y-4 sm:space-y-6 max-w-full">
+            <div className="space-y-2">
+              <h3 className="text-xl sm:text-2xl font-bold break-words">Upload your logo</h3>
+              <p className="text-sm text-muted-foreground">
+                Choose a PNG, JPG, or SVG file
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+                <input
+                  type="file"
+                  id="logo-upload"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                />
+                <label htmlFor="logo-upload" className="cursor-pointer">
+                  {uploadedLogo ? (
+                    <div className="space-y-3">
+                      <img src={uploadedLogo} alt="Uploaded logo" className="max-h-32 mx-auto object-contain" />
+                      <p className="text-sm text-primary font-medium">Logo uploaded! Click to change</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-medium">Click to upload</p>
+                        <p className="text-xs text-muted-foreground">PNG, JPG, or SVG</p>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm sm:text-base break-words">{logo.name}</div>
-                      </div>
-                    </Button>
-                  );
-                })}
+                    </div>
+                  )}
+                </label>
               </div>
-            )}
+
+              {uploadedLogo && (
+                <p className="text-sm text-primary font-medium text-center animate-fade-in">
+                  Perfect! You're all set ✨
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-2 sm:gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentStep(4)}
+                className="flex-1 whitespace-nowrap"
+              >
+                <ArrowLeft className="mr-1 sm:mr-2 h-4 w-4" />
+                Back
+              </Button>
+              <Button
+                onClick={handleUploadedLogoSubmit}
+                disabled={!canProceed()}
+                className="flex-1 whitespace-nowrap"
+              >
+                <span className="hidden sm:inline">See Your Business 💡</span>
+                <span className="sm:hidden">See It 💡</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 5: Logo style selection */}
+      {currentStep === 5 && (
+        <Card className="border-2 max-w-full">
+          <CardContent className="pt-4 sm:pt-6 space-y-4 sm:space-y-6 max-w-full">
+            <div className="space-y-2">
+              <h3 className="text-xl sm:text-2xl font-bold break-words">Choose your logo style</h3>
+              <p className="text-sm text-muted-foreground">
+                Pick a style that matches {selectedName}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              {logoStyles.map((logo) => {
+                const Icon = logo.icon;
+                return (
+                  <Button
+                    key={logo.id}
+                    onClick={() => handleLogoStyleSelect(logo.id)}
+                    disabled={isGeneratingLogos}
+                    variant="outline"
+                    className={`w-full h-auto py-3 text-left justify-start hover:border-primary hover:bg-primary/5 max-w-full ${
+                      isGeneratingLogos ? 'opacity-50' : ''
+                    }`}
+                  >
+                    <div
+                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br ${logo.gradient} flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0`}
+                    >
+                      <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm sm:text-base break-words">{logo.name}</div>
+                    </div>
+                  </Button>
+                );
+              })}
+            </div>
 
             {isGeneratingLogos && (
               <div className="flex flex-col items-center justify-center py-8 space-y-3">
@@ -701,97 +921,142 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
               </div>
             )}
 
-            {/* Generated Logos */}
-            {generatedLogos.length > 0 && !isGeneratingLogos && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label className="text-base font-semibold">Select your logo:</Label>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleRegenerateLogos}
-                    className="text-xs"
-                  >
-                    <RefreshCw className="h-3 w-3 mr-1" />
-                    Regenerate
-                  </Button>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  {generatedLogos.slice(0, 3).map((logo, idx) => (
-                    <div
-                      key={idx}
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:scale-[1.02] ${
-                        selectedLogoIndex === idx ? 'border-primary bg-primary/5' : 'border-border'
-                      }`}
+            <Button
+              variant="outline"
+              onClick={() => setCurrentStep(4)}
+              disabled={isGeneratingLogos}
+              className="w-full"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 6: Logo selection with feedback */}
+      {currentStep === 6 && (
+        <Card className="border-2 max-w-full">
+          <CardContent className="pt-4 sm:pt-6 space-y-4 sm:space-y-6 max-w-full">
+            <div className="space-y-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="text-xl sm:text-2xl font-bold break-words">Pick your favorite logo</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRegenerateLogos}
+                  disabled={isGeneratingLogos}
+                  className="text-xs self-start sm:self-auto whitespace-nowrap"
+                >
+                  {isGeneratingLogos ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3 w-3" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Tap 👍 to save ideas you like, 👎 to replace
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {generatedLogos.map((logo, idx) => (
+                <Card
+                  key={idx}
+                  className={`border-2 transition-all hover:shadow-md max-w-full ${
+                    selectedLogoIndex === idx ? 'border-primary bg-primary/5' : 'border-border'
+                  } ${regeneratingLogoIndex === idx ? 'opacity-50' : ''}`}
+                >
+                  <CardContent className="p-3 sm:p-4 max-w-full">
+                    <div 
+                      className="flex items-center gap-3 cursor-pointer"
                       onClick={() => setSelectedLogoIndex(idx)}
                     >
-                      <div className="flex items-center justify-center h-24 mb-2">
-                        <img src={logo} alt={`Logo ${idx + 1}`} className="max-w-full max-h-full object-contain" />
+                      {/* Logo Preview */}
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center bg-muted rounded-lg flex-shrink-0">
+                        <img src={logo} alt={`Logo ${idx + 1}`} className="max-w-full max-h-full object-contain p-2" />
                       </div>
+
+                      {/* Logo Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm sm:text-base font-medium break-words">Logo Option {idx + 1}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {selectedLogoIndex === idx ? 'Selected' : 'Tap to select'}
+                        </p>
+                      </div>
+
+                      {/* Selection Indicator */}
                       {selectedLogoIndex === idx && (
-                        <div className="flex items-center justify-center">
-                          <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                            <Check className="h-3 w-3 text-primary-foreground" />
-                          </div>
+                        <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                          <Check className="h-4 w-4 text-primary-foreground" />
                         </div>
                       )}
                     </div>
-                  ))}
-                </div>
 
-                {/* Mini Storefront Preview */}
-                <div className="mt-6 p-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border-2 border-primary/20 animate-fade-in">
-                  <p className="text-xs text-muted-foreground text-center mb-4">Preview</p>
-                  <div className="bg-background rounded-lg p-6 space-y-4">
-                    {/* Logo */}
-                    <div className="flex justify-center">
-                      <img 
-                        src={generatedLogos[selectedLogoIndex]} 
-                        alt="Logo" 
-                        className="h-16 w-16 object-contain"
-                      />
+                    {/* Feedback Controls */}
+                    <div className="flex gap-2 mt-3 pt-3 border-t">
+                      <Button
+                        variant={likedLogos.has(idx) ? "default" : "outline"}
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLikeLogo(idx);
+                        }}
+                        className="flex-1 h-8 text-xs"
+                      >
+                        <ThumbsUp className={`h-3 w-3 mr-1 flex-shrink-0 ${likedLogos.has(idx) ? 'fill-current' : ''}`} />
+                        <span className="hidden sm:inline">Like</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRejectLogo(idx);
+                        }}
+                        disabled={regeneratingLogoIndex === idx}
+                        className="flex-1 h-8 text-xs"
+                      >
+                        {regeneratingLogoIndex === idx ? (
+                          <Loader2 className="h-3 w-3 animate-spin flex-shrink-0" />
+                        ) : (
+                          <>
+                            <ThumbsDown className="h-3 w-3 mr-1 flex-shrink-0" />
+                            <span className="hidden sm:inline">Replace</span>
+                          </>
+                        )}
+                      </Button>
                     </div>
-                    {/* Business Name */}
-                    <h2 className="text-xl sm:text-2xl font-bold text-center break-words">{selectedName}</h2>
-                    {/* Tagline */}
-                    <p className="text-sm text-muted-foreground text-center italic break-words">
-                      {nameOptions.find(opt => opt.name === selectedName)?.tagline || 'Helping you succeed'}
-                    </p>
-                    {/* About snippet */}
-                    <div className="pt-4 border-t">
-                      <p className="text-xs text-muted-foreground text-center break-words">
-                        {aboutYou.expertise.slice(0, 120)}...
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-center text-muted-foreground mt-4">
-                    ✨ This is just a preview — your full business is next!
-                  </p>
-                </div>
-              </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {selectedLogoIndex !== null && (
+              <p className="text-sm text-primary font-medium text-center animate-fade-in">
+                ✨ Perfect choice! Ready to see your business come to life?
+              </p>
             )}
 
             <div className="flex gap-2 sm:gap-3 pt-2">
               <Button
                 variant="outline"
-                onClick={() => setCurrentStep(3)}
+                onClick={() => setCurrentStep(5)}
                 disabled={isGeneratingLogos}
                 className="flex-1 whitespace-nowrap"
               >
                 <ArrowLeft className="mr-1 sm:mr-2 h-4 w-4" />
                 Back
               </Button>
-              {generatedLogos.length > 0 && (
-                <Button
-                  onClick={handleFinalSubmit}
-                  disabled={!canProceed()}
-                  className="flex-1"
-                >
-                  <span className="hidden sm:inline">See Your Business 💡</span>
-                  <span className="sm:hidden">See It 💡</span>
-                </Button>
-              )}
+              <Button
+                onClick={handleLogoConfirm}
+                disabled={!canProceed()}
+                className="flex-1"
+              >
+                <span className="hidden sm:inline">See Your Business 💡</span>
+                <span className="sm:hidden">See It 💡</span>
+              </Button>
             </div>
           </CardContent>
         </Card>
