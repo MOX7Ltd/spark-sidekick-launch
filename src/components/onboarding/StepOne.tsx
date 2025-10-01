@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Sparkles, ThumbsUp, ThumbsDown, RefreshCw } from 'lucide-react';
+import { Sparkles, ThumbsUp, ThumbsDown, RefreshCw, CheckCircle, Lightbulb } from 'lucide-react';
 import { generateProductIdeas, type ProductIdea } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
@@ -21,7 +21,25 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   const [hasGenerated, setHasGenerated] = useState(false);
   const [ideaSource, setIdeaSource] = useState<'typed' | 'chip'>('typed');
   const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
+  const [motivationalMessage, setMotivationalMessage] = useState('');
+  const [showConfetti, setShowConfetti] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const motivationalMessages = [
+    "Nice! You're onto something big 🚀",
+    "Your idea has serious potential 👏",
+    "Let's make this real 🔥",
+    "This could be amazing ✨",
+    "You're building something special 💪",
+    "Great thinking! Let's go 🎯"
+  ];
+
+  useEffect(() => {
+    if (hasGenerated && products.length > 0) {
+      const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
+      setMotivationalMessage(randomMessage);
+    }
+  }, [hasGenerated, products.length]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,6 +135,8 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   const handleThumbsUp = (productId: string) => {
     // Optional: Track positive feedback
     console.log('Product liked:', productId);
+    setShowConfetti(productId);
+    setTimeout(() => setShowConfetti(null), 1000);
     toast({
       title: "Great choice!",
       description: "We'll refine these after you sign up.",
@@ -172,7 +192,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
               ))}
             </div>
             <p className="text-xs text-muted-foreground text-center pt-2">
-              These are previews. Your starter pack turns ideas into real products, a storefront, and launch content.
+              These are just starter ideas — your starter pack will turn them into real products you can sell.
             </p>
           </div>
         )}
@@ -187,15 +207,31 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
               <p className="text-sm text-muted-foreground">
                 Use 👍 to mark ideas you like, 👎 to generate a replacement, or the refresh icon to try a different variation.
               </p>
-              <Button
+                <Button
                 type="button"
                 onClick={handleGenerateProducts}
                 disabled={!isValid || isGenerating}
                 size="lg"
-                className="w-full sm:w-auto"
+                className="w-full sm:w-auto relative"
               >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Generate product ideas
+                {isGenerating ? (
+                  <>
+                    <Lightbulb className="w-4 h-4 mr-2 animate-pulse" />
+                    <span className="flex items-center gap-1">
+                      Generating
+                      <span className="flex gap-0.5">
+                        <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
+                        <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
+                        <span className="animate-bounce" style={{ animationDelay: '300ms' }}>.</span>
+                      </span>
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate product ideas
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -204,9 +240,23 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
         {/* Product Ideas Display */}
         {hasGenerated && (
           <div className="space-y-4 animate-fade-in">
+            {/* Motivational Message & Progress Badge */}
+            {motivationalMessage && products.length > 0 && (
+              <div className="flex items-center justify-between p-4 bg-primary/5 border border-primary/20 rounded-lg animate-scale-in">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-primary animate-pulse" />
+                  <p className="font-semibold text-foreground">{motivationalMessage}</p>
+                </div>
+                <Badge variant="outline" className="flex items-center gap-1 bg-background">
+                  <CheckCircle className="w-3 h-3 text-primary" />
+                  Idea Locked In
+                </Badge>
+              </div>
+            )}
+            
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-muted-foreground">
-                Product ideas you could sell
+                Here's how your idea could make money 💡
               </h3>
               <Button
                 type="button"
@@ -233,9 +283,20 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                   </Card>
                 ))
               ) : (
-                products.map((product) => (
-                  <Card key={product.id} className="border-primary/20 hover:border-primary/40 transition-all">
-                    <CardContent className="p-4">
+                products.map((product, idx) => (
+                  <Card 
+                    key={product.id} 
+                    className="border-primary/20 hover:border-primary/40 transition-all hover:scale-[1.02] hover:shadow-lg group relative overflow-hidden"
+                    style={{ 
+                      animation: `fade-in 0.5s ease-out ${idx * 0.1}s both`
+                    }}
+                  >
+                    {showConfetti === product.id && (
+                      <div className="absolute inset-0 pointer-events-none">
+                        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 animate-pulse" />
+                      </div>
+                    )}
+                    <CardContent className="p-4 relative">
                       {regeneratingIds.has(product.id) ? (
                         <div className="space-y-3">
                           <Skeleton className="h-5 w-3/4" />
@@ -260,7 +321,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleThumbsUp(product.id)}
-                              className="flex-1"
+                              className="flex-1 hover:bg-primary/10 transition-all"
                             >
                               <ThumbsUp className="w-4 h-4 mr-1" />
                               Looks good
@@ -270,6 +331,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleThumbsDown(product.id)}
+                              className="hover:bg-destructive/10 transition-all"
                             >
                               <ThumbsDown className="w-4 h-4" />
                             </Button>
@@ -278,6 +340,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleRefreshProduct(product.id)}
+                              className="hover:bg-accent/10 transition-all"
                             >
                               <RefreshCw className="w-4 h-4" />
                             </Button>
