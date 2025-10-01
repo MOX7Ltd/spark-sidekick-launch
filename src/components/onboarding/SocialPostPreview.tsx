@@ -10,6 +10,7 @@ interface SocialPostPreviewProps {
   expertise: string;
   motivation: string;
   styles: string[];
+  audiences: string[];
   idea: string;
   onContinue: () => void;
 }
@@ -18,7 +19,8 @@ export const SocialPostPreview = ({
   firstName, 
   expertise, 
   motivation, 
-  styles, 
+  styles,
+  audiences,
   idea,
   onContinue 
 }: SocialPostPreviewProps) => {
@@ -42,6 +44,7 @@ export const SocialPostPreview = ({
         type: 'intro',
         platforms: ['instagram', 'linkedin'],
         businessName: idea,
+        audience: audiences.join(', '),
         background: expertise,
         motivation: motivation,
         tone: styles.join(', ')

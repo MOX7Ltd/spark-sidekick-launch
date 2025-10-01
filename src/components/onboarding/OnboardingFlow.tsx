@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { StepOne } from './StepOne';
 import { StepAboutYouMobile } from './StepAboutYouMobile';
-import { SocialPostPreview } from './SocialPostPreview';
 import { StepTwoMultiSelect } from './StepTwoMultiSelect';
-import { StepStyleSelect } from './StepStyleSelect';
+import { SocialPostPreview } from './SocialPostPreview';
 import { StepBusinessIdentity } from './StepBusinessIdentity';
 import { StarterPackReveal } from './StarterPackReveal';
-import { generateBusinessIdentity, generateCampaign } from '@/lib/api';
+import { generateBusinessIdentity, generateCampaign, GenerateIdentityRequest, GenerateCampaignRequest } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 interface OnboardingData {
@@ -80,115 +79,21 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     includeLastName: boolean;
   }) => {
     setFormData(prev => ({ ...prev, aboutYou }));
-    setCurrentStep(2.5); // Show social post preview
+    setCurrentStep(3); // Go to audience select
+  };
+
+  const handleAudienceSelect = (audiences: string[]) => {
+    setFormData(prev => ({ ...prev, audiences }));
+    setCurrentStep(4); // Go to social post preview
   };
 
   const handleSocialPostContinue = () => {
-    setCurrentStep(3);
+    setCurrentStep(5); // Go to business identity
   };
 
-  const handleStepTwo = (audiences: string[]) => {
-    setFormData(prev => ({ ...prev, audiences }));
-    setCurrentStep(4);
-  };
-
-  const handleStyleSelect = async (styleCategory: string) => {
-    if (!formData.idea || !formData.aboutYou) return;
-    
-    setFormData(prev => ({ ...prev, styleCategory }));
-    setIsGenerating(true);
-    
-    try {
-      console.log('Generating business identity with data:', {
-        idea: formData.idea,
-        audiences: formData.audiences,
-        experience: formData.aboutYou.expertise,
-        motivation: formData.aboutYou.motivation,
-        firstName: formData.aboutYou.firstName,
-        styles: formData.aboutYou.styles,
-        styleCategory
-      });
-
-      // Determine naming preference based on checkboxes
-      let namingPreference: 'with_personal_name' | 'anonymous' | 'custom' = 'anonymous';
-      if (formData.aboutYou.includeFirstName || formData.aboutYou.includeLastName) {
-        namingPreference = 'with_personal_name';
-      }
-
-      // Generate business identity using AI after all data is collected
-      const identityData = await generateBusinessIdentity({
-        idea: formData.idea,
-        audience: formData.audiences?.join(', ') || '',
-        experience: formData.aboutYou.expertise,
-        motivation: formData.aboutYou.motivation,
-        firstName: formData.aboutYou.firstName,
-        lastName: formData.aboutYou.lastName,
-        includeFirstName: formData.aboutYou.includeFirstName,
-        includeLastName: formData.aboutYou.includeLastName,
-        tone: formData.aboutYou.styles.join(', '),
-        styleCategory,
-        namingPreference
-      });
-
-      console.log('Generated identity data:', identityData);
-
-      // Generate intro campaign with the business identity
-      console.log('Generating intro campaign...');
-      const campaignData = await generateCampaign({
-        type: 'intro',
-        platforms: ['instagram', 'linkedin'],
-        background: `${formData.aboutYou.expertise}. ${formData.aboutYou.motivation}`,
-        motivation: formData.aboutYou.motivation,
-        tone: formData.aboutYou.styles.join(', '),
-        // For anonymous users, pass business data directly
-        businessName: identityData.nameOptions[0].name,
-        audience: formData.audiences?.join(', ') || '',
-        bio: identityData.bio,
-        tagline: identityData.tagline
-      });
-
-      console.log('Generated campaign data:', campaignData);
-
-      // Update form data with generated identity and campaign
-      setFormData(prev => ({
-        ...prev,
-        businessIdentity: {
-          name: identityData.nameOptions[0].name,
-          logo: identityData.logoSVG,
-          tagline: identityData.tagline,
-          bio: identityData.bio,
-          colors: identityData.colors,
-          logoSVG: identityData.logoSVG,
-          nameOptions: identityData.nameOptions
-        },
-        products: identityData.products,
-        introCampaign: {
-          shortPost: {
-            caption: campaignData.items.find(item => item.platform === 'instagram')?.caption || '',
-            hashtags: campaignData.items.find(item => item.platform === 'instagram')?.hashtags || []
-          },
-          longPost: {
-            caption: campaignData.items.find(item => item.platform === 'linkedin')?.caption || ''
-          }
-        }
-      }));
-      
-      setCurrentStep(5);
-    } catch (error) {
-      console.error('Error generating business identity:', error);
-      toast({
-        title: "Generation Failed",
-        description: `Failed to generate business identity: ${error.message || 'Please try again.'}`,
-        variant: "destructive"
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleStepThree = (businessIdentity: { name: string; logo: string; tagline: string; bio: string; colors: string[]; logoSVG: string; nameOptions: Array<{name: string; style?: string; archetype?: string; tagline: string}> }) => {
+  const handleBusinessIdentity = (businessIdentity: OnboardingData['businessIdentity']) => {
     setFormData(prev => ({ ...prev, businessIdentity }));
-    setCurrentStep(6);
+    setCurrentStep(6); // Go to final reveal
   };
 
   const handleUnlock = () => {
@@ -225,38 +130,30 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
             />
           )}
 
-          {currentStep === 2.5 && formData.aboutYou && formData.idea && (
-            <SocialPostPreview
-              firstName={formData.aboutYou.firstName}
-              expertise={formData.aboutYou.expertise}
-              motivation={formData.aboutYou.motivation}
-              styles={formData.aboutYou.styles}
-              idea={formData.idea}
-              onContinue={handleSocialPostContinue}
-            />
-          )}
-          
           {currentStep === 3 && (
             <StepTwoMultiSelect 
-              onNext={handleStepTwo}
+              onNext={handleAudienceSelect}
               onBack={goBack}
               initialValue={formData.audiences?.[0]}
               isLoading={false}
             />
           )}
 
-          {currentStep === 4 && (
-            <StepStyleSelect
-              onNext={handleStyleSelect}
-              onBack={goBack}
-              initialValue={formData.styleCategory}
-              isLoading={isGenerating}
+          {currentStep === 4 && formData.aboutYou && formData.idea && formData.audiences && (
+            <SocialPostPreview
+              firstName={formData.aboutYou.firstName}
+              expertise={formData.aboutYou.expertise}
+              motivation={formData.aboutYou.motivation}
+              styles={formData.aboutYou.styles}
+              audiences={formData.audiences}
+              idea={formData.idea}
+              onContinue={handleSocialPostContinue}
             />
           )}
           
           {currentStep === 5 && (
             <StepBusinessIdentity
-              onNext={handleStepThree}
+              onNext={handleBusinessIdentity}
               onBack={goBack}
               initialValue={formData.businessIdentity}
               idea={formData.idea}
