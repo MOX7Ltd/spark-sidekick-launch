@@ -139,6 +139,12 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+
+  html, #root {
+    width: 100%;
+    overflow-x: hidden;
   }
 
   /* Accessible focus styles */

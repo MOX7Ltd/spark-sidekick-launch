@@ -119,8 +119,8 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   };
 
   return (
-    <div className="min-h-[80vh] py-8">
-      <div className="container mx-auto px-4">
+    <div className="min-h-[80vh] py-6 md:py-8 overflow-x-hidden">
+      <div className="max-w-screen-sm mx-auto px-3 sm:px-4 w-full">
         <div className="min-h-[60vh] flex items-center justify-center">
           {/* Stage 1: Your Idea (Products) */}
           {currentStep === 1 && (

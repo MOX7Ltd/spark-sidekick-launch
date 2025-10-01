@@ -5,7 +5,7 @@ import sidehiveLogo from '@/assets/sidehive-logo.jpg';
 export const Header = () => {
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+      <div className="max-w-screen-sm mx-auto px-3 sm:px-4 h-16 flex items-center justify-between w-full">
         <div className="flex items-center space-x-3">
           <img 
             src={sidehiveLogo} 
