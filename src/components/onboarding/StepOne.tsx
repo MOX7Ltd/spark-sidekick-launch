@@ -52,14 +52,24 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
 
   const isValid = idea.trim().length >= 12;
   
-  const inspirationChips = [
+  const allInspirationIdeas = [
     "Online coaching program for beginners",
-    "Meal-prep subscription boxes",
-    "Digital templates for small businesses",
-    "Weekend fitness bootcamps",
-    "Virtual tutoring sessions",
-    "Handmade product shop",
+    "Digital course or masterclass (e.g., productivity, coding, fitness)",
+    "Subscription-based digital templates (e.g., resumes, pitch decks, planners)",
+    "E-books or guides (e.g., \"How to start a side hustle,\" \"Beginner's guide to yoga\")",
+    "Paid newsletter (specialised insights, curated trends, personal growth)",
+    "Membership community (exclusive group chats, Q&As, or forums)",
+    "Virtual workshops or bootcamps (short, interactive sessions)",
+    "Stock photos, graphics, or icons bundle",
+    "AI-generated prompts, tools, or resource packs",
+    "Exclusive video library (tutorials, lessons, or niche knowledge base)"
   ];
+
+  // Randomly select 6 ideas on component mount
+  const [inspirationChips] = useState(() => {
+    const shuffled = [...allInspirationIdeas].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 6);
+  });
 
   const handleChipClick = (chip: string) => {
     logFrontendEvent({
