@@ -275,14 +275,6 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
                 <span className="hidden sm:inline">Back</span>
               </Button>
               <Button 
-                variant="outline"
-                size="lg"
-                onClick={handleSkip}
-                className="flex-1 h-11 sm:h-12 text-sm sm:text-base whitespace-nowrap"
-              >
-                Skip
-              </Button>
-              <Button 
                 variant="hero"
                 size="lg"
                 onClick={handleNext}
