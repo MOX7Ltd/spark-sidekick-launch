@@ -49,6 +49,20 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
   const [isListening, setIsListening] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
+  const allMotivationExamples = [
+    "I've coached youth soccer for 10 years and want to share my methods online so more kids can benefit.",
+    "I've learned how to get out of debt and want to help others avoid the mistakes I made.",
+    "I struggled with confidence for years, now I want to teach others the tools that helped me grow.",
+    "As a single parent, I found shortcuts for healthy meal planning and want to make it easier for other families.",
+    "I built a career in graphic design without formal training and want to mentor people starting from scratch."
+  ];
+
+  // Randomly select 2 examples on component mount
+  const [motivationExamples] = useState(() => {
+    const shuffled = [...allMotivationExamples].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 2);
+  });
+
   const totalQuestions = 3;
 
   const startVoiceInput = (field: 'expertise' | 'motivation') => {
@@ -260,8 +274,9 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
 
             <div className="text-xs text-muted-foreground space-y-1">
               <p>💡 Examples:</p>
-              <p className="pl-4">• "I want more freedom and flexibility in my life"</p>
-              <p className="pl-4">• "I want to help others like me who are struggling"</p>
+              {motivationExamples.map((example, index) => (
+                <p key={index} className="pl-4">• "{example}"</p>
+              ))}
             </div>
 
             <div className="flex gap-2 pt-4">
