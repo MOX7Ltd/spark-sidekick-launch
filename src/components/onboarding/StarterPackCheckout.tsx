@@ -85,8 +85,9 @@ export const StarterPackCheckout = ({ onContinue, businessName }: StarterPackChe
 
           <Button 
             size="lg"
+            variant="hero"
             onClick={onContinue}
-            className="w-full h-12 md:h-14 text-base md:text-lg bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all group"
+            className="w-full h-12 md:h-14 text-base md:text-lg font-semibold group"
           >
             Let's Go Live! 🚀
             <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5 group-hover:translate-x-1 transition-transform" />

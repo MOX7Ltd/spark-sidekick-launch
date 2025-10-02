@@ -118,8 +118,9 @@ export const StarterPackReveal = ({ businessIdentity, products, onContinue, onBa
       <div className="text-center space-y-3 md:space-y-4">
         <Button 
           size="lg"
+          variant="hero"
           onClick={onContinue}
-          className="w-full md:w-auto h-12 md:h-14 px-6 md:px-8 text-base md:text-lg bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all"
+          className="w-full md:w-auto h-12 md:h-14 px-6 md:px-8 text-base md:text-lg font-semibold"
         >
           <Sparkles className="mr-2 h-4 w-4 md:h-5 md:w-5" />
           Next: Generate launch posts

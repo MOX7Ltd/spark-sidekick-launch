@@ -246,11 +246,12 @@ export const SocialPostPreview = ({
 
       <div className="mt-6 md:mt-8 text-center">
         <Button 
-          size="lg" 
+          size="lg"
+          variant="hero"
           onClick={onContinue}
-          className="w-full md:w-auto h-12 md:h-14 px-6 md:px-8 text-base md:text-lg group bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all"
+          className="w-full md:w-auto h-12 md:h-14 px-6 md:px-8 text-base md:text-lg font-semibold group"
         >
-          Get my Starter Pack
+          Get my Starter Pack →
           <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5 group-hover:translate-x-1 transition-transform" />
         </Button>
       </div>

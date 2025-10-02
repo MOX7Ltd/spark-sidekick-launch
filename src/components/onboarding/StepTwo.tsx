@@ -123,29 +123,27 @@ export const StepTwo = ({ onNext, onBack, initialValue, isLoading = false }: Ste
         </div>
       )}
 
-      {/* Fixed bottom navigation */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border">
-        <div className="max-w-3xl mx-auto space-y-2">
-          <Button 
-            variant="secondary" 
-            size="default"
-            onClick={onBack}
-            className="w-full"
-            disabled={isLoading}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-          <Button 
-            size="lg"
-            className="w-full h-14 text-lg font-semibold"
-            onClick={handleSubmit}
-            disabled={!selectedAudience || isLoading}
-            variant="hero"
-          >
-            {isLoading ? "Processing..." : "Continue →"}
-          </Button>
-        </div>
+      {/* Navigation buttons */}
+      <div className="space-y-3 pt-4">
+        <Button 
+          variant="secondary" 
+          size="default"
+          onClick={onBack}
+          className="w-full"
+          disabled={isLoading}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+        <Button 
+          size="lg"
+          className="w-full h-14 text-lg font-semibold"
+          onClick={handleSubmit}
+          disabled={!selectedAudience || isLoading}
+          variant="hero"
+        >
+          {isLoading ? "Processing..." : "Continue →"}
+        </Button>
       </div>
     </div>
   );

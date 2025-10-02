@@ -473,21 +473,24 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
           </div>
         )}
 
-        {/* Fixed bottom navigation - Only shows after generation */}
+        {/* Next step section - Shows after products are generated */}
         {hasGenerated && products.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border z-50">
-            <div className="max-w-3xl mx-auto">
+          <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-2 border-primary/20 animate-fade-in-up max-w-full">
+            <CardContent className="p-4 sm:p-6 text-center space-y-3 max-w-full">
+              <p className="text-center font-medium break-words">
+                Your idea is taking shape! ✨
+              </p>
               <Button 
-                type="submit"
+                type="submit" 
                 size="lg"
                 variant="hero"
+                className="w-full h-14 text-base font-semibold"
                 disabled={!isValid}
-                className="w-full h-14 text-lg font-semibold"
               >
-                Continue to next step →
+                Great — tell us about yourself →
               </Button>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
       </form>
     </div>
