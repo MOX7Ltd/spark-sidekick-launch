@@ -110,7 +110,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     return banned;
   });
 
-  // Logo states
+// Logo states
   const [logoSection, setLogoSection] = useState<'hidden' | 'choice' | 'upload' | 'generate' | 'select'>('hidden');
   const [hasExistingLogo, setHasExistingLogo] = useState<boolean | null>(null);
   const [uploadedLogo, setUploadedLogo] = useState('');
@@ -120,6 +120,9 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
   const [isGeneratingLogos, setIsGeneratingLogos] = useState(false);
   const [regeneratingLogoIndex, setRegeneratingLogoIndex] = useState<number | null>(null);
   const [likedLogos, setLikedLogos] = useState<Set<number>>(new Set());
+  
+  // Descriptive logo nicknames
+  const logoNicknames = ['Clean & Bold', 'Playful Energy', 'Visionary Spark', 'Creative Edge'];
 
   // Shared states for bio and colors
   const [generatedBio, setGeneratedBio] = useState<string>('');
@@ -299,6 +302,10 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
   // Name: Confirm selection and show logo section
   const handleNameConfirm = () => {
     if (!selectedName) return;
+    toast({
+      title: "🎉 That's a strong brand name!",
+      description: "Let's design the perfect logo to match."
+    });
     setLogoSection('choice');
   };
 
@@ -455,6 +462,11 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
   const handleLogoConfirm = () => {
     if (selectedLogoIndex === null) return;
     
+    toast({
+      title: "💪 Your logo choice screams confidence!",
+      description: "Your brand identity is ready to shine."
+    });
+    
     const finalLogo = generatedLogos[selectedLogoIndex];
     const selectedNameOption = nameOptions.find(opt => opt.name === selectedName);
     
@@ -473,15 +485,18 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
   return (
     <TooltipProvider>
       <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 py-6 space-y-6 animate-fade-in">
-        {/* Micro-header with energy */}
-        <div className="text-center space-y-2 pb-4">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20">
-            <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-            <span className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Your brand is taking shape! ✨
-            </span>
-          </div>
+      {/* Top Guidance Banner */}
+      <div className="text-center space-y-3 pb-6">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20">
+          <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+          <span className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            Your brand is taking shape! ✨
+          </span>
         </div>
+        <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
+          This is where your business comes to life. Your name and logo are the first things people will see, so let's make them shine.
+        </p>
+      </div>
 
       {/* NAME SECTION - Hide when logo section is active to avoid vertical stacking */}
       {logoSection === 'hidden' && (
@@ -511,7 +526,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                 >
                   <div>
                     <div className="font-semibold mb-1">Yes, I have a name</div>
-                    <div className="text-xs text-muted-foreground">I'll show you alternatives too</div>
+                    <div className="text-xs text-muted-foreground">We'll polish it and show you creative alternatives too.</div>
                   </div>
                 </Button>
 
@@ -522,7 +537,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                 >
                   <div>
                     <div className="font-semibold mb-1">No, help me create one</div>
-                    <div className="text-xs text-muted-foreground">Let's brainstorm together</div>
+                    <div className="text-xs text-muted-foreground">Let's brainstorm magic names together in seconds.</div>
                   </div>
                 </Button>
               </div>
@@ -592,10 +607,13 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
           {/* Name: Selection */}
           {nameSection === 'select' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="space-y-2 mb-4">
                 <p className="text-sm font-medium text-foreground">
-                  Here are some names we think fit your vibe & audience.
+                  Here are some names matched to your vibe & audience — any of these could become your brand. Like one, tweak one, or refresh for more.
                 </p>
+              </div>
+              
+              <div className="flex items-center justify-end">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -706,7 +724,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
 
               {selectedName && (
                 <p className="text-sm text-primary font-medium animate-fade-in text-center">
-                  Perfect choice — that's going to look great! 🔥
+                  That's a strong brand name! ✨
                 </p>
               )}
 
@@ -727,7 +745,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                   disabled={!selectedName}
                   className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold"
                 >
-                  Next, design my logo 🎨
+                  🔥 Love it — now let's design your logo →
                 </Button>
               </div>
             </div>
@@ -845,10 +863,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
               <div className="space-y-4">
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-foreground">
-                    Choose a logo style that reflects your vibe — you'll see generated logo options next.
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Not sure? Pick the one that feels closest — you can always regenerate later.
+                    Your logo is the face of your business. We've designed these to reflect your vibe & style — pick one you love (you can refine later).
                   </p>
                 </div>
 
@@ -956,11 +971,11 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                           onClick={() => setSelectedLogoIndex(idx)}
                         >
                           <div className="w-20 h-20 flex items-center justify-center bg-muted rounded-lg flex-shrink-0">
-                            <img src={logo} alt={`Logo ${idx + 1}`} className="max-w-full max-h-full object-contain p-2" />
+                            <img src={logo} alt={`${logoNicknames[idx]}`} className="max-w-full max-h-full object-contain p-2" />
                           </div>
 
                           <div className="flex-1">
-                            <p className="font-medium">Logo Option {idx + 1}</p>
+                            <p className="font-medium">{logoNicknames[idx]}</p>
                             <p className="text-xs text-muted-foreground">
                               {selectedLogoIndex === idx ? 'Selected' : 'Tap to select'}
                             </p>
@@ -1023,12 +1038,15 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
 
                 {selectedLogoIndex !== null && (
                   <div className="space-y-3 pt-2 animate-fade-in">
+                    <p className="text-sm text-primary font-medium text-center">
+                      💡 Great pick — this logo will be the visual anchor of your brand.
+                    </p>
                     <div className="text-center space-y-1 px-4 py-3 rounded-lg bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/20">
                       <p className="text-sm font-semibold text-foreground">
-                        You've got your name & logo — now let's bring it all to life!
+                        Your logo choice screams confidence!
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        This is where your business idea transforms into a real storefront you can share.
+                        With your name and logo chosen, SideHive will now transform this into your storefront and the social posts that attract your first customers.
                       </p>
                     </div>
                   </div>
@@ -1049,7 +1067,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                     disabled={selectedLogoIndex === null}
                     className="flex-1 bg-gradient-to-r from-primary via-accent to-brand-orange hover:opacity-90 text-white font-bold shadow-lg"
                   >
-                    ✨ Reveal My Shopfront ✨
+                    🚀 Amazing! Reveal My Shopfront →
                   </Button>
                 </div>
               </div>
