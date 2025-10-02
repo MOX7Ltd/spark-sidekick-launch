@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
   Check, Palette, Lightbulb, Sparkles, Zap, Heart, 
-  RefreshCw, Loader2, ThumbsUp, ThumbsDown, ArrowLeft, Upload
+  RefreshCw, Loader2, ThumbsUp, ThumbsDown, ArrowLeft, Upload,
+  Circle, Smile, Target, Paintbrush, Clock, TrendingUp, Type
 } from 'lucide-react';
 import {
   Tooltip,
@@ -27,12 +28,64 @@ interface StepBusinessIdentityProps {
   vibes: string[];
 }
 
-// Limit to 4 logo styles for mobile-friendliness
+// Expanded logo styles for more variety
 const logoStyles = [
-  { id: 'modern', name: 'Minimalist', gradient: 'from-slate-600 to-slate-800', icon: Lightbulb },
-  { id: 'playful', name: 'Playful', gradient: 'from-pink-500 to-orange-400', icon: Sparkles },
-  { id: 'bold', name: 'Bold', gradient: 'from-purple-600 to-indigo-600', icon: Zap },
-  { id: 'icon', name: 'Icon-Based', gradient: 'from-teal-500 to-cyan-600', icon: Heart },
+  { 
+    id: 'minimalist', 
+    name: 'Minimalist', 
+    description: 'Clean, simple, modern',
+    gradient: 'from-slate-600 to-slate-800', 
+    icon: Circle 
+  },
+  { 
+    id: 'playful', 
+    name: 'Playful', 
+    description: 'Fun, lighthearted, energetic',
+    gradient: 'from-pink-500 to-orange-400', 
+    icon: Smile 
+  },
+  { 
+    id: 'bold', 
+    name: 'Bold', 
+    description: 'Confident, high impact, daring',
+    gradient: 'from-purple-600 to-indigo-600', 
+    icon: Zap 
+  },
+  { 
+    id: 'icon', 
+    name: 'Icon-Based', 
+    description: 'Strong symbol-driven design',
+    gradient: 'from-teal-500 to-cyan-600', 
+    icon: Target 
+  },
+  { 
+    id: 'handdrawn', 
+    name: 'Hand-drawn', 
+    description: 'Sketch-style, creative, personal',
+    gradient: 'from-amber-500 to-orange-600', 
+    icon: Paintbrush 
+  },
+  { 
+    id: 'retro', 
+    name: 'Retro', 
+    description: 'Vintage, nostalgic, classic',
+    gradient: 'from-rose-500 to-red-600', 
+    icon: Clock 
+  },
+  { 
+    id: 'gradient', 
+    name: 'Modern Gradient', 
+    description: 'Colorful, tech-forward, trendy',
+    gradient: 'from-blue-500 to-purple-600', 
+    icon: TrendingUp 
+  },
+  { 
+    id: 'typography', 
+    name: 'Typography-First', 
+    description: 'Strong wordmark focus',
+    gradient: 'from-gray-700 to-gray-900', 
+    icon: Type 
+  },
 ];
 
 export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, aboutYou, audiences, vibes = [] }: StepBusinessIdentityProps) => {
@@ -790,33 +843,53 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
             {/* Logo: Style selection */}
             {logoSection === 'generate' && (
               <div className="space-y-4">
-                <p className="text-sm font-medium text-foreground">
-                  Choose a logo style that matches your vibe:
-                </p>
-
                 <div className="space-y-2">
+                  <p className="text-sm font-medium text-foreground">
+                    Choose a logo style that reflects your vibe — you'll see generated logo options next.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Not sure? Pick the one that feels closest — you can always regenerate later.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
                   {logoStyles.map((logo) => {
                     const Icon = logo.icon;
+                    const isSelected = selectedLogoStyle === logo.id;
+                    
                     return (
-                      <Button
+                      <Card
                         key={logo.id}
-                        onClick={() => handleLogoStyleSelect(logo.id)}
-                        disabled={isGeneratingLogos}
-                        variant="outline"
-                        className={`w-full h-auto py-3 text-left justify-start hover:border-primary hover:bg-primary/5 ${
-                          isGeneratingLogos ? 'opacity-50' : ''
-                        }`}
+                        className={`cursor-pointer transition-all hover:scale-[1.02] ${
+                          isSelected
+                            ? 'border-primary ring-2 ring-primary/20 bg-primary/5'
+                            : 'border-border hover:border-primary/50'
+                        } ${isGeneratingLogos ? 'opacity-50 pointer-events-none' : ''}`}
+                        onClick={() => !isGeneratingLogos && setSelectedLogoStyle(logo.id)}
                       >
-                        <div
-                          className={`w-12 h-12 rounded-lg bg-gradient-to-br ${logo.gradient} flex items-center justify-center mr-3 flex-shrink-0`}
-                        >
-                          <Icon className="h-5 w-5 text-white" />
-                        </div>
-                        <div className="font-semibold">{logo.name}</div>
-                      </Button>
+                        <CardContent className="p-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <div className={`p-2 rounded-lg bg-gradient-to-br ${logo.gradient}`}>
+                                <Icon className="h-4 w-4 text-white" />
+                              </div>
+                              <h4 className="text-sm font-bold">{logo.name}</h4>
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                              {logo.description}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
                     );
                   })}
                 </div>
+
+                {selectedLogoStyle && !isGeneratingLogos && (
+                  <p className="text-sm text-primary font-medium text-center animate-fade-in">
+                    ✨ Great choice! This style will guide your logo designs
+                  </p>
+                )}
 
                 {isGeneratingLogos && (
                   <div className="flex flex-col items-center justify-center py-8 space-y-3">
@@ -825,15 +898,25 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                   </div>
                 )}
 
-                <Button
-                  variant="secondary"
-                  onClick={() => setLogoSection('choice')}
-                  disabled={isGeneratingLogos}
-                  className="w-full"
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
-                </Button>
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setLogoSection('choice')}
+                    disabled={isGeneratingLogos}
+                    className="flex-1"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back
+                  </Button>
+                  
+                  <Button
+                    onClick={() => selectedLogoStyle && handleLogoStyleSelect(selectedLogoStyle)}
+                    disabled={!selectedLogoStyle || isGeneratingLogos}
+                    className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                  >
+                    ✨ Generate my logos ✨
+                  </Button>
+                </div>
               </div>
             )}
 
