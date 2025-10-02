@@ -102,4 +102,5 @@ export interface GenerateCampaignRequest {
   vibes: string[];
   type: 'intro' | 'quick_win' | 'conversion' | 'custom';
   platforms: string[];
+  aboutYou?: AboutYou;
 }

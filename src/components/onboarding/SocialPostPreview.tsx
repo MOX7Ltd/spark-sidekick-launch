@@ -60,6 +60,14 @@ export const SocialPostPreview = ({
         businessName: businessIdentity.name,
         tagline: businessIdentity.tagline || '',
         bio: aboutYou.expertise,
+        aboutYou: {
+          firstName: aboutYou.firstName,
+          lastName: aboutYou.lastName,
+          expertise: aboutYou.expertise,
+          motivation: aboutYou.motivation || aboutYou.expertise,
+          includeFirstName: aboutYou.includeFirstName,
+          includeLastName: aboutYou.includeLastName
+        },
         audiences,
         vibes,
         products: products.slice(0, 3)
