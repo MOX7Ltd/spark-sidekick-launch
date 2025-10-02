@@ -141,11 +141,26 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     }
   };
 
+  // Step labels for progress bar
+  const getStepLabel = (step: number): string => {
+    const labels = {
+      1: 'Your Idea',
+      2: 'About You',
+      3: 'About Your Business',
+      4: 'Business Identity'
+    };
+    return labels[step as keyof typeof labels] || '';
+  };
+
   return (
     <div className="min-h-[80vh] py-6 md:py-8 overflow-x-hidden">
       {/* Progress Bar - Only show for main onboarding steps (1-4) */}
       {currentStep <= 4 && (
-        <ProgressBar currentStep={currentStep} totalSteps={4} />
+        <ProgressBar 
+          currentStep={currentStep} 
+          totalSteps={4} 
+          stepLabel={getStepLabel(currentStep)}
+        />
       )}
       
       <div className="max-w-screen-sm mx-auto px-3 sm:px-4 w-full">

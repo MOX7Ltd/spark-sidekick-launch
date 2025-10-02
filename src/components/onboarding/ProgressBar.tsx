@@ -3,9 +3,10 @@ import React from 'react';
 interface ProgressBarProps {
   currentStep: number;
   totalSteps: number;
+  stepLabel?: string;
 }
 
-export const ProgressBar = ({ currentStep, totalSteps }: ProgressBarProps) => {
+export const ProgressBar = ({ currentStep, totalSteps, stepLabel }: ProgressBarProps) => {
   const progress = (currentStep / totalSteps) * 100;
 
   return (
@@ -19,13 +20,10 @@ export const ProgressBar = ({ currentStep, totalSteps }: ProgressBarProps) => {
           />
         </div>
         
-        {/* Step indicator text */}
-        <div className="flex justify-between items-center mt-2">
-          <span className="text-xs text-muted-foreground">
-            Step {currentStep} of {totalSteps}
-          </span>
-          <span className="text-xs font-medium text-primary">
-            {Math.round(progress)}% complete
+        {/* Step indicator text - showing only step number and label */}
+        <div className="flex justify-center items-center mt-3">
+          <span className="text-sm font-medium text-foreground">
+            Step {currentStep} of {totalSteps}{stepLabel ? `: ${stepLabel}` : ''}
           </span>
         </div>
       </div>

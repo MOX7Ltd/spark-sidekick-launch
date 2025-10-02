@@ -197,7 +197,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
 
             <div className="flex gap-2 sm:gap-3 pt-4">
               <Button 
-                variant="outline"
+                variant="secondary"
                 size="lg"
                 onClick={onBack}
                 className="flex-1 h-11 sm:h-12 text-sm sm:text-base whitespace-nowrap"
@@ -207,6 +207,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
                 <span className="sm:hidden">Back</span>
               </Button>
               <Button 
+                variant="hero"
                 size="lg"
                 onClick={handleNext}
                 disabled={!canProceed()}
@@ -265,7 +266,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
 
             <div className="flex gap-2 pt-4">
               <Button 
-                variant="outline"
+                variant="secondary"
                 size="lg"
                 onClick={() => setCurrentQuestion(1)}
                 className="h-11 sm:h-12 px-3 sm:px-4 text-sm sm:text-base whitespace-nowrap"
@@ -274,7 +275,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
                 <span className="hidden sm:inline">Back</span>
               </Button>
               <Button 
-                variant="ghost"
+                variant="outline"
                 size="lg"
                 onClick={handleSkip}
                 className="flex-1 h-11 sm:h-12 text-sm sm:text-base whitespace-nowrap"
@@ -282,6 +283,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
                 Skip
               </Button>
               <Button 
+                variant="hero"
                 size="lg"
                 onClick={handleNext}
                 disabled={motivation.length === 0}
@@ -340,7 +342,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
 
             <div className="flex gap-2 sm:gap-3 pt-4">
               <Button 
-                variant="outline"
+                variant="secondary"
                 size="lg"
                 onClick={() => setCurrentQuestion(2)}
                 className="flex-1 h-11 sm:h-12 text-sm sm:text-base whitespace-nowrap"
@@ -350,6 +352,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
                 <span className="sm:hidden">Back</span>
               </Button>
               <Button 
+                variant="hero"
                 size="lg"
                 onClick={handleNext}
                 disabled={!canProceed()}
