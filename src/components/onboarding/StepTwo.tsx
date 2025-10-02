@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, ArrowRight, GraduationCap, Baby, Briefcase, Sparkles } from 'lucide-react';
+import { Users, ArrowRight, ArrowLeft, GraduationCap, Baby, Briefcase, Sparkles } from 'lucide-react';
 
 interface StepTwoProps {
   onNext: (audience: string) => void;
@@ -60,15 +60,13 @@ export const StepTwo = ({ onNext, onBack, initialValue, isLoading = false }: Ste
   const selectedOption = audienceOptions.find(opt => opt.id === selectedAudience);
 
   return (
-    <div className="max-w-2xl mx-auto animate-slide-up">
+    <div className="max-w-3xl mx-auto px-4 py-6 animate-fade-in">
       <div className="text-center mb-8">
-        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-accent rounded-full flex items-center justify-center animate-bounce-in">
-          <Users className="w-8 h-8 text-white" />
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <Users className="w-6 h-6 text-primary" />
+          <h2 className="text-2xl sm:text-3xl font-bold">Who's it for?</h2>
         </div>
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">
-          Who's it for? 🎯
-        </h2>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           Choose the audience that best fits your idea
         </p>
       </div>
@@ -125,26 +123,29 @@ export const StepTwo = ({ onNext, onBack, initialValue, isLoading = false }: Ste
         </div>
       )}
 
-      <div className="flex gap-3">
-        <Button 
-          variant="outline" 
-          size="lg" 
-          onClick={onBack}
-          className="flex-1"
-          disabled={isLoading}
-        >
-          Back
-        </Button>
-        <Button 
-          size="lg" 
-          className="flex-1 h-14 text-lg font-semibold"
-          onClick={handleSubmit}
-          disabled={!selectedAudience || isLoading}
-          variant="hero"
-        >
-          {isLoading ? "Generating identity..." : "Next step"}
-          <ArrowRight className="ml-2 w-5 h-5" />
-        </Button>
+      {/* Fixed bottom navigation */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border">
+        <div className="max-w-3xl mx-auto space-y-2">
+          <Button 
+            variant="secondary" 
+            size="default"
+            onClick={onBack}
+            className="w-full"
+            disabled={isLoading}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+          <Button 
+            size="lg"
+            className="w-full h-14 text-lg font-semibold"
+            onClick={handleSubmit}
+            disabled={!selectedAudience || isLoading}
+            variant="hero"
+          >
+            {isLoading ? "Processing..." : "Continue →"}
+          </Button>
+        </div>
       </div>
     </div>
   );

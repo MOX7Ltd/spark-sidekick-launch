@@ -228,25 +228,18 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   };
 
   return (
-    <div className="w-full max-w-screen-sm mx-auto px-3 sm:px-4 py-6 animate-fade-in">
-      {/* Progress indicator - Step 1 */}
-      <div className="flex justify-center gap-2 mb-8">
-        <div className="w-8 h-2 rounded-full bg-primary" />
-        <div className="w-2 h-2 rounded-full bg-border" />
-        <div className="w-2 h-2 rounded-full bg-border" />
-      </div>
-
+    <div className="w-full max-w-3xl mx-auto px-4 py-6 animate-fade-in">
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Main Input Card */}
         <Card className="border-2 border-primary/20 animate-fade-in-up max-w-full">
           <CardContent className="p-4 sm:p-6 space-y-4 max-w-full">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-primary animate-pulse" />
-                <h2 className="text-xl sm:text-2xl font-bold break-words">What do you want to make money from?</h2>
+            <div className="space-y-3 text-center">
+              <div className="flex items-center justify-center gap-2">
+                <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+                <h2 className="text-2xl sm:text-3xl font-bold">What do you want to make money from?</h2>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Describe your offer in plain words. Our A.I. will turn the idea into sellable products for you.
+              <p className="text-base text-muted-foreground">
+                Describe your offer in plain words. Our A.I. will turn it into sellable products for you.
               </p>
             </div>
 
@@ -322,7 +315,8 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 onClick={handleGenerateProducts}
                 disabled={isGenerating}
                 size="lg"
-                className="w-full min-h-[3.5rem] h-auto text-sm sm:text-base px-4 py-3"
+                variant="hero"
+                className="w-full min-h-[3.5rem] h-auto text-base font-semibold"
               >
                 {isGenerating ? (
                   <>
@@ -479,23 +473,21 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
           </div>
         )}
 
-        {/* Next Button - Only shows after generation */}
+        {/* Fixed bottom navigation - Only shows after generation */}
         {hasGenerated && products.length > 0 && (
-          <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-2 border-primary/20 animate-fade-in-up max-w-full">
-            <CardContent className="p-4 sm:p-6 space-y-3 max-w-full">
-              <p className="text-center font-medium break-words">
-                Your idea is taking shape! ✨
-              </p>
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border z-50">
+            <div className="max-w-3xl mx-auto">
               <Button 
-                type="submit" 
-                size="lg" 
-                className="w-full min-h-[3.5rem] h-auto text-sm sm:text-base font-semibold px-4 py-3"
+                type="submit"
+                size="lg"
+                variant="hero"
                 disabled={!isValid}
+                className="w-full h-14 text-lg font-semibold"
               >
-                <span className="text-center">Great — tell us about yourself</span>
+                Continue to next step →
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
       </form>
     </div>

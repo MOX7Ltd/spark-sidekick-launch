@@ -223,26 +223,30 @@ export const StepAboutBusiness = ({
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-3 md:gap-4 pt-4">
-          <Button 
-            type="button"
-            variant="outline"
-            size="lg"
-            onClick={onBack}
-            className="w-full sm:flex-1 h-12 text-sm md:text-base"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-          
-          <Button 
-            type="submit"
-            size="lg"
-            disabled={!isValid || isLoading}
-            className="w-full sm:flex-1 h-12 text-sm md:text-base bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all disabled:opacity-50"
-          >
-            {isLoading ? 'Processing...' : 'Let\'s name your business! →'}
-          </Button>
+        {/* Fixed bottom navigation */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border z-50">
+          <div className="max-w-3xl mx-auto space-y-2">
+            <Button 
+              type="button"
+              variant="secondary"
+              size="default"
+              onClick={onBack}
+              className="w-full"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+            
+            <Button 
+              type="submit"
+              size="lg"
+              disabled={!isValid || isLoading}
+              variant="hero"
+              className="w-full h-14 text-lg font-semibold"
+            >
+              {isLoading ? 'Processing...' : 'Continue →'}
+            </Button>
+          </div>
         </div>
       </form>
     </div>

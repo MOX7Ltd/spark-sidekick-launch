@@ -103,16 +103,16 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
     onNext({ firstName, lastName, expertise, motivation, styles, profilePicture, includeFirstName, includeLastName });
   };
 
-  const isValid = expertise.length >= 10 && styles.length > 0;
+  const isValid = expertise.length >= 10;
 
   return (
-    <div className="max-w-2xl mx-auto animate-fade-in">
-      <div className="text-center mb-6">
-        <div className="flex items-center justify-center space-x-2 mb-3">
-          <User className="w-7 h-7 text-primary" />
-          <h2 className="text-3xl font-bold">About You</h2>
+    <div className="max-w-3xl mx-auto px-4 py-6 animate-fade-in">
+      <div className="text-center mb-8">
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <User className="w-6 h-6 text-primary" />
+          <h2 className="text-2xl sm:text-3xl font-bold">About You</h2>
         </div>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           Let's make it personal
         </p>
       </div>
@@ -274,65 +274,32 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
             </div>
           </div>
 
-          <div className="space-y-3">
-            <Label className="text-base font-medium">
-              Tone & Style <span className="text-muted-foreground text-sm font-normal">(Select all that apply)</span>
-            </Label>
-            <div className="grid grid-cols-2 gap-3">
-              {styleOptions.map((option) => {
-                const Icon = option.icon;
-                const isSelected = styles.includes(option.value);
-                return (
-                  <Card 
-                    key={option.value}
-                    className={`cursor-pointer transition-all hover:scale-[1.02] ${
-                      isSelected
-                        ? 'border-primary ring-2 ring-primary/20 bg-primary/5' 
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                    onClick={() => toggleStyle(option.value)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <Icon className={`h-5 w-5 mt-0.5 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
-                        <div className="flex-1 space-y-1">
-                          <div className="font-semibold text-sm">{option.label}</div>
-                          <div className="text-xs text-muted-foreground">{option.description}</div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-            {styles.length > 0 && expertise.length >= 10 && (
-              <p className="text-sm text-primary font-medium animate-fade-in">
-                🔥 Great choices! We're getting to know you
-              </p>
-            )}
-          </div>
         </div>
 
-        <div className="flex gap-4 pt-2">
-          <Button 
-            type="button"
-            variant="outline"
-            size="lg"
-            onClick={onBack}
-            className="flex-1 h-12 text-base"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-          
-          <Button 
-            type="submit"
-            size="lg"
-            disabled={!isValid || isLoading}
-            className="flex-1 h-12 text-base"
-          >
-            {isLoading ? 'Generating...' : 'Next step →'}
-          </Button>
+        {/* Fixed bottom navigation */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border">
+          <div className="max-w-3xl mx-auto space-y-2">
+            <Button 
+              type="button"
+              variant="secondary"
+              size="default"
+              onClick={onBack}
+              className="w-full"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+            
+            <Button 
+              type="submit"
+              size="lg"
+              variant="hero"
+              disabled={!isValid || isLoading}
+              className="w-full h-14 text-lg font-semibold"
+            >
+              {isLoading ? 'Processing...' : 'Continue →'}
+            </Button>
+          </div>
         </div>
       </form>
     </div>

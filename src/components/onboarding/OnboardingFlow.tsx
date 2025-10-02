@@ -6,6 +6,7 @@ import { SocialPostPreview } from './SocialPostPreview';
 import { StepBusinessIdentity } from './StepBusinessIdentity';
 import { StarterPackReveal } from './StarterPackReveal';
 import { StarterPackCheckout } from './StarterPackCheckout';
+import { ProgressBar } from './ProgressBar';
 import { useToast } from '@/hooks/use-toast';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
 import { DebugPanel } from '@/components/debug/DebugPanel';
@@ -142,6 +143,11 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
 
   return (
     <div className="min-h-[80vh] py-6 md:py-8 overflow-x-hidden">
+      {/* Progress Bar - Only show for main onboarding steps (1-4) */}
+      {currentStep <= 4 && (
+        <ProgressBar currentStep={currentStep} totalSteps={4} />
+      )}
+      
       <div className="max-w-screen-sm mx-auto px-3 sm:px-4 w-full">
         <div className="min-h-[60vh] flex items-center justify-center">
           {/* Stage 1: Your Idea (Products) */}

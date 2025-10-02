@@ -832,10 +832,11 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
               <Button
                 onClick={handleUploadedLogoSubmit}
                 disabled={!canProceed()}
-                className="flex-1 whitespace-nowrap"
+                variant="hero"
+                size="lg"
+                className="w-full h-14 text-base font-semibold"
               >
-                <span className="hidden sm:inline">See Your Business 💡</span>
-                <span className="sm:hidden">See It 💡</span>
+                See Your Business 💡
               </Button>
             </div>
           </CardContent>
@@ -1017,10 +1018,11 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
               <Button
                 onClick={handleLogoConfirm}
                 disabled={!canProceed()}
-                className="flex-1"
+                variant="hero"
+                size="lg"
+                className="w-full h-14 text-base font-semibold"
               >
-                <span className="hidden sm:inline">See Your Business 💡</span>
-                <span className="sm:hidden">See It 💡</span>
+                See Your Business 💡
               </Button>
             </div>
           </CardContent>
