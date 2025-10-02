@@ -53,16 +53,16 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   const isValid = idea.trim().length >= 12;
   
   const allInspirationIdeas = [
-    "Online coaching program for beginners",
-    "Digital course or masterclass (e.g., productivity, coding, fitness)",
-    "Subscription-based digital templates (e.g., resumes, pitch decks, planners)",
-    "E-books or guides (e.g., \"How to start a side hustle,\" \"Beginner's guide to yoga\")",
-    "Paid newsletter (specialised insights, curated trends, personal growth)",
-    "Membership community (exclusive group chats, Q&As, or forums)",
-    "Virtual workshops or bootcamps (short, interactive sessions)",
-    "Stock photos, graphics, or icons bundle",
-    "AI-generated prompts, tools, or resource packs",
-    "Exclusive video library (tutorials, lessons, or niche knowledge base)"
+    "Online coaching program for youth soccer players",
+    "Digital course on budgeting and saving for first-home buyers",
+    "Subscription-based resume & cover letter templates for job seekers",
+    "E-book: \"30-Minute Healthy Meals for Busy Parents\"",
+    "Paid newsletter: AI tools & trends explained simply",
+    "Membership community for first-time founders",
+    "Virtual workshop series on how to land freelance design clients",
+    "Stock photo & graphic bundle for small business social media posts",
+    "AI-generated prompt pack for Instagram growth hacks",
+    "Exclusive video library teaching beginner guitar players step by step"
   ];
 
   // Randomly select 6 ideas on component mount
