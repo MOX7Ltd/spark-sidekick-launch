@@ -366,7 +366,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
             
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-sm sm:text-base font-bold break-words">
-                Here's how your idea could start making money 💡
+                Here are a few ways your idea could make you money
               </h3>
               <Button
                 type="button"
@@ -498,7 +498,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 className="w-full h-14 text-base font-semibold"
                 disabled={!isValid}
               >
-                💸 Great — now let's turn this idea into your business story
+                Great start — now let's tell your story →
               </Button>
             </CardContent>
           </Card>

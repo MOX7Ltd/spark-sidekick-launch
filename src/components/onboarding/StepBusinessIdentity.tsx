@@ -743,9 +743,10 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                 <Button
                   onClick={handleNameConfirm}
                   disabled={!selectedName}
-                  className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold"
+                  variant="hero"
+                  className="flex-1"
                 >
-                  🔥 Love it — now let's design your logo →
+                  Next, design my logo →
                 </Button>
               </div>
             </div>
@@ -1065,9 +1066,10 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                   <Button
                     onClick={handleLogoConfirm}
                     disabled={selectedLogoIndex === null}
-                    className="flex-1 bg-gradient-to-r from-primary via-accent to-brand-orange hover:opacity-90 text-white font-bold shadow-lg"
+                    variant="hero"
+                    className="flex-1"
                   >
-                    🚀 Amazing! Reveal My Shopfront →
+                    Bring it to life — see my shopfront →
                   </Button>
                 </div>
               </div>

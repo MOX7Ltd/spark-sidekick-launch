@@ -141,15 +141,23 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     }
   };
 
-  // Step labels for progress bar
+  // Step labels for progress bar - remapped to show Step 2 for both "About You" and "Vibe & Audience"
   const getStepLabel = (step: number): string => {
     const labels = {
       1: 'Your Idea',
       2: 'About You',
-      3: 'About Your Business',
-      4: 'Business Identity'
+      3: 'About You', // Maps to Step 2 of 4 in UI
+      4: 'Create Your Brand'
     };
     return labels[step as keyof typeof labels] || '';
+  };
+
+  // Get display step number for progress bar (UI-only mapping)
+  const getDisplayStep = (step: number): number => {
+    if (step <= 2) return step; // Step 1-2 stay as is
+    if (step === 3) return 2;   // Step 3 shows as Step 2
+    if (step === 4) return 3;   // Step 4 shows as Step 3
+    return step;
   };
 
   return (
@@ -157,7 +165,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
       {/* Progress Bar - Only show for main onboarding steps (1-4) */}
       {currentStep <= 4 && (
         <ProgressBar 
-          currentStep={currentStep} 
+          currentStep={getDisplayStep(currentStep)} 
           totalSteps={4} 
           stepLabel={getStepLabel(currentStep)}
         />
@@ -190,6 +198,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
               onBack={goBack}
               initialVibes={formData.vibes}
               initialAudiences={formData.audiences}
+              aboutYou={formData.aboutYou}
               isLoading={false}
             />
           )}
