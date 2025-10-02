@@ -47,6 +47,9 @@ export const StarterPackReveal = ({ businessIdentity, products, onContinue, onBa
       )}
 
       <div className="text-center mb-6 md:mb-8 space-y-3 md:space-y-4">
+        <p className="text-xs md:text-sm text-muted-foreground/70 uppercase tracking-wide mb-2 md:mb-3 px-4">
+          You've shaped your idea, shared your story, and built your brand — now here's your storefront.
+        </p>
         <div className="w-16 h-16 md:w-20 md:h-20 mx-auto bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center animate-bounce-in">
           <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-white animate-pulse" />
         </div>

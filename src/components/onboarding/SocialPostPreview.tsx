@@ -150,6 +150,9 @@ export const SocialPostPreview = ({
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 md:py-8 animate-fade-in">
       <div className="text-center mb-6 md:mb-8 space-y-2 md:space-y-3">
+        <p className="text-xs md:text-sm text-muted-foreground/70 uppercase tracking-wide mb-2 md:mb-3 px-4">
+          Your shopfront is live — now let's spread the word and attract your first customers.
+        </p>
         <div className="inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-primary/10 rounded-full mb-2 md:mb-4 animate-bounce-in">
           <Sparkles className="w-6 h-6 md:w-8 md:h-8 text-primary animate-glow-pulse" />
         </div>
