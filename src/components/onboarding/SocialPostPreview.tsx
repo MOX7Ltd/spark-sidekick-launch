@@ -153,9 +153,12 @@ export const SocialPostPreview = ({
         <div className="inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-primary/10 rounded-full mb-2 md:mb-4 animate-bounce-in">
           <Sparkles className="w-6 h-6 md:w-8 md:h-8 text-primary animate-glow-pulse" />
         </div>
-        <h2 className="text-2xl md:text-3xl font-bold px-2">✨ Your launch posts are ready!</h2>
+        <h2 className="text-2xl md:text-3xl font-bold px-2">📣 Let's Spread the Word!</h2>
         <p className="text-base md:text-lg text-muted-foreground px-4">
-          Copy, customize, and share these to introduce {businessIdentity.name} to the world
+          These posts are your ticket to attracting your first customers. Copy, tweak, and share today.
+        </p>
+        <p className="text-sm md:text-base text-muted-foreground/80 italic px-4 pt-2">
+          Thousands of new side-hustlers launched their business here — now it's your turn.
         </p>
       </div>
 
@@ -259,7 +262,7 @@ export const SocialPostPreview = ({
           onClick={onContinue}
           className="w-full md:w-auto h-12 md:h-14 px-6 md:px-8 text-base md:text-lg font-semibold group"
         >
-          Get my Starter Pack →
+          🚀 Unlock My Starter Pack
           <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5 group-hover:translate-x-1 transition-transform" />
         </Button>
       </div>

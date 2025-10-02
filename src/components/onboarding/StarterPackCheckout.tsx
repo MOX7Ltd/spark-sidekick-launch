@@ -15,9 +15,9 @@ export const StarterPackCheckout = ({ onContinue, businessName }: StarterPackChe
         <div className="inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-primary/10 rounded-full mb-2 md:mb-4">
           <Sparkles className="w-6 h-6 md:w-8 md:h-8 text-primary" />
         </div>
-        <h2 className="text-2xl md:text-4xl font-bold px-2">Ready to launch {businessName}?</h2>
+        <h2 className="text-2xl md:text-4xl font-bold px-2">🚀 Launch {businessName} Today!</h2>
         <p className="text-base md:text-xl text-muted-foreground px-4">
-          Get everything you need to start your business today
+          Your brand, storefront, and launch posts are ready to go live. Unlock your Starter Pack to make it official.
         </p>
       </div>
 
@@ -37,8 +37,8 @@ export const StarterPackCheckout = ({ onContinue, businessName }: StarterPackChe
                 <Check className="w-4 h-4 md:w-5 md:h-5 text-primary" />
               </div>
               <div>
-                <p className="font-semibold text-sm md:text-base">Complete Business Identity</p>
-                <p className="text-xs md:text-sm text-muted-foreground">Your logo, brand colors, and tagline</p>
+                <p className="font-semibold text-sm md:text-base">✨ Your brand identity is ready to shine</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Logo, tagline, and colors that represent you</p>
               </div>
             </div>
 
@@ -47,8 +47,8 @@ export const StarterPackCheckout = ({ onContinue, businessName }: StarterPackChe
                 <Check className="w-4 h-4 md:w-5 md:h-5 text-primary" />
               </div>
               <div>
-                <p className="font-semibold text-sm md:text-base">Professional Storefront</p>
-                <p className="text-xs md:text-sm text-muted-foreground">Beautiful, mobile-optimized website</p>
+                <p className="font-semibold text-sm md:text-base">✨ Your storefront is launch-ready</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Mobile-friendly website ready to impress</p>
               </div>
             </div>
 
@@ -57,8 +57,8 @@ export const StarterPackCheckout = ({ onContinue, businessName }: StarterPackChe
                 <Check className="w-4 h-4 md:w-5 md:h-5 text-primary" />
               </div>
               <div>
-                <p className="font-semibold text-sm md:text-base">Launch-Ready Social Posts</p>
-                <p className="text-xs md:text-sm text-muted-foreground">Instagram, LinkedIn, and Facebook content</p>
+                <p className="font-semibold text-sm md:text-base">✨ Your social media posts are prepped to attract customers</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Instagram, LinkedIn, and Facebook content ready to post</p>
               </div>
             </div>
 
@@ -67,8 +67,8 @@ export const StarterPackCheckout = ({ onContinue, businessName }: StarterPackChe
                 <Check className="w-4 h-4 md:w-5 md:h-5 text-primary" />
               </div>
               <div>
-                <p className="font-semibold text-sm md:text-base">Product Catalog</p>
-                <p className="text-xs md:text-sm text-muted-foreground">Your offerings organized and ready to sell</p>
+                <p className="font-semibold text-sm md:text-base">✨ Your product catalog is organized and ready to sell</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Your offerings beautifully showcased</p>
               </div>
             </div>
 
@@ -77,8 +77,8 @@ export const StarterPackCheckout = ({ onContinue, businessName }: StarterPackChe
                 <Check className="w-4 h-4 md:w-5 md:h-5 text-primary" />
               </div>
               <div>
-                <p className="font-semibold text-sm md:text-base">Payment Integration</p>
-                <p className="text-xs md:text-sm text-muted-foreground">Accept payments from day one</p>
+                <p className="font-semibold text-sm md:text-base">✨ Your payment setup means you can take money from day one</p>
+                <p className="text-xs md:text-sm text-muted-foreground">Start earning immediately</p>
               </div>
             </div>
           </div>
@@ -89,7 +89,7 @@ export const StarterPackCheckout = ({ onContinue, businessName }: StarterPackChe
             onClick={onContinue}
             className="w-full h-12 md:h-14 text-base md:text-lg font-semibold group"
           >
-            Let's Go Live! 🚀
+            🔥 Launch My Business
             <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5 group-hover:translate-x-1 transition-transform" />
           </Button>
 

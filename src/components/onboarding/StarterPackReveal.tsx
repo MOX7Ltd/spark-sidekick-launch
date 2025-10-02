@@ -51,10 +51,10 @@ export const StarterPackReveal = ({ businessIdentity, products, onContinue, onBa
           <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-white animate-pulse" />
         </div>
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold animate-fade-in px-2">
-          🎉 Your business is coming alive!
+          ✨ Your Shopfront is Ready!
         </h2>
         <p className="text-base md:text-xl text-muted-foreground max-w-2xl mx-auto animate-fade-in px-4" style={{ animationDelay: '0.1s' }}>
-          Here's your storefront header preview
+          This is the face of your new business — your storefront customers could be seeing today.
         </p>
       </div>
 
@@ -122,8 +122,7 @@ export const StarterPackReveal = ({ businessIdentity, products, onContinue, onBa
           onClick={onContinue}
           className="w-full md:w-auto h-12 md:h-14 px-6 md:px-8 text-base md:text-lg font-semibold"
         >
-          <Sparkles className="mr-2 h-4 w-4 md:h-5 md:w-5" />
-          Next: Generate launch posts
+          📣 Create My Launch Posts
         </Button>
         
         <div>
