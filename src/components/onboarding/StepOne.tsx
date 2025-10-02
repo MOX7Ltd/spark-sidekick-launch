@@ -4,7 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Sparkles, ThumbsUp, ThumbsDown, RefreshCw, CheckCircle, Lightbulb, Mic, Zap } from 'lucide-react';
+import { Sparkles, ThumbsUp, ThumbsDown, RefreshCw, CheckCircle, Lightbulb, Mic, Zap, Check } from 'lucide-react';
 import { generateProductIdeas, type ProductIdea } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
@@ -22,7 +22,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   const [ideaSource, setIdeaSource] = useState<'typed' | 'chip'>('typed');
   const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
   const [motivationalMessage, setMotivationalMessage] = useState('');
-  const [showConfetti, setShowConfetti] = useState<string | null>(null);
+  const [likedProducts, setLikedProducts] = useState<Set<string>>(new Set());
   const [fadingOutId, setFadingOutId] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [showSparkAnimation, setShowSparkAnimation] = useState(false);
@@ -202,38 +202,21 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
     }, 300);
   };
 
-  const handleThumbsUp = (productId: string, event: React.MouseEvent) => {
+  const handleThumbsUp = (productId: string) => {
     logFrontendEvent({
       eventType: 'user_action',
       step: 'StepOne',
       payload: { action: 'thumbs_up', productId }
     });
     
-    // Create confetti particles
-    const button = event.currentTarget as HTMLElement;
-    const rect = button.getBoundingClientRect();
-    const colors = ['hsl(185, 85%, 45%)', 'hsl(35, 95%, 55%)', 'hsl(185, 70%, 65%)', 'hsl(35, 85%, 75%)'];
-    
-    for (let i = 0; i < 12; i++) {
-      const particle = document.createElement('div');
-      particle.className = 'confetti-particle';
-      particle.style.left = `${rect.left + rect.width / 2}px`;
-      particle.style.top = `${rect.top + rect.height / 2}px`;
-      particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-      particle.style.setProperty('--x', `${(Math.random() - 0.5) * 200}px`);
-      particle.style.setProperty('--y', `${-Math.random() * 150 - 50}px`);
-      particle.style.animationDelay = `${Math.random() * 0.1}s`;
-      document.body.appendChild(particle);
-      
-      setTimeout(() => particle.remove(), 1000);
-    }
-    
-    setShowConfetti(productId);
-    setTimeout(() => setShowConfetti(null), 800);
-    
-    toast({
-      title: "Great choice!",
-      description: "We'll refine these after you sign up.",
+    setLikedProducts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(productId)) {
+        newSet.delete(productId);
+      } else {
+        newSet.add(productId);
+      }
+      return newSet;
     });
   };
 
@@ -415,9 +398,11 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 products.map((product, idx) => (
                   <Card 
                     key={product.id} 
-                    className={`border-2 border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-lg max-w-full ${
-                      fadingOutId === product.id ? 'animate-fade-out' : 'animate-fade-in-up'
-                    } ${showConfetti === product.id ? 'animate-glow-pulse' : ''}`}
+                    className={`border-2 transition-all duration-300 hover:shadow-lg max-w-full ${
+                      likedProducts.has(product.id) 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-primary/20 hover:border-primary/40'
+                    } ${fadingOutId === product.id ? 'animate-fade-out' : 'animate-fade-in-up'}`}
                     style={{ 
                       animationDelay: `${idx * 0.1}s`
                     }}
@@ -444,11 +429,24 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={(e) => handleThumbsUp(product.id, e)}
-                              className="flex-1 hover:bg-primary/10 hover:scale-105 transition-all min-h-[2.25rem] h-auto py-2"
+                              onClick={() => handleThumbsUp(product.id)}
+                              className={`flex-1 hover:scale-105 transition-all min-h-[2.25rem] h-auto py-2 ${
+                                likedProducts.has(product.id) 
+                                  ? 'bg-primary/10 text-primary' 
+                                  : 'hover:bg-primary/10'
+                              }`}
                             >
-                              <ThumbsUp className="w-4 h-4 mr-1 shrink-0" />
-                              <span className="text-center">Looks good</span>
+                              {likedProducts.has(product.id) ? (
+                                <>
+                                  <Check className="w-4 h-4 mr-1 shrink-0" />
+                                  <span className="text-center">Selected</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ThumbsUp className="w-4 h-4 mr-1 shrink-0" />
+                                  <span className="text-center">Looks good</span>
+                                </>
+                              )}
                             </Button>
                             <Button
                               type="button"
