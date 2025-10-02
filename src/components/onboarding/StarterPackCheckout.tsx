@@ -26,7 +26,7 @@ export const StarterPackCheckout = ({ onContinue, businessName }: StarterPackChe
           <div className="text-center mb-6">
             <h3 className="text-xl md:text-2xl font-bold mb-2">SideHive Starter Pack</h3>
             <div className="flex items-baseline justify-center gap-2">
-              <span className="text-4xl md:text-5xl font-bold">$49</span>
+              <span className="text-4xl md:text-5xl font-bold">$10</span>
               <span className="text-lg md:text-xl text-muted-foreground">one-time</span>
             </div>
           </div>
