@@ -29,11 +29,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
   const { toast } = useToast();
 
   const motivationalMessages = [
-    "Nice work 🚀 — your idea is starting to look real.",
-    "This is how people could actually buy into your idea 👏",
-    "Your idea has serious potential 💡",
-    "You're building something special ✨",
-    "Nice work — you've just taken your first step toward making this real! 🔥"
+    "Nice work! 🚀 Here are a few ways your idea could make you money. These are just starting points—you'll unlock more customization after signup.",
   ];
 
   useEffect(() => {
@@ -215,6 +211,9 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
         newSet.delete(productId);
       } else {
         newSet.add(productId);
+        toast({
+          title: "Saved! This one's now in your starter pack.",
+        });
       }
       return newSet;
     });
@@ -232,7 +231,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 <h2 className="text-2xl sm:text-3xl font-bold">What do you want to make money from?</h2>
               </div>
               <p className="text-base text-muted-foreground">
-                Describe your offer in plain words. Our A.I. will turn it into sellable products for you.
+                Keep it simple — even a rough idea works! We'll help shape it into something real.
               </p>
             </div>
 
@@ -259,6 +258,11 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 <Mic className={`h-5 w-5 ${isListening ? 'text-red-500 animate-pulse' : ''}`} />
               </Button>
             </div>
+
+            {/* Tour-guide explainer */}
+            <p className="text-sm text-muted-foreground text-center px-2">
+              In just a moment, we'll show you how your idea could start making money online. Think of this as a preview of what's possible.
+            </p>
 
             {idea.length >= 12 && !hasGenerated && (
               <div className="flex items-center gap-2 text-primary animate-bounce-in">
@@ -313,14 +317,9 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
               >
                 {isGenerating ? (
                   <>
-                    <Zap className="w-5 h-5 mr-2 animate-pulse shrink-0" />
-                    <span className="flex items-center gap-1 text-center">
-                      Turning your idea into reality
-                      <span className="flex gap-0.5">
-                        <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
-                        <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
-                        <span className="animate-bounce" style={{ animationDelay: '300ms' }}>.</span>
-                      </span>
+                    <Sparkles className="w-5 h-5 mr-2 animate-pulse shrink-0" />
+                    <span className="text-center">
+                      Turning your idea into starter products… ✨ This is where the magic begins.
                     </span>
                   </>
                 ) : (
@@ -475,8 +474,9 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
               )}
             </div>
 
-            <p className="text-xs text-muted-foreground text-center pt-2">
-              Refine these anytime after signup. Your starter pack turns them into real products.
+            {/* Guidance below product ideas */}
+            <p className="text-sm text-muted-foreground text-center pt-4">
+              Pick the options that feel closest to your vision — we'll refine and expand them in the next steps.
             </p>
           </div>
         )}
@@ -484,10 +484,13 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
         {/* Next step section - Shows after products are generated */}
         {hasGenerated && products.length > 0 && (
           <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-2 border-primary/20 animate-fade-in-up max-w-full">
-            <CardContent className="p-4 sm:p-6 text-center space-y-3 max-w-full">
-              <p className="text-center font-medium break-words">
-                Your idea is taking shape! ✨
+            <CardContent className="p-4 sm:p-6 space-y-4 max-w-full">
+              {/* Journey Preview */}
+              <p className="text-sm text-muted-foreground text-center leading-relaxed">
+                Next, we'll learn a little about you so we can shape your business identity. That's how your idea starts becoming a real shopfront — and soon, we'll help you promote it with ready-to-go social media content.
               </p>
+              
+              {/* CTA Button */}
               <Button 
                 type="submit" 
                 size="lg"
@@ -495,7 +498,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 className="w-full h-14 text-base font-semibold"
                 disabled={!isValid}
               >
-                Great — tell us about yourself →
+                💸 Great — now let's turn this idea into your business story
               </Button>
             </CardContent>
           </Card>
