@@ -50,16 +50,29 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
   const [showSuccess, setShowSuccess] = useState(false);
 
   const allMotivationExamples = [
-    "I've coached youth soccer for 10 years and want to share my methods online so more kids can benefit.",
-    "I've learned how to get out of debt and want to help others avoid the mistakes I made.",
-    "I struggled with confidence for years, now I want to teach others the tools that helped me grow.",
-    "As a single parent, I found shortcuts for healthy meal planning and want to make it easier for other families.",
-    "I built a career in graphic design without formal training and want to mentor people starting from scratch."
+    "I want kids to fall in love with soccer like I did",
+    "I want to help parents feel less overwhelmed and more confident",
+    "I want to show people they don't need a degree to build a creative career",
+    "I want busy professionals to discover they can cook healthy meals in 15 minutes",
+    "I want to help people build financial freedom without feeling confused"
+  ];
+  
+  const allExpertiseExamples = [
+    "I've coached youth soccer teams every weekend for 3 years",
+    "I've been teaching guitar to friends for years and they keep asking for more lessons",
+    "I've helped 20+ friends plan their dream vacations",
+    "I've managed social media for small businesses and always get results",
+    "I've raised 3 kids and learned every parenting hack in the book"
   ];
 
   // Randomly select 2 examples on component mount
   const [motivationExamples] = useState(() => {
     const shuffled = [...allMotivationExamples].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 2);
+  });
+  
+  const [expertiseExamples] = useState(() => {
+    const shuffled = [...allExpertiseExamples].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, 2);
   });
 
@@ -151,7 +164,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
             <div className="space-y-2">
               <h2 className="text-xl sm:text-2xl font-bold break-words">What's your name?</h2>
               <p className="text-muted-foreground">
-                We'll use it to personalize your business
+                Your name gives your business a personal touch — it's how people connect with you
               </p>
             </div>
 
@@ -180,7 +193,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
               <>
                 <div className="flex items-center gap-2 text-primary animate-bounce-in">
                   <Check className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
-                  <span className="font-medium text-sm sm:text-base break-words">Amazing — your idea is already taking shape ✨</span>
+                  <span className="font-medium text-sm sm:text-base break-words">🙌 Amazing — your idea now has your signature on it!</span>
                 </div>
                 
                 <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
@@ -241,7 +254,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
             <div className="space-y-2">
               <h2 className="text-xl sm:text-2xl font-bold break-words">Why do you want to start this business?</h2>
               <p className="text-muted-foreground">
-                What's driving you to make this happen?
+                Your "why" is what makes people care — it's the heart of your brand
               </p>
             </div>
 
@@ -268,7 +281,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
             {motivation.length >= 10 && (
               <div className="flex items-center gap-2 text-primary animate-bounce-in">
                 <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
-                <span className="font-medium text-sm sm:text-base break-words">Your why is powerful! This will connect with people 🔥</span>
+                <span className="font-medium text-sm sm:text-base break-words">🔥 Your why is powerful — people will connect with this instantly!</span>
               </div>
             )}
 
@@ -310,7 +323,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
             <div className="space-y-2">
               <h2 className="text-xl sm:text-2xl font-bold break-words">What makes you ready to start this business?</h2>
               <p className="text-muted-foreground">
-                This is where your experience, passion, or personal story shines through
+                Your experience, skills, or story — this is your unfair advantage
               </p>
             </div>
 
@@ -337,14 +350,15 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
             {expertise.length >= 10 && (
               <div className="flex items-center gap-2 text-primary animate-bounce-in">
                 <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
-                <span className="font-medium text-sm sm:text-base break-words">Amazing! Your story is what makes this special ✨</span>
+                <span className="font-medium text-sm sm:text-base break-words">💪 This is your unfair advantage — people will trust you!</span>
               </div>
             )}
 
             <div className="text-xs text-muted-foreground space-y-1">
               <p>💡 Examples:</p>
-              <p className="pl-4">• "I've raised 5 kids and know the chaos of family life"</p>
-              <p className="pl-4">• "I love running and have coached beginners for years"</p>
+              {expertiseExamples.map((example, index) => (
+                <p key={index} className="pl-4">• "{example}"</p>
+              ))}
             </div>
 
             <div className="flex gap-2 sm:gap-3 pt-4">
@@ -365,9 +379,14 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
                 disabled={!canProceed()}
                 className="flex-1 h-11 sm:h-12 text-sm sm:text-base"
               >
-                Now set your business vibe & audience
+                Beautiful — let's shape your business personality →
               </Button>
             </div>
+            {canProceed() && (
+              <p className="text-xs text-muted-foreground text-center animate-fade-in px-2">
+                Your passion and story are the heart of your business. Now let's shape its personality and audience so it feels alive.
+              </p>
+            )}
           </CardContent>
         </Card>
       )}

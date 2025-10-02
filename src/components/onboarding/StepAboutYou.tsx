@@ -113,7 +113,7 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
           <h2 className="text-2xl sm:text-3xl font-bold">About You</h2>
         </div>
         <p className="text-base text-muted-foreground">
-          Let's make it personal
+          Your story is what makes your business stand out — let's capture it together
         </p>
       </div>
 
@@ -199,14 +199,17 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
 
           <div className="space-y-2">
             <Label htmlFor="expertise" className="text-base font-medium">
-              Tell us a little about your experience or skills
+              What makes you ready to start this business?
             </Label>
+            <p className="text-sm text-muted-foreground">
+              Your experience, skills, or personal story — this is your unfair advantage
+            </p>
             <div className="relative">
               <Textarea
                 id="expertise"
                 value={expertise}
                 onChange={(e) => setExpertise(e.target.value)}
-                placeholder="1-2 sentences about what you do or what you're good at"
+                placeholder="Share what makes you uniquely qualified..."
                 className="min-h-[90px] text-base resize-none pr-12"
               />
               <Button
@@ -225,15 +228,18 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
                 💡 Examples:
               </p>
               <p className="text-xs text-muted-foreground pl-4">
-                • "I've been helping friends set up websites for years."
+                • "I've coached youth soccer teams every weekend for 3 years"
               </p>
               <p className="text-xs text-muted-foreground pl-4">
-                • "I love crafts and want to turn that into income."
+                • "I've been teaching guitar to friends for years"
+              </p>
+              <p className="text-xs text-muted-foreground pl-4">
+                • "I've helped 20+ friends plan their dream vacations"
               </p>
             </div>
             {expertise.length >= 10 && (
               <p className="text-sm text-primary font-medium animate-fade-in">
-                ✨ Perfect, this will help make your business unique!
+                💪 This is your unfair advantage — people will trust you for this!
               </p>
             )}
           </div>
@@ -242,6 +248,9 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
             <Label htmlFor="motivation" className="text-base font-medium">
               Why do you want to start this business? <span className="text-muted-foreground font-normal">(Optional)</span>
             </Label>
+            <p className="text-sm text-muted-foreground">
+              Your "why" is what connects with people — it's the heart of your brand
+            </p>
             <div className="relative">
               <Textarea
                 id="motivation"
@@ -266,12 +275,20 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
                 💡 Examples:
               </p>
               <p className="text-xs text-muted-foreground pl-4">
-                • "I've always dreamed of turning my passion into income."
+                • "I want kids to fall in love with soccer like I did"
               </p>
               <p className="text-xs text-muted-foreground pl-4">
-                • "I need more freedom and flexibility in life."
+                • "I want to help parents feel less overwhelmed and more confident"
+              </p>
+              <p className="text-xs text-muted-foreground pl-4">
+                • "I want to show people they don't need a degree to build a creative career"
               </p>
             </div>
+            {motivation.length >= 10 && (
+              <p className="text-sm text-primary font-medium animate-fade-in">
+                🔥 Your why is powerful — people will connect with this instantly!
+              </p>
+            )}
           </div>
 
         </div>
@@ -296,8 +313,13 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
             disabled={!isValid || isLoading}
             className="w-full h-14 text-lg font-semibold"
           >
-            {isLoading ? 'Processing...' : 'Next: Tell us about your business →'}
+            {isLoading ? 'Processing...' : 'Beautiful — now let\'s shape your business personality →'}
           </Button>
+          {isValid && (
+            <p className="text-sm text-muted-foreground text-center animate-fade-in">
+              Your passion and story are the heart of your business. Now let's shape its personality and audience so it feels alive.
+            </p>
+          )}
         </div>
       </form>
     </div>
