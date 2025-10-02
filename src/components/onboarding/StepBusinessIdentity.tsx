@@ -4,10 +4,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
-  Check, Palette, Lightbulb, Sparkles, Zap, Target, Heart, Star, 
-  Hexagon, RefreshCw, Loader2, ThumbsUp, ThumbsDown, ArrowLeft, 
-  Briefcase, Smile, Minimize2, Eye, User, Upload
+  Check, Palette, Lightbulb, Sparkles, Zap, Heart, 
+  RefreshCw, Loader2, ThumbsUp, ThumbsDown, ArrowLeft, Upload
 } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { regenerateBusinessNames, regenerateSingleName, generateLogos, generateBusinessIdentity } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import type { BusinessIdentity, AboutYou } from '@/types/onboarding';
@@ -22,13 +27,12 @@ interface StepBusinessIdentityProps {
   vibes: string[];
 }
 
+// Limit to 4 logo styles for mobile-friendliness
 const logoStyles = [
   { id: 'modern', name: 'Minimalist', gradient: 'from-slate-600 to-slate-800', icon: Lightbulb },
   { id: 'playful', name: 'Playful', gradient: 'from-pink-500 to-orange-400', icon: Sparkles },
   { id: 'bold', name: 'Bold', gradient: 'from-purple-600 to-indigo-600', icon: Zap },
-  { id: 'professional', name: 'Clean Professional', gradient: 'from-blue-600 to-blue-800', icon: Target },
   { id: 'icon', name: 'Icon-Based', gradient: 'from-teal-500 to-cyan-600', icon: Heart },
-  { id: 'retro', name: 'Retro', gradient: 'from-amber-600 to-red-600', icon: Star },
 ];
 
 export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, aboutYou, audiences, vibes = [] }: StepBusinessIdentityProps) => {
@@ -96,7 +100,8 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
       
       setGeneratedBio(fullIdentity.bio || '');
       setGeneratedColors(fullIdentity.colors || []);
-      setNameOptions(fullIdentity.nameOptions || []);
+      // Limit to 4 options for mobile-friendliness
+      setNameOptions((fullIdentity.nameOptions || []).slice(0, 4));
       setNameSection('select');
     } catch (error) {
       toast({
@@ -126,7 +131,8 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
       
       setGeneratedBio(fullIdentity.bio || '');
       setGeneratedColors(fullIdentity.colors || []);
-      setNameOptions(fullIdentity.nameOptions || []);
+      // Limit to 4 options for mobile-friendliness
+      setNameOptions((fullIdentity.nameOptions || []).slice(0, 4));
       setSelectedName(existingName);
       setNameSection('select');
       
@@ -293,7 +299,8 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     
     try {
       const logos = await generateLogos(selectedName, styleId, vibes);
-      setGeneratedLogos(logos);
+      // Limit to 4 options for mobile-friendliness
+      setGeneratedLogos(logos.slice(0, 4));
       setSelectedLogoIndex(null);
       setLikedLogos(new Set());
       setLogoSection('select');
@@ -320,7 +327,8 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     setIsGeneratingLogos(true);
     try {
       const logos = await generateLogos(selectedName, selectedLogoStyle, vibes);
-      setGeneratedLogos(logos);
+      // Limit to 4 options for mobile-friendliness
+      setGeneratedLogos(logos.slice(0, 4));
       setSelectedLogoIndex(null);
       setLikedLogos(new Set());
       
@@ -410,25 +418,31 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 py-6 space-y-8 animate-fade-in">
-      {/* Section Header */}
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl sm:text-3xl font-bold">Let's Create Your Business Identity</h2>
-        <p className="text-muted-foreground">We'll help you craft the perfect name and logo</p>
-      </div>
-
-      {/* NAME SECTION */}
-      <Card className="border-2">
-        <CardContent className="pt-6 space-y-6">
-          <div className="flex items-center gap-3 pb-4 border-b">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold">Business Name</h3>
-              <p className="text-sm text-muted-foreground">Choose or create your brand name</p>
-            </div>
+    <TooltipProvider>
+      <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 py-6 space-y-6 animate-fade-in">
+        {/* Micro-header with energy */}
+        <div className="text-center space-y-2 pb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20">
+            <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+            <span className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Your brand is taking shape! ✨
+            </span>
           </div>
+        </div>
+
+      {/* NAME SECTION - Hide when logo section is active to avoid vertical stacking */}
+      {logoSection === 'hidden' && (
+        <Card className="border-2 border-primary/20 shadow-lg">
+          <CardContent className="pt-6 space-y-6">
+            <div className="flex items-center gap-3 pb-4 border-b border-primary/10">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center shadow-md">
+                <Sparkles className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold">Business Name</h3>
+                <p className="text-sm text-muted-foreground">Choose or create your brand name</p>
+              </div>
+            </div>
 
           {/* Name: Initial choice */}
           {nameSection === 'choice' && (
@@ -526,15 +540,15 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
           {nameSection === 'select' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  Tap 👍 to save ideas you like, 👎 to replace
+                <p className="text-sm font-medium text-foreground">
+                  Here are some names we think fit your vibe & audience.
                 </p>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleRegenerateNames}
                   disabled={isGeneratingNames}
-                  className="text-xs"
+                  className="text-xs shrink-0"
                 >
                   {isGeneratingNames ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
@@ -598,28 +612,38 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                           <p className="text-xs text-muted-foreground italic mb-2">{option.tagline}</p>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`h-8 w-8 p-0 ${likedNames.has(option.name) ? 'text-green-600 bg-green-50' : 'text-muted-foreground'}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleLikeName(option.name);
-                            }}
-                          >
-                            <ThumbsUp className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRejectName(index);
-                            }}
-                          >
-                            <ThumbsDown className="h-4 w-4" />
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={`h-8 w-8 p-0 transition-colors ${likedNames.has(option.name) ? 'text-green-600 bg-green-50 dark:bg-green-950' : 'text-muted-foreground hover:text-green-600'}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleLikeName(option.name);
+                                }}
+                              >
+                                <ThumbsUp className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Love this</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRejectName(index);
+                                }}
+                              >
+                                <ThumbsDown className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Not for me</TooltipContent>
+                          </Tooltip>
                         </div>
                       </div>
                     </div>
@@ -633,7 +657,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                 </p>
               )}
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-4">
                 <Button
                   variant="secondary"
                   onClick={() => {
@@ -646,30 +670,30 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                   Back
                 </Button>
                 <Button
-                  variant="outline"
                   onClick={handleNameConfirm}
                   disabled={!selectedName}
-                  className="flex-1"
+                  className="flex-1 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-semibold"
                 >
-                  Continue
+                  Next, design my logo 🎨
                 </Button>
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* LOGO SECTION */}
+      {/* LOGO SECTION - Only show when name is selected */}
       {logoSection !== 'hidden' && (
-        <Card className="border-2">
+        <Card className="border-2 border-primary/20 shadow-lg">
           <CardContent className="pt-6 space-y-6">
-            <div className="flex items-center gap-3 pb-4 border-b">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Palette className="h-5 w-5 text-primary" />
+            <div className="flex items-center gap-3 pb-4 border-b border-primary/10">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent to-brand-orange-light flex items-center justify-center shadow-md">
+                <Palette className="h-6 w-6 text-white" />
               </div>
               <div>
                 <h3 className="text-xl font-bold">Logo Design</h3>
-                <p className="text-sm text-muted-foreground">Upload or generate your brand logo</p>
+                <p className="text-sm text-muted-foreground">for {selectedName}</p>
               </div>
             </div>
 
@@ -766,8 +790,8 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
             {/* Logo: Style selection */}
             {logoSection === 'generate' && (
               <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Choose a logo style that matches {selectedName}
+                <p className="text-sm font-medium text-foreground">
+                  Choose a logo style that matches your vibe:
                 </p>
 
                 <div className="space-y-2">
@@ -817,15 +841,15 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
             {logoSection === 'select' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    Tap 👍 to save ideas you like, 👎 to replace
+                  <p className="text-sm font-medium text-foreground">
+                    These logos are matched to your vibe & style. Pick one you love — you can always tweak later.
                   </p>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleRegenerateLogos}
                     disabled={isGeneratingLogos}
-                    className="text-xs"
+                    className="text-xs shrink-0"
                   >
                     {isGeneratingLogos ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -867,37 +891,47 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                         </div>
 
                         <div className="flex gap-2 mt-3 pt-3 border-t">
-                          <Button
-                            variant={likedLogos.has(idx) ? "default" : "outline"}
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleLikeLogo(idx);
-                            }}
-                            className="flex-1 h-8 text-xs"
-                          >
-                            <ThumbsUp className={`h-3 w-3 mr-1 ${likedLogos.has(idx) ? 'fill-current' : ''}`} />
-                            <span className="hidden sm:inline">Like</span>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRejectLogo(idx);
-                            }}
-                            disabled={regeneratingLogoIndex === idx}
-                            className="flex-1 h-8 text-xs"
-                          >
-                            {regeneratingLogoIndex === idx ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <>
-                                <ThumbsDown className="h-3 w-3 mr-1" />
-                                <span className="hidden sm:inline">Replace</span>
-                              </>
-                            )}
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant={likedLogos.has(idx) ? "default" : "outline"}
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleLikeLogo(idx);
+                                }}
+                                className="flex-1 h-8 text-xs transition-colors"
+                              >
+                                <ThumbsUp className={`h-3 w-3 mr-1 ${likedLogos.has(idx) ? 'fill-current' : ''}`} />
+                                <span className="hidden sm:inline">Like</span>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Love this</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRejectLogo(idx);
+                                }}
+                                disabled={regeneratingLogoIndex === idx}
+                                className="flex-1 h-8 text-xs"
+                              >
+                                {regeneratingLogoIndex === idx ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <>
+                                    <ThumbsDown className="h-3 w-3 mr-1" />
+                                    <span className="hidden sm:inline">Replace</span>
+                                  </>
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Not for me</TooltipContent>
+                          </Tooltip>
                         </div>
                       </CardContent>
                     </Card>
@@ -905,12 +939,19 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                 </div>
 
                 {selectedLogoIndex !== null && (
-                  <p className="text-sm text-primary font-medium text-center animate-fade-in">
-                    ✨ Perfect choice! Ready to see your business come to life?
-                  </p>
+                  <div className="space-y-3 pt-2 animate-fade-in">
+                    <div className="text-center space-y-1 px-4 py-3 rounded-lg bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/20">
+                      <p className="text-sm font-semibold text-foreground">
+                        You've got your name & logo — now let's bring it all to life!
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        This is where your business idea transforms into a real storefront you can share.
+                      </p>
+                    </div>
+                  </div>
                 )}
 
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-3 pt-4">
                   <Button
                     variant="secondary"
                     onClick={() => setLogoSection('generate')}
@@ -921,12 +962,11 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                     Back
                   </Button>
                   <Button
-                    variant="outline"
                     onClick={handleLogoConfirm}
                     disabled={selectedLogoIndex === null}
-                    className="flex-1"
+                    className="flex-1 bg-gradient-to-r from-primary via-accent to-brand-orange hover:opacity-90 text-white font-bold shadow-lg"
                   >
-                    Continue
+                    ✨ Reveal My Shopfront ✨
                   </Button>
                 </div>
               </div>
@@ -935,33 +975,20 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
         </Card>
       )}
 
-      {/* Main Navigation - Bottom of page */}
-      <div className="flex gap-3 pt-4">
-        <Button
-          variant="secondary"
-          onClick={onBack}
-          className="flex-1"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-        {logoSection !== 'hidden' && (uploadedLogo || selectedLogoIndex !== null) && (
+      {/* Main Navigation - Only show on name section */}
+      {logoSection === 'hidden' && (
+        <div className="flex gap-3 pt-4">
           <Button
-            variant="hero"
-            size="lg"
-            onClick={() => {
-              if (uploadedLogo) {
-                handleUploadedLogoSubmit();
-              } else if (selectedLogoIndex !== null) {
-                handleLogoConfirm();
-              }
-            }}
-            className="flex-1 h-14 text-base font-semibold"
+            variant="secondary"
+            onClick={onBack}
+            className="flex-1"
           >
-            See Your Business 💡
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
           </Button>
-        )}
+        </div>
+      )}
       </div>
-    </div>
+    </TooltipProvider>
   );
 };
