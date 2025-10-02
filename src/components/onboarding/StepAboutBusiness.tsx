@@ -238,13 +238,14 @@ export const StepAboutBusiness = ({
             <CardContent className="p-4 md:p-6 space-y-4">
               <div className="flex items-center gap-2 pb-2 border-b border-primary/10">
                 <Sparkles className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold text-sm md:text-base">Shopfront bio preview</h3>
+                <h3 className="font-semibold text-sm md:text-base">Shopfront About preview</h3>
               </div>
               
               <div className="space-y-3">
                 {aboutYou.motivation && (
                   <div>
-                    <p className="font-bold text-base md:text-lg leading-snug">
+                    <h4 className="text-xs md:text-sm font-semibold text-muted-foreground uppercase mb-2">About</h4>
+                    <p className="text-sm md:text-base leading-relaxed">
                       {aboutYou.motivation}
                     </p>
                   </div>
@@ -252,7 +253,7 @@ export const StepAboutBusiness = ({
                 
                 {aboutYou.expertise && (
                   <div>
-                    <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
+                    <p className="text-sm md:text-base leading-relaxed">
                       {aboutYou.expertise}
                     </p>
                   </div>
@@ -266,31 +267,10 @@ export const StepAboutBusiness = ({
                     </p>
                   </div>
                 )}
-                
-                {(selectedVibes.length > 0 || selectedAudiences.length > 0) && (
-                  <div className="flex flex-wrap gap-1.5 pt-2">
-                    {selectedVibes.map(id => {
-                      const option = vibeOptions.find(o => o.id === id);
-                      return option ? (
-                        <Badge key={id} variant="outline" className="text-xs">
-                          {option.label}
-                        </Badge>
-                      ) : null;
-                    })}
-                    {selectedAudiences.map(id => {
-                      const option = audienceOptions.find(o => o.id === id);
-                      return option ? (
-                        <Badge key={id} variant="outline" className="text-xs">
-                          {option.label}
-                        </Badge>
-                      ) : null;
-                    })}
-                  </div>
-                )}
               </div>
               
               <p className="text-xs text-muted-foreground italic pt-2 border-t border-primary/10">
-                These are previews. You can edit them later in your shopfront.
+                This is how your About section will appear in your shopfront.
               </p>
             </CardContent>
           </Card>

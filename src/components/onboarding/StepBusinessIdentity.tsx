@@ -28,7 +28,7 @@ interface StepBusinessIdentityProps {
   vibes: string[];
 }
 
-// Expanded logo styles for more variety
+// Logo style options focused on visual design traits
 const logoStyles = [
   { 
     id: 'minimalist', 
@@ -40,42 +40,42 @@ const logoStyles = [
   { 
     id: 'playful', 
     name: 'Playful', 
-    description: 'Fun, lighthearted, energetic',
+    description: 'Fun, colorful, approachable',
     gradient: 'from-pink-500 to-orange-400', 
     icon: Smile 
   },
   { 
     id: 'bold', 
     name: 'Bold', 
-    description: 'Confident, high impact, daring',
+    description: 'Confident, strong, high impact',
     gradient: 'from-purple-600 to-indigo-600', 
     icon: Zap 
   },
   { 
     id: 'icon', 
     name: 'Icon-Based', 
-    description: 'Strong symbol-driven design',
+    description: 'Symbol-driven, versatile marks',
     gradient: 'from-teal-500 to-cyan-600', 
     icon: Target 
   },
   { 
     id: 'handdrawn', 
-    name: 'Hand-drawn', 
-    description: 'Sketch-style, creative, personal',
+    name: 'Hand-Drawn', 
+    description: 'Sketchy, creative, personal',
     gradient: 'from-amber-500 to-orange-600', 
     icon: Paintbrush 
   },
   { 
     id: 'retro', 
     name: 'Retro', 
-    description: 'Vintage, nostalgic, classic',
+    description: 'Nostalgic, vintage character',
     gradient: 'from-rose-500 to-red-600', 
     icon: Clock 
   },
   { 
     id: 'gradient', 
-    name: 'Modern Gradient', 
-    description: 'Colorful, tech-forward, trendy',
+    name: 'Gradient', 
+    description: 'Colorful, trendy, digital',
     gradient: 'from-blue-500 to-purple-600', 
     icon: TrendingUp 
   },
