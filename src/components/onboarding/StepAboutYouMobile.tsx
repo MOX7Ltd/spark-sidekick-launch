@@ -379,7 +379,8 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
                 disabled={!canProceed()}
                 className="flex-1 h-11 sm:h-12 text-sm sm:text-base"
               >
-                Beautiful — let's shape your business personality →
+                <span className="hidden sm:inline">Beautiful — let's shape your business personality →</span>
+                <span className="sm:hidden">Shape your business →</span>
               </Button>
             </div>
             {canProceed() && (
