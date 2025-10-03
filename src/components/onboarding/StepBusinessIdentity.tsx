@@ -971,8 +971,8 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                           className="flex items-center gap-3 cursor-pointer"
                           onClick={() => setSelectedLogoIndex(idx)}
                         >
-                          <div className="w-20 h-20 flex items-center justify-center bg-muted rounded-lg flex-shrink-0">
-                            <img src={logo} alt={`${logoNicknames[idx]}`} className="max-w-full max-h-full object-contain p-2" />
+                          <div className="w-32 h-32 flex items-center justify-center bg-muted rounded-lg flex-shrink-0">
+                            <img src={logo} alt={`${logoNicknames[idx]}`} className="max-w-full max-h-full object-contain p-1" />
                           </div>
 
                           <div className="flex-1">

@@ -146,11 +146,11 @@ export const LivePreview = ({ idea, aboutYou, audience, businessIdentity }: Live
               <div className="flex items-center space-x-4">
                 {businessIdentity?.logoSVG ? (
                   <div 
-                    className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center overflow-hidden"
+                    className="w-24 h-24 md:w-28 md:h-28 bg-white/20 rounded-full flex items-center justify-center overflow-hidden"
                     dangerouslySetInnerHTML={{ __html: businessIdentity.logoSVG }}
                   />
                 ) : (
-                  <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
+                  <div className="w-24 h-24 md:w-28 md:h-28 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
                     {preview.storefront.logo === 'logo-0' ? '🚀' : 
                      preview.storefront.logo === 'logo-1' ? '✨' : '💡'}
                     {preview.storefront.name.charAt(0)}

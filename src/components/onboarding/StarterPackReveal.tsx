@@ -67,7 +67,7 @@ export const StarterPackReveal = ({ businessIdentity, products, onContinue, onBa
           {/* Logo & Business Name */}
           <div className="flex flex-col items-center text-center mb-4 md:mb-6">
             {(businessIdentity.logoUrl || businessIdentity.logoSVG) && (
-              <div className="w-20 h-20 md:w-24 md:h-24 mb-3 md:mb-4">
+              <div className="w-32 h-32 md:w-40 md:h-40 mb-4 md:mb-6">
                 {businessIdentity.logoSVG?.startsWith('<svg') ? (
                   <div dangerouslySetInnerHTML={{ __html: businessIdentity.logoSVG }} />
                 ) : (
