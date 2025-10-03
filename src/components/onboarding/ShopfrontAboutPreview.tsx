@@ -1,6 +1,8 @@
 import React from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ThumbsUp, ThumbsDown, RefreshCw } from 'lucide-react';
 
 interface ShopfrontAboutPreviewProps {
   aiBio?: string;
@@ -9,6 +11,9 @@ interface ShopfrontAboutPreviewProps {
   vibes?: string[];
   audiences?: string[];
   isLoading?: boolean;
+  onRefresh?: () => void;
+  onFeedback?: (feedback: 'up' | 'down') => void;
+  feedback?: 'up' | 'down' | null;
 }
 
 export const ShopfrontAboutPreview = ({ 
@@ -17,18 +22,24 @@ export const ShopfrontAboutPreview = ({
   fallbackExpertise,
   vibes = [],
   audiences = [],
-  isLoading = false 
+  isLoading = false,
+  onRefresh,
+  onFeedback,
+  feedback 
 }: ShopfrontAboutPreviewProps) => {
   // Loading state
   if (isLoading) {
     return (
       <div className="mb-4 md:mb-6">
         <h4 className="text-xs md:text-sm font-semibold text-muted-foreground uppercase mb-2">About</h4>
-        <div className="space-y-2">
+        <div className="space-y-2 mb-3">
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-5/6" />
           <Skeleton className="h-4 w-4/5" />
         </div>
+        <p className="text-xs text-muted-foreground italic">
+          ✨ Generating your bio...
+        </p>
       </div>
     );
   }
@@ -73,7 +84,43 @@ export const ShopfrontAboutPreview = ({
 
   return (
     <div>
-      <h4 className="text-xs md:text-sm font-semibold text-muted-foreground uppercase mb-2">About</h4>
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-xs md:text-sm font-semibold text-muted-foreground uppercase">About</h4>
+        {aiBio && onRefresh && (
+          <div className="flex items-center gap-2">
+            {onFeedback && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onFeedback('up')}
+                  className={`h-7 w-7 p-0 ${feedback === 'up' ? 'bg-green-500/10 text-green-600' : ''}`}
+                >
+                  <ThumbsUp className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onFeedback('down')}
+                  className={`h-7 w-7 p-0 ${feedback === 'down' ? 'bg-red-500/10 text-red-600' : ''}`}
+                >
+                  <ThumbsDown className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onRefresh}
+              className="h-7 px-2 text-xs"
+            >
+              <RefreshCw className="h-3.5 w-3.5 mr-1" />
+              Refresh
+            </Button>
+          </div>
+        )}
+      </div>
+      
       <p className="text-sm md:text-base leading-relaxed mb-3">{bioText}</p>
       
       {/* Show vibes & audiences as tags if available */}
@@ -93,7 +140,9 @@ export const ShopfrontAboutPreview = ({
       )}
       
       <p className="text-xs text-muted-foreground italic mt-3">
-        This is how your About section will appear in your shopfront.
+        {aiBio 
+          ? "✨ This AI-generated bio will appear in your shopfront."
+          : "This is how your About section will appear in your shopfront."}
       </p>
     </div>
   );

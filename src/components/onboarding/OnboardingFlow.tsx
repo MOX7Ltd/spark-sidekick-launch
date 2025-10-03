@@ -73,17 +73,28 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   };
 
   // Stage 3: About Your Business (Vibe & Style + Target Audience)
-  const handleAboutBusiness = (data: { vibes: string[]; audiences: string[] }) => {
+  const handleAboutBusiness = (data: { vibes: string[]; audiences: string[]; businessIdentity?: any }) => {
     logFrontendEvent({
       eventType: 'user_action',
       step: 'StepAboutBusiness',
       payload: { 
         action: 'submit_business_info',
         vibes: data.vibes,
-        audiences: data.audiences
+        audiences: data.audiences,
+        hasBio: !!data.businessIdentity?.bio
       }
     });
-    setFormData(prev => ({ ...prev, vibes: data.vibes, audiences: data.audiences }));
+    
+    // Save vibes, audiences, and potentially the bio if already generated
+    const updates: any = { vibes: data.vibes, audiences: data.audiences };
+    if (data.businessIdentity?.bio) {
+      updates.businessIdentity = {
+        ...formData.businessIdentity,
+        ...data.businessIdentity
+      };
+    }
+    
+    setFormData(prev => ({ ...prev, ...updates }));
     setCurrentStep(4); // Go to business identity (name + logo)
   };
 
@@ -198,6 +209,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
               onBack={goBack}
               initialVibes={formData.vibes}
               initialAudiences={formData.audiences}
+              idea={formData.idea || ''}
               aboutYou={formData.aboutYou}
               businessIdentity={formData.businessIdentity}
               isLoading={false}

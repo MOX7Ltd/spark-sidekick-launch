@@ -1,16 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Users, Baby, GraduationCap, Briefcase, Palette, MapPin, Globe, Heart, Target, Sparkles, Smile, Zap, BookOpen, Lightbulb, Rocket } from 'lucide-react';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
 import { ShopfrontAboutPreview } from './ShopfrontAboutPreview';
+import { generateBusinessIdentity } from '@/lib/api';
+import type { GenerateIdentityRequest } from '@/types/onboarding';
+import { useToast } from '@/hooks/use-toast';
 
 interface StepAboutBusinessProps {
-  onNext: (data: { vibes: string[]; audiences: string[] }) => void;
+  onNext: (data: { vibes: string[]; audiences: string[]; businessIdentity?: any }) => void;
   onBack: () => void;
   initialVibes?: string[];
   initialAudiences?: string[];
+  idea?: string;
   aboutYou?: {
     firstName?: string;
     lastName?: string;
@@ -23,6 +27,7 @@ interface StepAboutBusinessProps {
     bio?: string;
     name?: string;
     tagline?: string;
+    colors?: string[];
   };
   isLoading?: boolean;
 }
@@ -54,12 +59,104 @@ export const StepAboutBusiness = ({
   onBack, 
   initialVibes = [], 
   initialAudiences = [],
+  idea = '',
   aboutYou,
   businessIdentity,
   isLoading = false 
 }: StepAboutBusinessProps) => {
   const [selectedVibes, setSelectedVibes] = useState<string[]>(initialVibes);
   const [selectedAudiences, setSelectedAudiences] = useState<string[]>(initialAudiences);
+  const [generatedBio, setGeneratedBio] = useState<string | undefined>(businessIdentity?.bio);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [bioFeedback, setBioFeedback] = useState<'up' | 'down' | null>(null);
+  const { toast } = useToast();
+
+  // Auto-generate bio when all required fields are filled
+  useEffect(() => {
+    const shouldGenerate = 
+      selectedVibes.length > 0 && 
+      selectedAudiences.length > 0 && 
+      aboutYou?.expertise && 
+      aboutYou?.motivation &&
+      !generatedBio &&
+      !isGenerating;
+
+    if (shouldGenerate) {
+      generateBio();
+    }
+  }, [selectedVibes, selectedAudiences, aboutYou?.expertise, aboutYou?.motivation]);
+
+  const generateBio = async () => {
+    if (!aboutYou?.expertise || !aboutYou?.motivation || !idea) return;
+    
+    setIsGenerating(true);
+    setBioFeedback(null);
+    
+    try {
+      const request: GenerateIdentityRequest = {
+        idea,
+        audiences: selectedAudiences,
+        vibes: selectedVibes,
+        aboutYou: {
+          firstName: aboutYou.firstName || '',
+          lastName: aboutYou.lastName || '',
+          expertise: aboutYou.expertise,
+          motivation: aboutYou.motivation,
+          includeFirstName: aboutYou.includeFirstName ?? true,
+          includeLastName: aboutYou.includeLastName ?? true,
+        },
+      };
+
+      logFrontendEvent({
+        eventType: 'user_action',
+        step: 'StepAboutBusiness',
+        payload: { action: 'generate_bio', request }
+      });
+
+      const response = await generateBusinessIdentity(request);
+      
+      if (response.bio) {
+        setGeneratedBio(response.bio);
+        logFrontendEvent({
+          eventType: 'user_action',
+          step: 'StepAboutBusiness',
+          payload: { action: 'bio_generated', bioLength: response.bio.length }
+        });
+      }
+    } catch (error) {
+      console.error('Failed to generate bio:', error);
+      toast({
+        title: "Couldn't generate bio",
+        description: "We'll try again or you can refresh manually.",
+        variant: "destructive"
+      });
+      logFrontendEvent({
+        eventType: 'error',
+        step: 'StepAboutBusiness',
+        payload: { action: 'generate_bio_failed', error: String(error) }
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleRefreshBio = () => {
+    setGeneratedBio(undefined);
+    generateBio();
+  };
+
+  const handleBioFeedback = (feedback: 'up' | 'down') => {
+    setBioFeedback(feedback);
+    logFrontendEvent({
+      eventType: 'user_action',
+      step: 'StepAboutBusiness',
+      payload: { action: 'bio_feedback', feedback }
+    });
+    toast({
+      title: feedback === 'up' ? "Thanks for the feedback!" : "We'll improve",
+      description: feedback === 'up' ? "Glad you like it!" : "Your feedback helps us improve.",
+    });
+  };
 
   const toggleVibe = (vibeId: string) => {
     const newVibes = selectedVibes.includes(vibeId)
@@ -92,7 +189,15 @@ export const StepAboutBusiness = ({
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (selectedVibes.length > 0 && selectedAudiences.length > 0) {
-      onNext({ vibes: selectedVibes, audiences: selectedAudiences });
+      // Pass the generated bio along with vibes and audiences
+      onNext({ 
+        vibes: selectedVibes, 
+        audiences: selectedAudiences,
+        businessIdentity: generatedBio ? {
+          ...businessIdentity,
+          bio: generatedBio
+        } : businessIdentity
+      });
     }
   };
 
@@ -244,12 +349,15 @@ export const StepAboutBusiness = ({
           <Card className="border-2 border-primary/20 overflow-hidden animate-fade-in">
             <CardContent className="p-6 md:p-8">
               <ShopfrontAboutPreview 
-                aiBio={businessIdentity?.bio}
+                aiBio={generatedBio}
                 fallbackMotivation={aboutYou.motivation}
                 fallbackExpertise={aboutYou.expertise}
                 vibes={selectedVibes}
                 audiences={selectedAudiences}
-                isLoading={false}
+                isLoading={isGenerating}
+                onRefresh={handleRefreshBio}
+                onFeedback={handleBioFeedback}
+                feedback={bioFeedback}
               />
             </CardContent>
           </Card>
