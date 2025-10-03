@@ -32,56 +32,56 @@ interface StepBusinessIdentityProps {
 const logoStyles = [
   { 
     id: 'minimalist', 
-    name: 'Minimalist', 
+    name: 'Minimalist Style', 
     description: 'Clean, simple, modern',
     gradient: 'from-slate-600 to-slate-800', 
     icon: Circle 
   },
   { 
     id: 'playful', 
-    name: 'Playful', 
+    name: 'Playful Style', 
     description: 'Fun, colorful, approachable',
     gradient: 'from-pink-500 to-orange-400', 
     icon: Smile 
   },
   { 
     id: 'bold', 
-    name: 'Bold', 
+    name: 'Bold Style', 
     description: 'Confident, strong, high impact',
     gradient: 'from-purple-600 to-indigo-600', 
     icon: Zap 
   },
   { 
     id: 'icon', 
-    name: 'Icon-Based', 
+    name: 'Creative / Icon-Based Style', 
     description: 'Symbol-driven, versatile marks',
     gradient: 'from-teal-500 to-cyan-600', 
     icon: Target 
   },
   { 
     id: 'handdrawn', 
-    name: 'Hand-Drawn', 
+    name: 'Hand-Drawn Style', 
     description: 'Sketchy, creative, personal',
     gradient: 'from-amber-500 to-orange-600', 
     icon: Paintbrush 
   },
   { 
     id: 'retro', 
-    name: 'Retro', 
+    name: 'Retro Style', 
     description: 'Nostalgic, vintage character',
     gradient: 'from-rose-500 to-red-600', 
     icon: Clock 
   },
   { 
     id: 'gradient', 
-    name: 'Gradient', 
+    name: 'Gradient Style', 
     description: 'Colorful, trendy, digital',
     gradient: 'from-blue-500 to-purple-600', 
     icon: TrendingUp 
   },
   { 
     id: 'typography', 
-    name: 'Typography-First', 
+    name: 'Typography-First Style', 
     description: 'Strong wordmark focus',
     gradient: 'from-gray-700 to-gray-900', 
     icon: Type 
@@ -121,8 +121,8 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
   const [regeneratingLogoIndex, setRegeneratingLogoIndex] = useState<number | null>(null);
   const [likedLogos, setLikedLogos] = useState<Set<number>>(new Set());
   
-  // Descriptive logo nicknames
-  const logoNicknames = ['Clean & Bold', 'Playful Energy', 'Visionary Spark', 'Creative Edge'];
+  // Descriptive logo nicknames for display
+  const logoNicknames = ['Style 1', 'Style 2', 'Style 3', 'Style 4'];
 
   // Shared states for bio and colors
   const [generatedBio, setGeneratedBio] = useState<string>('');
