@@ -19,6 +19,11 @@ interface StepAboutBusinessProps {
     includeFirstName?: boolean;
     includeLastName?: boolean;
   };
+  businessIdentity?: {
+    bio?: string;
+    name?: string;
+    tagline?: string;
+  };
   isLoading?: boolean;
 }
 
@@ -50,6 +55,7 @@ export const StepAboutBusiness = ({
   initialVibes = [], 
   initialAudiences = [],
   aboutYou,
+  businessIdentity,
   isLoading = false 
 }: StepAboutBusinessProps) => {
   const [selectedVibes, setSelectedVibes] = useState<string[]>(initialVibes);
@@ -235,20 +241,16 @@ export const StepAboutBusiness = ({
 
         {/* Shopfront About Preview - Only show when both selections are complete */}
         {isValid && aboutYou && (aboutYou.motivation || aboutYou.expertise) && (
-          <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 animate-fade-in">
-            <CardContent className="p-4 md:p-6 space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-primary/10">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold text-sm md:text-base">Shopfront Preview</h3>
-              </div>
-              
+          <Card className="border-2 border-primary/20 overflow-hidden animate-fade-in">
+            <CardContent className="p-6 md:p-8">
               <ShopfrontAboutPreview 
-                aboutText={[aboutYou.motivation, aboutYou.expertise].filter(Boolean).join(' ')}
+                aiBio={businessIdentity?.bio}
+                fallbackMotivation={aboutYou.motivation}
+                fallbackExpertise={aboutYou.expertise}
+                vibes={selectedVibes}
+                audiences={selectedAudiences}
+                isLoading={false}
               />
-              
-              <p className="text-xs text-muted-foreground italic pt-2 border-t border-primary/10">
-                This is how your About section will appear in your shopfront.
-              </p>
             </CardContent>
           </Card>
         )}

@@ -199,6 +199,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
               initialVibes={formData.vibes}
               initialAudiences={formData.audiences}
               aboutYou={formData.aboutYou}
+              businessIdentity={formData.businessIdentity}
               isLoading={false}
             />
           )}
