@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Users, Baby, GraduationCap, Briefcase, Palette, MapPin, Globe, Heart, Target, Sparkles, Smile, Zap, BookOpen, Lightbulb, Rocket, User } from 'lucide-react';
+import { ArrowLeft, Users, Baby, GraduationCap, Briefcase, Palette, MapPin, Globe, Heart, Target, Sparkles, Smile, Zap, BookOpen, Lightbulb, Rocket } from 'lucide-react';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
 
 interface StepAboutBusinessProps {
@@ -232,47 +232,65 @@ export const StepAboutBusiness = ({
           </div>
         )}
 
-        {/* Shopfront Bio Preview - Matches actual shopfront layout */}
+        {/* Shopfront Bio Preview - Only show when both selections are complete */}
         {isValid && aboutYou && (aboutYou.motivation || aboutYou.expertise) && (
           <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 animate-fade-in">
             <CardContent className="p-4 md:p-6 space-y-4">
-              <div className="flex items-center gap-2 pb-3 border-b border-primary/10">
+              <div className="flex items-center gap-2 pb-2 border-b border-primary/10">
                 <Sparkles className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold text-sm md:text-base">Your Shopfront Preview</h3>
+                <h3 className="font-semibold text-sm md:text-base">Shopfront bio preview</h3>
               </div>
               
-              {/* Mirror the actual shopfront About section layout */}
-              <div className="flex items-start gap-4 md:gap-6">
-                {/* Use generic avatar since profilePicture may not be in type */}
-                <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0">
-                  <User className="w-6 h-6 md:w-8 md:h-8 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-lg md:text-2xl font-bold mb-2 md:mb-3">
-                    About {aboutYou.includeFirstName || aboutYou.includeLastName ? (
-                      <>
-                        {aboutYou.includeFirstName ? aboutYou.firstName : ''}{' '}
-                        {aboutYou.includeLastName ? aboutYou.lastName : ''}
-                      </>
-                    ) : 'the Founder'}
-                  </h2>
-                  <div className="space-y-2">
-                    {aboutYou.motivation && (
-                      <p className="text-sm md:text-lg leading-relaxed text-foreground/90">
-                        {aboutYou.motivation}
-                      </p>
-                    )}
-                    {aboutYou.expertise && (
-                      <p className="text-sm md:text-lg leading-relaxed text-foreground/90">
-                        {aboutYou.expertise}
-                      </p>
-                    )}
+              <div className="space-y-3">
+                {aboutYou.motivation && (
+                  <div>
+                    <p className="font-bold text-base md:text-lg leading-snug">
+                      {aboutYou.motivation}
+                    </p>
                   </div>
-                </div>
+                )}
+                
+                {aboutYou.expertise && (
+                  <div>
+                    <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
+                      {aboutYou.expertise}
+                    </p>
+                  </div>
+                )}
+                
+                {(aboutYou.firstName || aboutYou.lastName) && (aboutYou.includeFirstName || aboutYou.includeLastName) && (
+                  <div>
+                    <p className="text-sm text-muted-foreground italic">
+                      By {aboutYou.includeFirstName ? aboutYou.firstName : ''}{' '}
+                      {aboutYou.includeLastName ? aboutYou.lastName : ''}
+                    </p>
+                  </div>
+                )}
+                
+                {(selectedVibes.length > 0 || selectedAudiences.length > 0) && (
+                  <div className="flex flex-wrap gap-1.5 pt-2">
+                    {selectedVibes.map(id => {
+                      const option = vibeOptions.find(o => o.id === id);
+                      return option ? (
+                        <Badge key={id} variant="outline" className="text-xs">
+                          {option.label}
+                        </Badge>
+                      ) : null;
+                    })}
+                    {selectedAudiences.map(id => {
+                      const option = audienceOptions.find(o => o.id === id);
+                      return option ? (
+                        <Badge key={id} variant="outline" className="text-xs">
+                          {option.label}
+                        </Badge>
+                      ) : null;
+                    })}
+                  </div>
+                )}
               </div>
               
               <p className="text-xs text-muted-foreground italic pt-2 border-t border-primary/10">
-                ✨ This is exactly how your About section will appear in your shopfront
+                These are previews. You can edit them later in your shopfront.
               </p>
             </CardContent>
           </Card>

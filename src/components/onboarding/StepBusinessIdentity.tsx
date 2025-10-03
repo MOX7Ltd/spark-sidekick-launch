@@ -28,60 +28,60 @@ interface StepBusinessIdentityProps {
   vibes: string[];
 }
 
-// Logo style options focused on visual design traits
+// Expanded logo styles for more variety
 const logoStyles = [
   { 
     id: 'minimalist', 
-    name: 'Minimalist Style', 
+    name: 'Minimalist', 
     description: 'Clean, simple, modern',
     gradient: 'from-slate-600 to-slate-800', 
     icon: Circle 
   },
   { 
     id: 'playful', 
-    name: 'Playful Style', 
-    description: 'Fun, colorful, approachable',
+    name: 'Playful', 
+    description: 'Fun, lighthearted, energetic',
     gradient: 'from-pink-500 to-orange-400', 
     icon: Smile 
   },
   { 
     id: 'bold', 
-    name: 'Bold Style', 
-    description: 'Confident, strong, high impact',
+    name: 'Bold', 
+    description: 'Confident, high impact, daring',
     gradient: 'from-purple-600 to-indigo-600', 
     icon: Zap 
   },
   { 
     id: 'icon', 
-    name: 'Creative / Icon-Based Style', 
-    description: 'Symbol-driven, versatile marks',
+    name: 'Icon-Based', 
+    description: 'Strong symbol-driven design',
     gradient: 'from-teal-500 to-cyan-600', 
     icon: Target 
   },
   { 
     id: 'handdrawn', 
-    name: 'Hand-Drawn Style', 
-    description: 'Sketchy, creative, personal',
+    name: 'Hand-drawn', 
+    description: 'Sketch-style, creative, personal',
     gradient: 'from-amber-500 to-orange-600', 
     icon: Paintbrush 
   },
   { 
     id: 'retro', 
-    name: 'Retro Style', 
-    description: 'Nostalgic, vintage character',
+    name: 'Retro', 
+    description: 'Vintage, nostalgic, classic',
     gradient: 'from-rose-500 to-red-600', 
     icon: Clock 
   },
   { 
     id: 'gradient', 
-    name: 'Gradient Style', 
-    description: 'Colorful, trendy, digital',
+    name: 'Modern Gradient', 
+    description: 'Colorful, tech-forward, trendy',
     gradient: 'from-blue-500 to-purple-600', 
     icon: TrendingUp 
   },
   { 
     id: 'typography', 
-    name: 'Typography-First Style', 
+    name: 'Typography-First', 
     description: 'Strong wordmark focus',
     gradient: 'from-gray-700 to-gray-900', 
     icon: Type 
@@ -121,8 +121,8 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
   const [regeneratingLogoIndex, setRegeneratingLogoIndex] = useState<number | null>(null);
   const [likedLogos, setLikedLogos] = useState<Set<number>>(new Set());
   
-  // Descriptive logo nicknames for display
-  const logoNicknames = ['Style 1', 'Style 2', 'Style 3', 'Style 4'];
+  // Descriptive logo nicknames
+  const logoNicknames = ['Clean & Bold', 'Playful Energy', 'Visionary Spark', 'Creative Edge'];
 
   // Shared states for bio and colors
   const [generatedBio, setGeneratedBio] = useState<string>('');
