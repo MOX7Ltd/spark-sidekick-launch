@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Users, Baby, GraduationCap, Briefcase, Palette, MapPin, Globe, Heart, Target, Sparkles, Smile, Zap, BookOpen, Lightbulb, Rocket } from 'lucide-react';
+import { ArrowLeft, Users, Baby, GraduationCap, Briefcase, Palette, MapPin, Globe, Heart, Target, Sparkles, Smile, Zap, BookOpen, Lightbulb, Rocket, ThumbsUp, ThumbsDown, RefreshCw } from 'lucide-react';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
-import { ShopfrontAboutPreview } from './ShopfrontAboutPreview';
 import { generateBusinessIdentity } from '@/lib/api';
 import type { GenerateIdentityRequest } from '@/types/onboarding';
 import { useToast } from '@/hooks/use-toast';
@@ -71,20 +70,7 @@ export const StepAboutBusiness = ({
   const [bioFeedback, setBioFeedback] = useState<'up' | 'down' | null>(null);
   const { toast } = useToast();
 
-  // Auto-generate bio when all required fields are filled
-  useEffect(() => {
-    const shouldGenerate = 
-      selectedVibes.length > 0 && 
-      selectedAudiences.length > 0 && 
-      aboutYou?.expertise && 
-      aboutYou?.motivation &&
-      !generatedBio &&
-      !isGenerating;
-
-    if (shouldGenerate) {
-      generateBio();
-    }
-  }, [selectedVibes, selectedAudiences, aboutYou?.expertise, aboutYou?.motivation]);
+  // Remove auto-generation - user triggers manually via CTA
 
   const generateBio = async () => {
     if (!aboutYou?.expertise || !aboutYou?.motivation || !idea) return;
@@ -186,22 +172,25 @@ export const StepAboutBusiness = ({
     });
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (selectedVibes.length > 0 && selectedAudiences.length > 0) {
-      // Pass the generated bio along with vibes and audiences
-      onNext({ 
-        vibes: selectedVibes, 
-        audiences: selectedAudiences,
-        businessIdentity: generatedBio ? {
-          ...businessIdentity,
-          bio: generatedBio
-        } : businessIdentity
-      });
-    }
+  const handleGenerateBio = () => {
+    generateBio();
   };
 
-  const isValid = selectedVibes.length > 0 && selectedAudiences.length > 0;
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    // Pass the generated bio along with vibes and audiences
+    onNext({ 
+      vibes: selectedVibes, 
+      audiences: selectedAudiences,
+      businessIdentity: generatedBio ? {
+        ...businessIdentity,
+        bio: generatedBio
+      } : businessIdentity
+    });
+  };
+
+  const hasMinSelections = selectedVibes.length > 0 && selectedAudiences.length > 0;
+  const hasBio = Boolean(generatedBio);
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6 md:space-y-8 animate-fade-in pb-8 px-4">
@@ -336,29 +325,83 @@ export const StepAboutBusiness = ({
           )}
         </div>
 
-        {isValid && (
+        {hasMinSelections && !hasBio && (
           <div className="text-center animate-fade-in">
             <p className="text-xs md:text-sm text-primary font-medium px-2">
-              🔥 Perfect! This will help us create content that resonates
+              🔥 Perfect! Ready to create your bio
             </p>
           </div>
         )}
 
-        {/* Shopfront About Preview - Only show when both selections are complete */}
-        {isValid && aboutYou && (aboutYou.motivation || aboutYou.expertise) && (
-          <Card className="border-2 border-primary/20 overflow-hidden animate-fade-in">
+        {/* Bio Preview Card - Only show after bio is generated */}
+        {hasBio && (
+          <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5 overflow-hidden animate-fade-in shadow-lg">
             <CardContent className="p-6 md:p-8">
-              <ShopfrontAboutPreview 
-                aiBio={generatedBio}
-                fallbackMotivation={aboutYou.motivation}
-                fallbackExpertise={aboutYou.expertise}
-                vibes={selectedVibes}
-                audiences={selectedAudiences}
-                isLoading={isGenerating}
-                onRefresh={handleRefreshBio}
-                onFeedback={handleBioFeedback}
-                feedback={bioFeedback}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-semibold">Your bio is ready</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleBioFeedback('up')}
+                    className={`h-8 w-8 p-0 ${bioFeedback === 'up' ? 'bg-green-500/10 text-green-600' : ''}`}
+                    title="Like this bio"
+                  >
+                    <ThumbsUp className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleBioFeedback('down')}
+                    className={`h-8 w-8 p-0 ${bioFeedback === 'down' ? 'bg-red-500/10 text-red-600' : ''}`}
+                    title="Dislike - regenerate"
+                  >
+                    <ThumbsDown className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRefreshBio}
+                    className="h-8 px-3 text-xs"
+                    disabled={isGenerating}
+                    title="Refresh bio"
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-1 ${isGenerating ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
+              </div>
+
+              <p className="text-sm md:text-base leading-relaxed mb-4 text-foreground">{generatedBio}</p>
+
+              {(selectedVibes.length > 0 || selectedAudiences.length > 0) && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {selectedVibes.map(vibe => (
+                    <Badge key={vibe} variant="secondary" className="text-xs">
+                      {vibeOptions.find(v => v.id === vibe)?.label || vibe}
+                    </Badge>
+                  ))}
+                  {selectedAudiences.map(audience => (
+                    <Badge key={audience} variant="outline" className="text-xs">
+                      {audienceOptions.find(a => a.id === audience)?.label || audience}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  ✨ This AI-generated bio will appear on your shopfront.
+                </p>
+                <div className="rounded-lg bg-primary/10 border border-primary/20 px-3 py-2">
+                  <p className="text-xs text-primary font-medium">
+                    Looks great — this is exactly what customers will read.
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -376,19 +419,39 @@ export const StepAboutBusiness = ({
             Back
           </Button>
           
-          <Button 
-            type="submit"
-            size="lg"
-            disabled={!isValid || isLoading}
-            variant="hero"
-            className="w-full h-14 text-lg font-semibold"
-          >
-            {isLoading ? 'Processing...' : 'Let\'s name your business →'}
-          </Button>
+          {!hasBio ? (
+            <Button 
+              type="button"
+              size="lg"
+              disabled={!hasMinSelections || isGenerating}
+              variant="hero"
+              className="w-full h-14 text-lg font-semibold"
+              onClick={handleGenerateBio}
+            >
+              {isGenerating ? (
+                <>
+                  <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                  Creating your bio…
+                </>
+              ) : (
+                'Great choices — let\'s create your bio →'
+              )}
+            </Button>
+          ) : (
+            <Button 
+              type="submit"
+              size="lg"
+              disabled={isLoading}
+              variant="hero"
+              className="w-full h-14 text-lg font-semibold"
+            >
+              {isLoading ? 'Processing...' : 'Looks great — let\'s name your business →'}
+            </Button>
+          )}
           
-          {isValid && (
+          {hasMinSelections && !hasBio && (
             <p className="text-xs text-center text-muted-foreground px-2 animate-fade-in">
-              Beautiful — your passion and story are the heart of your business. Now let's shape its personality and audience so it feels alive.
+              We'll use AI to craft a professional bio from your selections
             </p>
           )}
         </div>
