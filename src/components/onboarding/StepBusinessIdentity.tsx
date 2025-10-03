@@ -121,8 +121,8 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
   const [regeneratingLogoIndex, setRegeneratingLogoIndex] = useState<number | null>(null);
   const [likedLogos, setLikedLogos] = useState<Set<number>>(new Set());
   
-  // Descriptive logo nicknames
-  const logoNicknames = ['Clean & Bold', 'Playful Energy', 'Visionary Spark', 'Creative Edge'];
+  // Descriptive logo style labels
+  const logoNicknames = ['Abstract symbol design', 'Modern geometric style', 'Circular emblem mark', 'Minimal typography lockup'];
 
   // Shared states for bio and colors
   const [generatedBio, setGeneratedBio] = useState<string>('');
