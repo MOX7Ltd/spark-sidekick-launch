@@ -500,7 +500,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 disabled={!isValid}
               >
                 <span>Great start</span>
-                <span>now let's tell your story →</span>
+                <span>Now let's tell your story →</span>
               </Button>
             </CardContent>
           </Card>
