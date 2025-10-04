@@ -496,10 +496,11 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 type="submit" 
                 size="lg"
                 variant="hero"
-                className="w-full h-14 text-base font-semibold"
+                className="w-full h-auto py-3 text-base font-semibold flex flex-col items-center gap-0.5"
                 disabled={!isValid}
               >
-                Great start — now let's tell your story →
+                <span>Great start</span>
+                <span>now let's tell your story →</span>
               </Button>
             </CardContent>
           </Card>
