@@ -304,9 +304,6 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
               <p className="font-semibold text-lg">
                 Let's see what this could become 💡
               </p>
-              <p className="text-sm text-muted-foreground">
-                Tap 👍 to save ideas you like, 👎 to replace, or 🔄 to refresh for new variations
-              </p>
               <Button
                 type="button"
                 onClick={handleGenerateProducts}
@@ -380,6 +377,10 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 Refresh all
               </Button>
             </div>
+            
+            <p className="text-sm text-muted-foreground text-center">
+              Tap 👍 to save ideas you like, 👎 to replace, or 🔄 to refresh for new variations
+            </p>
             
             <div className="space-y-3">
               {isGenerating && products.length === 0 ? (
