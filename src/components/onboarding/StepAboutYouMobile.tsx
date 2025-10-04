@@ -325,6 +325,15 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
               <p className="text-muted-foreground">
                 Your experience, skills, or story — this is your unique selling point
               </p>
+              
+              {/* Reflective guidance */}
+              <div className="pt-3 pb-1 text-sm text-muted-foreground/80 space-y-1.5 border-l-2 border-primary/20 pl-3 bg-primary/5 py-2 rounded-r">
+                <p className="font-medium text-muted-foreground">Think about what makes you unique. Ask yourself:</p>
+                <p className="pl-2">– Are you a good motivator or natural leader?</p>
+                <p className="pl-2">– Do you have life experience that others look up to?</p>
+                <p className="pl-2">– Have you built practical skills through work, hobbies, or personal challenges?</p>
+                <p className="pl-2">– Do you have a natural ability, even without formal qualifications?</p>
+              </div>
             </div>
 
             <div className="relative">
