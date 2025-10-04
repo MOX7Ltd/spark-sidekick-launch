@@ -439,7 +439,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                               {likedProducts.has(product.id) ? (
                                 <>
                                   <Check className="w-4 h-4 mr-1 shrink-0" />
-                                  <span className="text-center">Selected</span>
+                                  <span className="text-center">Saved</span>
                                 </>
                               ) : (
                                 <>
