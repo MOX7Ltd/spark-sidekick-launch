@@ -609,7 +609,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
             <div className="space-y-4">
               <div className="space-y-2 mb-4">
                 <p className="text-sm font-medium text-foreground">
-                  Here are some names matched to your vibe & audience — any of these could become your brand. Like one, tweak one, or refresh for more.
+                  Here are some names matched to your vibe & audience — any of these could become your brand. Select one, replace one, or refresh the lot for more.
                 </p>
               </div>
               
@@ -683,22 +683,6 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                           <p className="text-xs text-muted-foreground italic mb-2">{option.tagline}</p>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className={`h-8 w-8 p-0 transition-colors ${likedNames.has(option.name) ? 'text-green-600 bg-green-50 dark:bg-green-950' : 'text-muted-foreground hover:text-green-600'}`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleLikeName(option.name);
-                                }}
-                              >
-                                <ThumbsUp className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Love this</TooltipContent>
-                          </Tooltip>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
