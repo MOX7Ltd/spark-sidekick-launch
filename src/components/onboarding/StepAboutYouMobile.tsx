@@ -323,7 +323,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
             <div className="space-y-2">
               <h2 className="text-xl sm:text-2xl font-bold break-words">What makes you ready to start this business?</h2>
               <p className="text-muted-foreground">
-                Your experience, skills, or story — this is your unfair advantage
+                Your experience, skills, or story — this is your unique selling point
               </p>
             </div>
 
@@ -350,7 +350,7 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
             {expertise.length >= 10 && (
               <div className="flex items-center gap-2 text-primary animate-bounce-in">
                 <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
-                <span className="font-medium text-sm sm:text-base break-words">💪 This is your unfair advantage — people will trust you!</span>
+                <span className="font-medium text-sm sm:text-base break-words">💪 This is your unique selling point — people will trust you!</span>
               </div>
             )}
 

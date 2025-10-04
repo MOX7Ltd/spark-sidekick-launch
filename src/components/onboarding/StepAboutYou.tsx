@@ -202,7 +202,7 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
               What makes you ready to start this business?
             </Label>
             <p className="text-sm text-muted-foreground">
-              Your experience, skills, or personal story — this is your unfair advantage
+              Your experience, skills, or personal story — this is your unique selling point
             </p>
             <div className="relative">
               <Textarea
@@ -239,7 +239,7 @@ export const StepAboutYou = ({ onNext, onBack, initialValue, isLoading }: StepAb
             </div>
             {expertise.length >= 10 && (
               <p className="text-sm text-primary font-medium animate-fade-in">
-                💪 This is your unfair advantage — people will trust you for this!
+                💪 This is your unique selling point — people will trust you for this!
               </p>
             )}
           </div>
