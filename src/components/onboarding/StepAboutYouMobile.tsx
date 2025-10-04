@@ -65,15 +65,15 @@ export const StepAboutYouMobile = ({ onNext, onBack, initialValue, isLoading }: 
     "I've raised 3 kids and learned every parenting hack in the book"
   ];
 
-  // Randomly select 2 examples on component mount
+  // Randomly select 3 examples on component mount
   const [motivationExamples] = useState(() => {
     const shuffled = [...allMotivationExamples].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 2);
+    return shuffled.slice(0, 3);
   });
   
   const [expertiseExamples] = useState(() => {
     const shuffled = [...allExpertiseExamples].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 2);
+    return shuffled.slice(0, 3);
   });
 
   const totalQuestions = 3;
