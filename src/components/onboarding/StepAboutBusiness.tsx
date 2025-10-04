@@ -138,10 +138,16 @@ export const StepAboutBusiness = ({
       step: 'StepAboutBusiness',
       payload: { action: 'bio_feedback', feedback }
     });
-    toast({
-      title: feedback === 'up' ? "Thanks for the feedback!" : "We'll improve",
-      description: feedback === 'up' ? "Glad you like it!" : "Your feedback helps us improve.",
-    });
+    
+    if (feedback === 'up') {
+      toast({
+        title: "Bio saved!",
+        description: "Your bio looks great and is ready to use.",
+      });
+    } else {
+      // Thumbs down - regenerate the bio
+      handleRefreshBio();
+    }
   };
 
   const toggleVibe = (vibeId: string) => {
@@ -344,24 +350,29 @@ export const StepAboutBusiness = ({
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
+                    type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => handleBioFeedback('up')}
                     className={`h-8 w-8 p-0 ${bioFeedback === 'up' ? 'bg-green-500/10 text-green-600' : ''}`}
                     title="Like this bio"
+                    disabled={isGenerating}
                   >
                     <ThumbsUp className="h-4 w-4" />
                   </Button>
                   <Button
+                    type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => handleBioFeedback('down')}
                     className={`h-8 w-8 p-0 ${bioFeedback === 'down' ? 'bg-red-500/10 text-red-600' : ''}`}
                     title="Dislike - regenerate"
+                    disabled={isGenerating}
                   >
                     <ThumbsDown className="h-4 w-4" />
                   </Button>
                   <Button
+                    type="button"
                     variant="ghost"
                     size="sm"
                     onClick={handleRefreshBio}
