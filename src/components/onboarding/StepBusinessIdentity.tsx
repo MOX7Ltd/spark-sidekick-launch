@@ -868,11 +868,11 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                       >
                         <CardContent className="p-4">
                           <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <div className={`p-2 rounded-lg bg-gradient-to-br ${logo.gradient}`}>
+                            <div className="flex items-start gap-2">
+                              <div className={`p-2 rounded-lg bg-gradient-to-br ${logo.gradient} flex-shrink-0`}>
                                 <Icon className="h-4 w-4 text-white" />
                               </div>
-                              <h4 className="text-sm font-bold">{logo.name}</h4>
+                              <h4 className="text-sm font-bold break-words leading-tight flex-1 min-w-0">{logo.name}</h4>
                             </div>
                             <p className="text-xs text-muted-foreground leading-relaxed">
                               {logo.description}
