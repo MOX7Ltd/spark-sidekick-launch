@@ -88,6 +88,30 @@ serve(async (req) => {
     const toneHint = vibes.length
       ? `Tone hint: ${vibes.join(", ")} (influence color/emotion only; do not change the ${primaryStyle} style).`
       : "Tone hint: neutral, versatile.";
+    
+    // Conditional business name handling based on style
+    let nameInstruction = "";
+    const normalizedStyle = primaryStyle.toLowerCase();
+    
+    switch (normalizedStyle) {
+      case "typography-first":
+      case "typography":
+      case "bold":
+      case "retro":
+        nameInstruction = `The logo must prominently feature the brand name "${businessName}" as a wordmark.`;
+        break;
+      case "icon-based":
+      case "icon":
+      case "playful":
+      case "minimalist":
+      case "modern-gradient":
+      case "gradient":
+      case "handdrawn":
+        nameInstruction = `The logo should include at least one variant as a standalone icon (no text), and one variant where the icon is paired with the brand name "${businessName}" in a balanced lockup.`;
+        break;
+      default:
+        nameInstruction = `The logo may use the brand name "${businessName}" in some variants, but should also support a standalone mark.`;
+    }
 
     // Generate exactly 4 style-consistent variations with structured axes
     const variationPlans = [
@@ -97,10 +121,11 @@ serve(async (req) => {
       "Lockup: integrated wordmark (typography-first emphasis); Color: accent highlight; Motif: negative space trick"
     ];
 
-    const basePrompt = `Design a logo for "${businessName}".
+    const basePrompt = `Design a logo concept for the business "${businessName}".
 Style: ${styleDescriptor}.
 ${toneHint}
-Constraints: keep one consistent ${primaryStyle} style across all variants. No photo-realism. Scalable, vector-friendly.`;
+${nameInstruction}
+Constraints: Keep all 4 variants within the same ${primaryStyle} style. Logos must be vector-friendly, scalable, and professional.`;
 
     const prompts = variationPlans.map((plan, i) => `${basePrompt}
 Variation plan ${i + 1}: ${plan}`);
