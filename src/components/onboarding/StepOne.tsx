@@ -488,7 +488,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
             <CardContent className="p-4 sm:p-6 space-y-4 max-w-full">
               {/* Journey Preview */}
               <p className="text-sm text-muted-foreground text-center leading-relaxed">
-                Next, we'll learn a little about you so we can shape your business identity. That's how your idea starts becoming a real shopfront — and soon, we'll help you promote it with ready-to-go social media content.
+                Next, we'll learn a little about you so we can shape your business identity. That's how your idea starts becoming a real shopfront.
               </p>
               
               {/* CTA Button */}
