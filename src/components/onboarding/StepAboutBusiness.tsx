@@ -454,9 +454,14 @@ export const StepAboutBusiness = ({
               size="lg"
               disabled={isLoading}
               variant="hero"
-              className="w-full h-14 text-lg font-semibold"
+              className="w-full h-auto py-3 text-lg font-semibold"
             >
-              {isLoading ? 'Processing...' : 'Looks great — let\'s name your business →'}
+              {isLoading ? 'Processing...' : (
+                <div className="flex flex-col gap-0.5">
+                  <span>Looks great</span>
+                  <span>Let's name your business →</span>
+                </div>
+              )}
             </Button>
           )}
           
