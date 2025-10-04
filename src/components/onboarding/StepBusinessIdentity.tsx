@@ -359,8 +359,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     
     try {
       const logos = await generateLogos(selectedName, styleId, vibes);
-      // Limit to 4 options for mobile-friendliness
-      setGeneratedLogos(logos.slice(0, 4));
+      setGeneratedLogos(logos);
       setSelectedLogoIndex(null);
       setLikedLogos(new Set());
       setLogoSection('select');
@@ -923,9 +922,17 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
             {/* Logo: Selection */}
             {logoSection === 'select' && (
               <div className="space-y-4">
+                <div className="mb-3">
+                  <h4 className="text-base font-semibold text-foreground mb-1">
+                    Logo options in: {logoStyles.find(s => s.id === selectedLogoStyle)?.name || 'Custom Style'}
+                  </h4>
+                  <p className="text-xs text-muted-foreground">
+                    All variations match your selected style. Pick one you love — you can always tweak later.
+                  </p>
+                </div>
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-foreground">
-                    These logos are matched to your vibe & style. Pick one you love — you can always tweak later.
+                    Choose your favorite:
                   </p>
                   <Button
                     variant="ghost"

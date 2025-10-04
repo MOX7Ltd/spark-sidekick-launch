@@ -27,12 +27,10 @@ serve(async (req) => {
   try {
     const requestBody = await req.json();
     
-    // Handle backwards compat: vibes[] or style (single string)
-    const vibes = Array.isArray(requestBody.vibes) 
-      ? requestBody.vibes 
-      : (requestBody.style ? [requestBody.style] : ['modern']);
-    const primaryStyle = vibes[0];
-    const styleHints = vibes.slice(1);
+    // Use style from client as primary source of truth
+    const styleFromClient = requestBody.style; // e.g., "playful"
+    const vibes: string[] = Array.isArray(requestBody.vibes) ? requestBody.vibes : [];
+    const primaryStyle = styleFromClient || 'modern';
     
     const { businessName } = requestBody;
     
@@ -66,27 +64,49 @@ serve(async (req) => {
       });
     }
 
-    console.log('Generating logos for:', businessName, 'with vibes:', vibes);
+    console.log('Generating logos for:', businessName, 'with style:', primaryStyle, 'and vibes:', vibes);
 
-    // Generate 6-8 logo variations
-    const logoPromises = Array.from({ length: 6 }, async (_, i) => {
-      const styleDescriptions: Record<string, string> = {
-        'modern': 'modern minimalist, clean lines, simple geometric shapes',
-        'minimalist': 'modern minimalist, clean lines, simple geometric shapes',
-        'playful': 'playful and colorful, fun shapes, vibrant colors',
-        'bold': 'bold typography-focused, strong letterforms',
-        'professional': 'clean professional, corporate, trustworthy',
-        'icon': 'icon-based, symbolic, memorable mark',
-        'retro': 'retro vintage style, nostalgic aesthetic',
-        'gradient': 'dynamic gradient, modern colorful transitions',
-        'friendly': 'approachable and warm, soft shapes',
-        'educational': 'clear and instructive, smart design',
-      };
+    // Expanded style descriptions map (must match frontend IDs)
+    const styleDescriptions: Record<string, string> = {
+      minimalist: "minimalist, lots of negative space, clean geometric forms, simple iconography, limited color palette",
+      playful: "playful, rounded forms, bubbly shapes, friendly iconography, lively motion cues, vibrant color accents",
+      bold: "bold, heavy weight shapes, strong contrast, assertive composition, high legibility, punchy silhouettes",
+      "icon-based": "icon-led, memorable symbol first, scalable mark, simplified contours, balanced with subtle wordmark",
+      icon: "icon-led, memorable symbol first, scalable mark, simplified contours, balanced with subtle wordmark",
+      handdrawn: "hand-drawn, sketch texture, organic lines, human warmth, imperfect strokes, approachable feel",
+      retro: "retro, vintage motifs, classic typography, nostalgic colorways, subtle grain",
+      "modern-gradient": "modern with gradient accents, soft blends, contemporary color transitions, smooth shapes",
+      gradient: "modern with gradient accents, soft blends, contemporary color transitions, smooth shapes",
+      "typography-first": "wordmark-first, custom letterforms, kerning care, smart ligatures, subtle typographic flair",
+      typography: "wordmark-first, custom letterforms, kerning care, smart ligatures, subtle typographic flair",
+      modern: "modern, clean, versatile"
+    };
 
-      const styleDesc = styleDescriptions[primaryStyle.toLowerCase()] || 'modern professional';
-      const hints = styleHints.length > 0 ? ` with hints of ${styleHints.map((h: string) => styleDescriptions[h.toLowerCase()] || h).join(', ')}` : '';
-      
-      const prompt = `Create a simple, clean logo mark for "${businessName}". Style: ${styleDesc}${hints}. Design variation ${i + 1}. Minimalist, scalable, works well at small sizes. No text in the logo, just the icon/mark. Flat design, vector style, professional. Transparent background.`;
+    const styleDescriptor = styleDescriptions[primaryStyle.toLowerCase()] || styleDescriptions.modern;
+    
+    // Use vibes as tone hints only (do not override style)
+    const toneHint = vibes.length
+      ? `Tone hint: ${vibes.join(", ")} (influence color/emotion only; do not change the ${primaryStyle} style).`
+      : "Tone hint: neutral, versatile.";
+
+    // Generate exactly 4 style-consistent variations with structured axes
+    const variationPlans = [
+      "Lockup: icon above wordmark; Color: primary palette; Motif: literal/obvious",
+      "Lockup: icon left of wordmark; Color: secondary palette; Motif: abstract symbol",
+      "Lockup: standalone icon (no wordmark); Color: monochrome; Motif: monogram/initial",
+      "Lockup: integrated wordmark (typography-first emphasis); Color: accent highlight; Motif: negative space trick"
+    ];
+
+    const basePrompt = `Design a logo for "${businessName}".
+Style: ${styleDescriptor}.
+${toneHint}
+Constraints: keep one consistent ${primaryStyle} style across all variants. No photo-realism. Scalable, vector-friendly.`;
+
+    const prompts = variationPlans.map((plan, i) => `${basePrompt}
+Variation plan ${i + 1}: ${plan}`);
+
+    // Generate 4 logos only
+    const logoPromises = prompts.map(async (prompt) => {
 
       const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
@@ -129,12 +149,13 @@ serve(async (req) => {
     const durationMs = Math.round(performance.now() - startTime);
     const responseData = {
       logos,
+      styleUsed: primaryStyle,
       trace_id: traceId,
       session_id: sessionId,
       idempotency_key: idempotencyKey,
       duration_ms: durationMs,
       feature_flags: featureFlags,
-      payload_keys: ['businessName', 'vibes'],
+      payload_keys: ['businessName', 'style', 'vibes'],
       vibes_used: vibes,
       deduped: false,
       ok: true,
