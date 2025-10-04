@@ -203,10 +203,10 @@ export const StepAboutBusiness = ({
       <div className="text-center space-y-2">
         <div className="flex items-center justify-center space-x-2">
           <Sparkles className="h-6 w-6 md:h-7 md:w-7 text-primary" />
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground">About Your Business</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground">Your vibe and audience</h2>
         </div>
         <p className="text-base md:text-lg text-muted-foreground px-2">
-          Tell us about your business vibe and who you'll serve
+          Tell us about your vibe and who you'll be selling to
         </p>
       </div>
 
