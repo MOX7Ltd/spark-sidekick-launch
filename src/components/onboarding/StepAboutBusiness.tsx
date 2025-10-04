@@ -409,7 +409,7 @@ export const StepAboutBusiness = ({
                 </p>
                 <div className="rounded-lg bg-primary/10 border border-primary/20 px-3 py-2">
                   <p className="text-xs text-primary font-medium">
-                    Looks great — this is exactly what customers will read.
+                    People will really connect to this.
                   </p>
                 </div>
               </div>
