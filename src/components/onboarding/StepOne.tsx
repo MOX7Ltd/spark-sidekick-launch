@@ -231,7 +231,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                 <h2 className="text-2xl sm:text-3xl font-bold">What do you want to make money from?</h2>
               </div>
               <p className="text-base text-muted-foreground">
-                Keep it simple — even a rough idea works! We'll help shape it into something real.
+                Whether it's just a spark of an idea or something you've been developing for a while, this is the place to start. Share as much as you like to help us understand your idea — we'll help shape it into products and a business you can launch.
               </p>
             </div>
 
