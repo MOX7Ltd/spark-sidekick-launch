@@ -5,6 +5,7 @@ interface ShopfrontHeaderPreviewProps {
   tagline?: string;
   bio?: string;
   logoSvg?: string;
+  logoUrl?: string;
   colors: string[];
 }
 
@@ -13,9 +14,13 @@ export const ShopfrontHeaderPreview = ({
   tagline,
   bio,
   logoSvg,
+  logoUrl,
   colors
 }: ShopfrontHeaderPreviewProps) => {
   const primaryColor = colors[0] || '#0ea5e9';
+  
+  // Use CDN URL if available, fallback to base64 SVG
+  const displayLogo = logoUrl || logoSvg;
 
   return (
     <div className="space-y-4">
@@ -37,11 +42,20 @@ export const ShopfrontHeaderPreview = ({
           <div className="flex flex-col md:flex-row gap-6 -mt-12">
             {/* Logo */}
             <div className="shrink-0">
-              {logoSvg ? (
-                <div 
-                  className="w-24 h-24 rounded-lg bg-background border-4 border-background shadow-lg flex items-center justify-center overflow-hidden"
-                  dangerouslySetInnerHTML={{ __html: logoSvg }}
-                />
+              {displayLogo ? (
+                logoUrl ? (
+                  <img 
+                    src={displayLogo}
+                    alt={`${name} logo`}
+                    className="w-24 h-24 rounded-lg bg-background border-4 border-background shadow-lg object-contain"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div 
+                    className="w-24 h-24 rounded-lg bg-background border-4 border-background shadow-lg flex items-center justify-center overflow-hidden"
+                    dangerouslySetInnerHTML={{ __html: displayLogo }}
+                  />
+                )
               ) : (
                 <div 
                   className="w-24 h-24 rounded-lg bg-background border-4 border-background shadow-lg flex items-center justify-center text-2xl font-bold"

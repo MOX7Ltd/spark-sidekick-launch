@@ -185,7 +185,14 @@ export default function Profile() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-4">
-                {identity.logo_svg ? (
+                {(identity as any).logo_url ? (
+                  <img 
+                    src={(identity as any).logo_url}
+                    alt={`${identity.business_name} logo`}
+                    className="w-16 h-16 shrink-0 border rounded-lg object-contain"
+                    loading="lazy"
+                  />
+                ) : identity.logo_svg ? (
                   <div
                     className="w-16 h-16 shrink-0 border rounded-lg flex items-center justify-center overflow-hidden"
                     dangerouslySetInnerHTML={{ __html: identity.logo_svg }}
@@ -274,11 +281,20 @@ export default function Profile() {
               <div className="space-y-2">
                 <Label>Logo</Label>
                 <div className="flex items-center gap-3">
-                  {identity.logo_svg && (
-                    <div
-                      className="w-20 h-20 border rounded-lg flex items-center justify-center overflow-hidden"
-                      dangerouslySetInnerHTML={{ __html: identity.logo_svg }}
-                    />
+                  {((identity as any).logo_url || identity.logo_svg) && (
+                    (identity as any).logo_url ? (
+                      <img 
+                        src={(identity as any).logo_url}
+                        alt={`${identity.business_name} logo`}
+                        className="w-20 h-20 border rounded-lg object-contain"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div
+                        className="w-20 h-20 border rounded-lg flex items-center justify-center overflow-hidden"
+                        dangerouslySetInnerHTML={{ __html: identity.logo_svg! }}
+                      />
+                    )
                   )}
                   <div className="flex-1 space-y-2">
                     <LogoRegenerator
@@ -321,6 +337,7 @@ export default function Profile() {
             name={formData.business_name || identity.business_name}
             tagline={formData.tagline || identity.tagline}
             bio={formData.bio || identity.bio}
+            logoUrl={(identity as any).logo_url}
             logoSvg={identity.logo_svg}
             colors={identity.brand_colors || []}
           />

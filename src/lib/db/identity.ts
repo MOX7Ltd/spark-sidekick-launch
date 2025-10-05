@@ -7,6 +7,7 @@ export interface BusinessIdentity {
   tagline?: string;
   bio?: string;
   brand_colors?: string[];
+  logo_url?: string;
   logo_svg?: string;
   idea?: string;
   audience?: string;
@@ -36,6 +37,7 @@ export async function getBusinessIdentity(userId: string): Promise<BusinessIdent
     tagline: data.tagline || undefined,
     bio: data.bio || undefined,
     brand_colors: data.brand_colors as string[] || [],
+    logo_url: (data as any).logo_url || undefined,
     logo_svg: data.logo_svg || undefined,
     idea: data.idea || undefined,
     audience: data.audience || undefined,
@@ -71,6 +73,7 @@ export async function updateBusinessIdentity(
     tagline: data.tagline || undefined,
     bio: data.bio || undefined,
     brand_colors: data.brand_colors as string[] || [],
+    logo_url: (data as any).logo_url || undefined,
     logo_svg: data.logo_svg || undefined,
     idea: data.idea || undefined,
     audience: data.audience || undefined,

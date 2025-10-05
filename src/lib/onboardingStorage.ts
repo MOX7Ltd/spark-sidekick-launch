@@ -25,7 +25,8 @@ export async function saveBusinessIdentity(identity: BusinessIdentity): Promise<
           tagline: identity.tagline,
           bio: identity.bio,
           brand_colors: identity.colors,
-          logo_svg: identity.logoSVG || identity.logoUrl,
+          logo_url: identity.logoUrl || null, // Primary: CDN URL
+          logo_svg: identity.logoSVG || identity.logoUrl, // Fallback: base64
           updated_at: new Date().toISOString()
         })
         .eq('id', existing.id);
@@ -43,7 +44,8 @@ export async function saveBusinessIdentity(identity: BusinessIdentity): Promise<
           tagline: identity.tagline,
           bio: identity.bio,
           brand_colors: identity.colors,
-          logo_svg: identity.logoSVG || identity.logoUrl,
+          logo_url: identity.logoUrl || null, // Primary: CDN URL
+          logo_svg: identity.logoSVG || identity.logoUrl, // Fallback: base64
           status: 'draft'
         })
         .select('id')

@@ -46,6 +46,7 @@ export type Database = {
           id: string
           idea: string | null
           logo_svg: string | null
+          logo_url: string | null
           naming_preference: string | null
           owner_id: string | null
           session_id: string | null
@@ -63,6 +64,7 @@ export type Database = {
           id?: string
           idea?: string | null
           logo_svg?: string | null
+          logo_url?: string | null
           naming_preference?: string | null
           owner_id?: string | null
           session_id?: string | null
@@ -80,6 +82,7 @@ export type Database = {
           id?: string
           idea?: string | null
           logo_svg?: string | null
+          logo_url?: string | null
           naming_preference?: string | null
           owner_id?: string | null
           session_id?: string | null

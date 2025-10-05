@@ -336,9 +336,30 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
   };
 
   // Logo: Submit uploaded logo
-  const handleUploadedLogoSubmit = () => {
+  const handleUploadedLogoSubmit = async () => {
     if (!uploadedLogo) return;
     const selectedNameOption = nameOptions.find(opt => opt.name === selectedName);
+    
+    // Upload logo to storage
+    let logoUrl = uploadedLogo;
+    try {
+      const { uploadBase64Logo } = await import('@/lib/storage');
+      const { getSessionId } = await import('@/lib/telemetry');
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      const sessionId = getSessionId();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      logoUrl = await uploadBase64Logo({
+        base64: uploadedLogo,
+        sessionId: user ? undefined : sessionId,
+        userId: user?.id,
+        filenameBase: 'logo',
+        ext: 'png',
+      });
+    } catch (error) {
+      console.error('Logo upload failed, using base64 fallback:', error);
+    }
     
     onNext({
       name: selectedName,
@@ -346,8 +367,8 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
       tagline: selectedNameOption?.tagline || 'Helping you succeed',
       bio: generatedBio || aboutYou.expertise,
       colors: generatedColors.length > 0 ? generatedColors : [],
-      logoUrl: uploadedLogo,
-      logoSVG: uploadedLogo,
+      logoUrl: logoUrl,
+      logoSVG: uploadedLogo, // Keep base64 for backwards compatibility
       logoSource: 'uploaded'
     });
   };
@@ -458,7 +479,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
   };
 
   // Logo: Confirm selection and complete
-  const handleLogoConfirm = () => {
+  const handleLogoConfirm = async () => {
     if (selectedLogoIndex === null) return;
     
     toast({
@@ -469,14 +490,35 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     const finalLogo = generatedLogos[selectedLogoIndex];
     const selectedNameOption = nameOptions.find(opt => opt.name === selectedName);
     
+    // Upload logo to storage
+    let logoUrl = finalLogo;
+    try {
+      const { uploadBase64Logo } = await import('@/lib/storage');
+      const { getSessionId } = await import('@/lib/telemetry');
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      const sessionId = getSessionId();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      logoUrl = await uploadBase64Logo({
+        base64: finalLogo,
+        sessionId: user ? undefined : sessionId,
+        userId: user?.id,
+        filenameBase: 'logo',
+        ext: 'png',
+      });
+    } catch (error) {
+      console.error('Logo upload failed, using base64 fallback:', error);
+    }
+    
     onNext({
       name: selectedName,
       nameOptions,
       tagline: selectedNameOption?.tagline || 'Helping you succeed',
       bio: generatedBio || aboutYou.expertise,
       colors: generatedColors.length > 0 ? generatedColors : [],
-      logoUrl: finalLogo,
-      logoSVG: finalLogo,
+      logoUrl: logoUrl,
+      logoSVG: finalLogo, // Keep base64 for backwards compatibility
       logoSource: 'generated'
     });
   };

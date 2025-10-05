@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
       .update({ owner_id: user.id, session_id: null })
       .eq('session_id', session_id)
       .is('owner_id', null)
-      .select('id');
+      .select('id, logo_url');
 
     if (businessError) {
       console.error('Error claiming businesses:', businessError);
@@ -74,6 +74,68 @@ Deno.serve(async (req) => {
 
     const businessIds = claimedBusinesses?.map(b => b.id) || [];
     console.log(`Claimed ${businessIds.length} businesses:`, businessIds);
+
+    // Move logo files from session folder to user folder
+    for (const business of claimedBusinesses || []) {
+      if (business.logo_url && business.logo_url.includes('onboarding/')) {
+        try {
+          console.log(`Moving logo for business ${business.id}...`);
+          
+          // List files in the onboarding session folder
+          const { data: files, error: listError } = await supabase.storage
+            .from('brand-assets')
+            .list(`onboarding/${session_id}/logos`);
+
+          if (listError || !files || files.length === 0) {
+            console.warn('No logos to move for session:', session_id);
+            continue;
+          }
+
+          // Move the first logo file
+          const file = files[0];
+          const fromPath = `onboarding/${session_id}/logos/${file.name}`;
+          const toPath = `users/${user.id}/logos/${file.name}`;
+
+          // Copy file to new location
+          const { error: copyError } = await supabase.storage
+            .from('brand-assets')
+            .copy(fromPath, toPath);
+
+          if (copyError) {
+            console.error('Logo copy error:', copyError);
+            continue;
+          }
+
+          // Delete old file
+          const { error: deleteError } = await supabase.storage
+            .from('brand-assets')
+            .remove([fromPath]);
+
+          if (deleteError) {
+            console.warn('Logo delete error (non-critical):', deleteError);
+          }
+
+          // Get new public URL
+          const { data: urlData } = supabase.storage
+            .from('brand-assets')
+            .getPublicUrl(toPath);
+
+          // Update business with new URL
+          const { error: updateError } = await supabase
+            .from('businesses')
+            .update({ logo_url: urlData.publicUrl })
+            .eq('id', business.id);
+
+          if (updateError) {
+            console.error('Logo URL update error:', updateError);
+          } else {
+            console.log('✓ Moved logo for business:', business.id);
+          }
+        } catch (error) {
+          console.error('Error moving logo for business:', business.id, error);
+        }
+      }
+    }
 
     // Claim products
     const { data: claimedProducts, error: productsError } = await supabase
