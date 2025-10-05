@@ -4,10 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Store, Package, Megaphone, User, LogOut } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { claimOnboardingData } from '@/lib/onboardingStorage';
+import { getSessionId } from '@/lib/telemetry';
 
 export default function Hub() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [claiming, setClaiming] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [businesses, setBusinesses] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -31,30 +36,55 @@ export default function Hub() {
   };
 
   const loadUserData = async (userId: string) => {
-    // Load businesses
-    const { data: bizData } = await supabase
-      .from('businesses')
-      .select('*')
-      .eq('owner_id', userId);
-    
-    if (bizData) setBusinesses(bizData);
+    try {
+      // Check for unclaimed onboarding data
+      const sessionId = getSessionId();
+      const { data: unclaimedBusiness } = await supabase
+        .from('businesses')
+        .select('id')
+        .eq('session_id', sessionId)
+        .is('owner_id', null)
+        .single();
 
-    // Load products
-    const { data: prodData } = await supabase
-      .from('products')
-      .select('*')
-      .eq('user_id', userId);
-    
-    if (prodData) setProducts(prodData);
+      if (unclaimedBusiness) {
+        setClaiming(true);
+        const result = await claimOnboardingData(userId);
+        if (result.success) {
+          toast({
+            title: "Setup complete!",
+            description: `Loaded ${result.claimed?.businesses || 0} business, ${result.claimed?.products || 0} products, and ${result.claimed?.campaigns || 0} campaigns.`,
+          });
+        }
+        setClaiming(false);
+      }
 
-    // Load campaigns
-    if (bizData && bizData.length > 0) {
-      const { data: campData } = await supabase
-        .from('campaigns')
-        .select('*, campaign_items(*)')
-        .eq('business_id', bizData[0].id);
+      // Load businesses
+      const { data: bizData } = await supabase
+        .from('businesses')
+        .select('*')
+        .eq('owner_id', userId);
       
-      if (campData) setCampaigns(campData);
+      if (bizData) setBusinesses(bizData);
+
+      // Load products
+      const { data: prodData } = await supabase
+        .from('products')
+        .select('*')
+        .eq('user_id', userId);
+      
+      if (prodData) setProducts(prodData);
+
+      // Load campaigns
+      if (bizData && bizData.length > 0) {
+        const { data: campData } = await supabase
+          .from('campaigns')
+          .select('*, campaign_items(*)')
+          .eq('business_id', bizData[0].id);
+        
+        if (campData) setCampaigns(campData);
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
     }
   };
 
@@ -63,10 +93,15 @@ export default function Hub() {
     navigate('/');
   };
 
-  if (isLoading) {
+  if (isLoading || claiming) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+          <p className="text-muted-foreground">
+            {claiming ? 'Finishing setup...' : 'Loading your business...'}
+          </p>
+        </div>
       </div>
     );
   }
