@@ -21,6 +21,9 @@ interface Product {
   format?: string;
   price?: number;
   visible: boolean;
+  asset_url?: string;
+  asset_status?: string;
+  asset_version?: number;
   created_at: string;
   updated_at: string;
 }
@@ -148,9 +151,12 @@ export default function Products() {
 
       setProducts(prev => [data, ...prev]);
       
+      // Trigger asset generation in background
+      triggerAssetGeneration(data.id, product);
+      
       toast({
         title: "Product added",
-        description: `"${product.title}" has been added to your products.`,
+        description: `"${product.title}" has been added. Draft file is generating...`,
       });
     } catch (error) {
       console.error('Error adding product:', error);
@@ -159,6 +165,36 @@ export default function Products() {
         description: "Could not save the product. Please try again.",
         variant: "destructive"
       });
+    }
+  };
+
+  const triggerAssetGeneration = async (productId: string, product: ProductIdea) => {
+    try {
+      // Get business data for branding
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: businesses } = await supabase
+        .from('businesses')
+        .select('business_name, tagline')
+        .eq('owner_id', user?.id)
+        .single();
+
+      // Call generate-product-asset function
+      await supabase.functions.invoke('generate-product-asset', {
+        body: {
+          productId,
+          productName: product.title,
+          productFormat: product.format || 'Guide',
+          description: product.description,
+          brand: {
+            businessName: businesses?.business_name,
+            tagline: businesses?.tagline
+          },
+          length: 'medium'
+        }
+      });
+    } catch (error) {
+      console.error('Error triggering asset generation:', error);
+      // Don't show error to user as this is background operation
     }
   };
 
@@ -224,6 +260,7 @@ export default function Products() {
               <ProductCard
                 key={product.id}
                 {...product}
+                asset_status={product.asset_status}
                 onEdit={(id) => {
                   const product = products.find(p => p.id === id);
                   if (product) setEditingProduct(product);

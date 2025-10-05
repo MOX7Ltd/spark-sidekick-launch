@@ -88,11 +88,11 @@ export const ProductGenerator = ({ onProductsGenerated, onAddProduct }: ProductG
     }
   };
 
-  const handleAddProduct = (product: ProductIdea) => {
-    onAddProduct(product);
+  const handleAddProduct = async (product: ProductIdea) => {
+    await onAddProduct(product);
     toast({
       title: "Product added!",
-      description: `"${product.title}" has been added to your products.`,
+      description: `"${product.title}" has been added. Draft file is generating...`,
     });
   };
 

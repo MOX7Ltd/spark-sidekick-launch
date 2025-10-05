@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.claim-onboarding]
 verify_jwt = true
+
+[functions.generate-product-asset]
+verify_jwt = true

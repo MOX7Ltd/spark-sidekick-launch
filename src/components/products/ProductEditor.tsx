@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { AssetPanel } from './AssetPanel';
 
 interface Product {
   id: string;
@@ -14,6 +15,9 @@ interface Product {
   format?: string;
   price?: number;
   visible: boolean;
+  asset_url?: string;
+  asset_status?: string;
+  asset_version?: number;
 }
 
 interface ProductEditorProps {
@@ -109,11 +113,15 @@ export const ProductEditor = ({ product, onSave, onCancel }: ProductEditorProps)
                 id="visible"
                 checked={formData.visible}
                 onCheckedChange={(checked) => setFormData({ ...formData, visible: checked })}
+                disabled={formData.asset_status !== 'ready'}
               />
               <Label htmlFor="visible" className="cursor-pointer flex-1">
                 <div className="font-medium">Show on shopfront</div>
                 <div className="text-sm text-muted-foreground">
-                  Make this product visible to customers
+                  {formData.asset_status === 'ready' 
+                    ? 'Make this product visible to customers'
+                    : 'Attach a file first to publish'
+                  }
                 </div>
               </Label>
             </div>
@@ -149,6 +157,23 @@ export const ProductEditor = ({ product, onSave, onCancel }: ProductEditorProps)
           </form>
         </CardContent>
       </Card>
+
+      {/* Asset Panel */}
+      <div className="mt-6">
+        <AssetPanel
+          productId={product.id}
+          productName={formData.title}
+          productFormat={formData.format}
+          description={formData.description || ''}
+          assetUrl={formData.asset_url}
+          assetStatus={formData.asset_status}
+          assetVersion={formData.asset_version}
+          onAssetGenerated={() => {
+            // Reload product data to get latest asset info
+            window.location.reload();
+          }}
+        />
+      </div>
     </div>
   );
 };
