@@ -123,6 +123,10 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
       await saveProducts(formData.products, businessId);
     }
     
+    // Store session for later claim - ensures data persists even if user exits early
+    const { getSessionId } = await import('@/lib/telemetry');
+    localStorage.setItem('pending_claim_session', getSessionId());
+    
     setCurrentStep(5); // Go to shopfront preview
   };
 

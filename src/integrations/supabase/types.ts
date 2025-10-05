@@ -47,7 +47,7 @@ export type Database = {
           idea: string | null
           logo_svg: string | null
           naming_preference: string | null
-          owner_id: string
+          owner_id: string | null
           session_id: string | null
           status: string | null
           tagline: string | null
@@ -64,7 +64,7 @@ export type Database = {
           idea?: string | null
           logo_svg?: string | null
           naming_preference?: string | null
-          owner_id: string
+          owner_id?: string | null
           session_id?: string | null
           status?: string | null
           tagline?: string | null
@@ -81,7 +81,7 @@ export type Database = {
           idea?: string | null
           logo_svg?: string | null
           naming_preference?: string | null
-          owner_id?: string
+          owner_id?: string | null
           session_id?: string | null
           status?: string | null
           tagline?: string | null

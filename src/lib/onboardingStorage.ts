@@ -209,42 +209,28 @@ export async function claimOnboardingData(userId: string): Promise<{
 }> {
   const sessionId = getSessionId();
   
-  console.log('🔧 claimOnboardingData called', { userId, sessionId });
-  
   try {
     const { data: { session } } = await supabase.auth.getSession();
     
-    console.log('🔐 Auth session check:', { 
-      hasSession: !!session, 
-      sessionUserId: session?.user?.id 
-    });
-    
     if (!session) {
-      console.error('❌ No auth session found');
       return { success: false, error: 'Not authenticated' };
     }
 
-    console.log('📡 Invoking claim-onboarding edge function...', { session_id: sessionId });
-    
     const response = await supabase.functions.invoke('claim-onboarding', {
       body: { session_id: sessionId }
     });
 
-    console.log('📨 Edge function response:', response);
-
     if (response.error) {
-      console.error('❌ Edge function returned error:', response.error);
+      console.error('Error claiming onboarding data:', response.error);
       return { success: false, error: response.error.message };
     }
-
-    console.log('✅ Successfully claimed data:', response.data);
 
     return {
       success: true,
       claimed: response.data.claimed
     };
   } catch (error: any) {
-    console.error('❌ Exception in claimOnboardingData:', error);
+    console.error('Exception in claimOnboardingData:', error);
     return { success: false, error: error?.message || 'Unknown error' };
   }
 }

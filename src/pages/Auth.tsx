@@ -27,46 +27,22 @@ export default function Auth() {
   const claimSession = query.get('claimSession') || localStorage.getItem('pending_claim_session');
 
   const handlePostAuth = async (userId: string) => {
-    console.log('🔍 Starting post-auth claim process...', { 
-      userId, 
-      claimSession, 
-      next,
-      hasLocalStorage: !!localStorage.getItem('pending_claim_session') 
-    });
-    
     try {
       if (claimSession) {
-        console.log('📞 Calling claimOnboardingData with session:', claimSession);
         const result = await claimOnboardingData(userId);
-        console.log('✅ Claim result:', result);
-        
         localStorage.removeItem('pending_claim_session');
         
         if (result.success && result.claimed) {
           toast({
             title: "Welcome to SideHive! 🎉",
-            description: `Claimed ${result.claimed.businesses} business, ${result.claimed.products} products, and ${result.claimed.campaigns} campaigns`,
-          });
-        } else if (result.error) {
-          console.error('❌ Claim error from server:', result.error);
-          toast({
-            title: "Setup Notice",
-            description: "Your account is ready. You can set up your business in the hub.",
-            variant: "default"
+            description: `Successfully claimed your business with ${result.claimed.products} products and ${result.claimed.campaigns} campaigns`,
           });
         }
-      } else {
-        console.log('ℹ️ No session to claim, navigating to hub');
       }
     } catch (e) {
-      console.error('❌ Claim failed with exception:', e);
-      toast({
-        title: "Welcome!",
-        description: "Your account is ready. You can set up your business in the hub.",
-        variant: "default"
-      });
+      console.error('Claim failed:', e);
+      // Non-blocking - still allow user to proceed
     } finally {
-      console.log('🚀 Navigating to:', next);
       navigate(next);
     }
   };
