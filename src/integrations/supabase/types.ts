@@ -466,6 +466,7 @@ export type Database = {
           format: string | null
           id: string
           is_draft: boolean | null
+          pdf_url: string | null
           price: number | null
           session_id: string | null
           title: string
@@ -484,6 +485,7 @@ export type Database = {
           format?: string | null
           id?: string
           is_draft?: boolean | null
+          pdf_url?: string | null
           price?: number | null
           session_id?: string | null
           title: string
@@ -502,6 +504,7 @@ export type Database = {
           format?: string | null
           id?: string
           is_draft?: boolean | null
+          pdf_url?: string | null
           price?: number | null
           session_id?: string | null
           title?: string

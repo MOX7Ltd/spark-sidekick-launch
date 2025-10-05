@@ -1,7 +1,7 @@
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Edit, Eye, EyeOff, FileText, Loader2, AlertCircle } from 'lucide-react';
+import { Edit, Eye, EyeOff, FileText, Loader2, AlertCircle, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface ProductCardProps {
@@ -12,6 +12,7 @@ interface ProductCardProps {
   price?: number;
   visible: boolean;
   asset_status?: string;
+  pdf_url?: string;
   onEdit: (id: string) => void;
   onToggleVisible: (id: string, visible: boolean) => void;
 }
@@ -24,6 +25,7 @@ export const ProductCard = ({
   price,
   visible,
   asset_status,
+  pdf_url,
   onEdit,
   onToggleVisible,
 }: ProductCardProps) => {
@@ -105,15 +107,28 @@ export const ProductCard = ({
             )}
           </label>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onEdit(id)}
-          className="gap-1.5"
-        >
-          <Edit className="h-3.5 w-3.5" />
-          Edit
-        </Button>
+        <div className="flex gap-2">
+          {pdf_url && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(pdf_url, '_blank')}
+              className="gap-1.5"
+            >
+              <Download className="h-3.5 w-3.5" />
+              PDF
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onEdit(id)}
+            className="gap-1.5"
+          >
+            <Edit className="h-3.5 w-3.5" />
+            Edit
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   );

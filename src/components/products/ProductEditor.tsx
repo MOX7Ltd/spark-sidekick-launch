@@ -1,24 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, AlertCircle } from 'lucide-react';
 import { AssetPanel } from './AssetPanel';
-
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  format?: string;
-  price?: number;
-  visible: boolean;
-  asset_url?: string;
-  asset_status?: string;
-  asset_version?: number;
-}
+import { PDFGeneratorButton } from './PDFGeneratorButton';
+import { Product } from '@/pages/hub/Products';
+import { BusinessIdentity, getBusinessIdentity } from '@/lib/db/identity';
+import { supabase } from '@/integrations/supabase/client';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ProductEditorProps {
   product: Product;
@@ -29,15 +22,41 @@ interface ProductEditorProps {
 export const ProductEditor = ({ product, onSave, onCancel }: ProductEditorProps) => {
   const [formData, setFormData] = useState<Product>(product);
   const [isSaving, setIsSaving] = useState(false);
+  const [businessIdentity, setBusinessIdentity] = useState<BusinessIdentity | null>(null);
+  const [contentChanged, setContentChanged] = useState(false);
+
+  useEffect(() => {
+    const loadBusinessIdentity = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const identity = await getBusinessIdentity(user.id);
+        setBusinessIdentity(identity);
+      }
+    };
+    loadBusinessIdentity();
+  }, []);
+
+  useEffect(() => {
+    // Check if content changed after initial load
+    if (formData.title !== product.title || formData.description !== product.description) {
+      setContentChanged(true);
+    }
+  }, [formData.title, formData.description, product.title, product.description]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
       await onSave(formData);
+      setContentChanged(false);
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handlePDFGenerated = (pdfUrl: string) => {
+    setFormData({ ...formData, pdf_url: pdfUrl });
+    setContentChanged(false);
   };
 
   return (
@@ -126,6 +145,15 @@ export const ProductEditor = ({ product, onSave, onCancel }: ProductEditorProps)
               </Label>
             </div>
 
+            {contentChanged && formData.pdf_url && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Content changed — consider regenerating the PDF to keep it up to date.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="flex gap-3 pt-4">
               <Button
                 type="submit"
@@ -145,6 +173,13 @@ export const ProductEditor = ({ product, onSave, onCancel }: ProductEditorProps)
                   </>
                 )}
               </Button>
+              {businessIdentity && (
+                <PDFGeneratorButton
+                  product={formData}
+                  businessIdentity={businessIdentity}
+                  onPDFGenerated={handlePDFGenerated}
+                />
+              )}
               <Button
                 type="button"
                 variant="outline"

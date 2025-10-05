@@ -13,7 +13,7 @@ import { MicroGuidance } from '@/components/hub/MicroGuidance';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { ProductIdea } from '@/lib/api';
 
-interface Product {
+export interface Product {
   id: string;
   user_id: string;
   title: string;
@@ -24,6 +24,7 @@ interface Product {
   asset_url?: string;
   asset_status?: string;
   asset_version?: number;
+  pdf_url?: string;
   created_at: string;
   updated_at: string;
 }
