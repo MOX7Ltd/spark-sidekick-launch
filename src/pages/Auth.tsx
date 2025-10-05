@@ -34,8 +34,17 @@ export default function Auth() {
 
         if (error) throw error;
 
-        if (data.user) {
-          // Claim onboarding data
+        // Check if email confirmation is required
+        if (data.user && !data.session) {
+          toast({
+            title: "Check your email",
+            description: "We've sent you a confirmation link. Please check your email to complete registration.",
+          });
+          return;
+        }
+
+        if (data.user && data.session) {
+          // User is auto-confirmed, claim onboarding data
           const result = await claimOnboardingData(data.user.id);
           
           if (result.success) {
@@ -43,16 +52,14 @@ export default function Auth() {
               title: "Welcome to SideHive!",
               description: `Your account has been created and ${result.claimed?.businesses || 0} business(es) have been linked.`,
             });
-            
-            // Redirect to hub/dashboard
-            navigate('/hub/dashboard');
           } else {
             toast({
-              title: "Account created",
+              title: "Welcome to SideHive!",
               description: "Your account has been created successfully.",
             });
-            navigate('/');
           }
+          
+          navigate('/hub/dashboard');
         }
       } else {
         // Sign in
