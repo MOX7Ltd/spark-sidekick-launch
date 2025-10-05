@@ -258,92 +258,274 @@ Requirements:
 }
 
 function generateHTML(content: AssetBlueprint, brand?: any): string {
-  const brandName = brand?.businessName || 'SideHive';
+  const businessName = brand?.businessName || 'SideHive';
   const tagline = brand?.tagline || '';
+  const logoUrl = brand?.logoUrl || '';
+  const brandColors = brand?.brandColors || ['#6366f1', '#8b5cf6'];
+  const primaryColor = brandColors[0] || '#6366f1';
+  const accentColor = brandColors[1] || primaryColor;
 
-  let html = `
+  return `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${content.title}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    @page { size: A4; margin: 2cm; }
-    body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; }
-    .header { text-align: center; padding: 20px 0; border-bottom: 3px solid #18A0B0; margin-bottom: 30px; }
-    .header h1 { margin: 0; color: #18A0B0; font-size: 28px; }
-    .header p { margin: 5px 0 0 0; color: #666; font-size: 14px; }
-    .title { text-align: center; margin-bottom: 40px; }
-    .title h2 { font-size: 24px; color: #333; margin-bottom: 10px; }
-    .title p { color: #666; font-size: 16px; }
-    .section { margin-bottom: 30px; page-break-inside: avoid; }
-    .section h3 { color: #18A0B0; font-size: 20px; margin-bottom: 15px; border-bottom: 2px solid #f0f0f0; padding-bottom: 5px; }
-    .section p { margin-bottom: 15px; }
-    .section ul { margin: 10px 0; padding-left: 25px; }
-    .section li { margin-bottom: 8px; }
-    .callout { background: #f8f9fa; border-left: 4px solid #18A0B0; padding: 15px; margin: 20px 0; page-break-inside: avoid; }
-    .callout-title { font-weight: bold; color: #18A0B0; margin-bottom: 8px; }
-    .footer { margin-top: 50px; padding-top: 20px; border-top: 2px solid #f0f0f0; text-align: center; font-size: 12px; color: #999; }
-    .cta { background: #18A0B0; color: white; padding: 20px; text-align: center; margin: 30px 0; border-radius: 8px; font-size: 16px; font-weight: bold; }
+    @page { 
+      size: A4; 
+      margin: 0; 
+    }
+    
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box; 
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: 1.7;
+      color: #1a1a1a;
+      background: white;
+      padding: 40px 50px;
+    }
+    
+    header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      border-bottom: 3px solid ${primaryColor};
+      padding-bottom: 24px;
+      margin-bottom: 40px;
+    }
+    
+    .logo {
+      width: 60px;
+      height: 60px;
+      flex-shrink: 0;
+    }
+    
+    .logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    
+    .header-text {
+      flex: 1;
+    }
+    
+    .business-name {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+    
+    .tagline {
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .product-title {
+      font-size: 36px;
+      font-weight: 700;
+      color: ${primaryColor};
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+    
+    .product-subtitle {
+      font-size: 18px;
+      color: #555;
+      margin-bottom: 32px;
+      font-weight: 500;
+    }
+    
+    .section {
+      margin-bottom: 32px;
+      page-break-inside: avoid;
+    }
+    
+    .section h3 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid ${accentColor};
+    }
+    
+    .section p {
+      margin-bottom: 16px;
+      font-size: 15px;
+      color: #333;
+      line-height: 1.7;
+    }
+    
+    .section ul {
+      margin: 16px 0;
+      padding-left: 28px;
+    }
+    
+    .section li {
+      margin-bottom: 10px;
+      font-size: 15px;
+      color: #333;
+      line-height: 1.6;
+    }
+    
+    .section li::marker {
+      color: ${primaryColor};
+      font-weight: 600;
+    }
+    
+    .callout {
+      background: linear-gradient(135deg, ${primaryColor}10, ${accentColor}10);
+      border-left: 4px solid ${primaryColor};
+      padding: 20px;
+      margin: 24px 0;
+      border-radius: 4px;
+      page-break-inside: avoid;
+    }
+    
+    .callout-title {
+      font-weight: 600;
+      color: ${primaryColor};
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+    
+    .callout p {
+      color: #333;
+      font-size: 15px;
+      margin: 0;
+    }
+    
+    .cta {
+      background: linear-gradient(135deg, ${primaryColor}, ${accentColor});
+      color: white;
+      padding: 24px;
+      text-align: center;
+      margin: 40px 0;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 600;
+      page-break-inside: avoid;
+    }
+    
+    footer {
+      margin-top: 60px;
+      padding-top: 24px;
+      border-top: 2px solid #e5e7eb;
+      text-align: center;
+      font-size: 13px;
+      color: #666;
+    }
+    
+    footer p {
+      margin: 4px 0;
+    }
+    
+    @media print {
+      body { 
+        print-color-adjust: exact; 
+        -webkit-print-color-adjust: exact; 
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>${brandName}</h1>
-    ${tagline ? `<p>${tagline}</p>` : ''}
-  </div>
+  <header>
+    ${logoUrl ? `<div class="logo"><img src="${logoUrl}" alt="${businessName} Logo" /></div>` : ''}
+    <div class="header-text">
+      <div class="business-name">${businessName}</div>
+      ${tagline ? `<div class="tagline">${tagline}</div>` : ''}
+    </div>
+  </header>
   
-  <div class="title">
-    <h2>${content.title}</h2>
-    ${content.subtitle ? `<p>${content.subtitle}</p>` : ''}
-  </div>
-`;
-
-  // Add sections
-  for (const section of content.sections) {
-    html += `  <div class="section">\n    <h3>${section.heading}</h3>\n`;
-    if (section.body) {
-      html += `    <p>${section.body}</p>\n`;
-    }
-    if (section.bullets && section.bullets.length > 0) {
-      html += `    <ul>\n`;
-      for (const bullet of section.bullets) {
-        html += `      <li>${bullet}</li>\n`;
-      }
-      html += `    </ul>\n`;
-    }
-    html += `  </div>\n`;
-  }
-
-  // Add callouts
-  if (content.callouts && content.callouts.length > 0) {
-    for (const callout of content.callouts) {
-      html += `  <div class="callout">\n    <div class="callout-title">${callout.title}</div>\n    <p>${callout.text}</p>\n  </div>\n`;
-    }
-  }
-
-  // Add CTA
-  if (content.cta) {
-    html += `  <div class="cta">${content.cta}</div>\n`;
-  }
-
-  // Add footer
-  html += `
-  <div class="footer">
-    <p>Generated by AI. Review before publishing.</p>
-    <p>© ${new Date().getFullYear()} ${brandName}</p>
-  </div>
+  <main>
+    <h1 class="product-title">${content.title}</h1>
+    ${content.subtitle ? `<p class="product-subtitle">${content.subtitle}</p>` : ''}
+    
+    ${content.sections.map(section => `
+      <div class="section">
+        <h3>${section.heading}</h3>
+        ${section.body ? `<p>${section.body}</p>` : ''}
+        ${section.bullets && section.bullets.length > 0 ? `
+          <ul>
+            ${section.bullets.map(bullet => `<li>${bullet}</li>`).join('\n            ')}
+          </ul>
+        ` : ''}
+      </div>
+    `).join('\n    ')}
+    
+    ${content.callouts && content.callouts.length > 0 ? content.callouts.map(callout => `
+      <div class="callout">
+        <div class="callout-title">${callout.title}</div>
+        <p>${callout.text}</p>
+      </div>
+    `).join('\n    ') : ''}
+    
+    ${content.cta ? `<div class="cta">${content.cta}</div>` : ''}
+  </main>
+  
+  <footer>
+    <p>Made with ❤️ on SideHive</p>
+    <p>© ${new Date().getFullYear()} ${businessName}</p>
+  </footer>
 </body>
-</html>`;
-
-  return html;
+</html>
+  `.trim();
 }
 
+// PDF conversion using Playwright's Chromium
 async function convertHTMLToPDF(html: string): Promise<Uint8Array> {
-  // For MVP, we'll use a simple HTML to PDF conversion
-  // In production, you'd use Puppeteer or a dedicated PDF service
-  
-  // Using a basic approach: encode HTML as a simple PDF-like structure
-  // This is a placeholder - in production use proper PDF generation
-  const encoder = new TextEncoder();
-  return encoder.encode(html);
+  try {
+    console.log('[convertHTMLToPDF] Starting Playwright PDF generation');
+    
+    // Import Playwright's chromium
+    const { chromium } = await import("https://deno.land/x/playwright@1.40.0/index.ts");
+    
+    // Launch browser in headless mode
+    const browser = await chromium.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    
+    const page = await browser.newPage();
+    
+    // Set content and wait for network to be idle
+    await page.setContent(html, { 
+      waitUntil: 'networkidle',
+      timeout: 30000 
+    });
+    
+    // Generate PDF with proper settings
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { 
+        top: '24mm', 
+        right: '18mm', 
+        bottom: '18mm', 
+        left: '18mm' 
+      },
+      preferCSSPageSize: false
+    });
+    
+    await browser.close();
+    
+    console.log('[convertHTMLToPDF] PDF generated successfully, size:', pdfBuffer.length);
+    return pdfBuffer;
+  } catch (error) {
+    console.error('[convertHTMLToPDF] Error generating PDF:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`PDF generation failed: ${errorMessage}`);
+  }
 }

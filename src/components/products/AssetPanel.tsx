@@ -36,7 +36,7 @@ export const AssetPanel = ({
       const { data: { user } } = await supabase.auth.getUser();
       const { data: businesses } = await supabase
         .from('businesses')
-        .select('business_name, tagline, brand_colors')
+        .select('business_name, tagline, logo_svg, brand_colors')
         .eq('owner_id', user?.id)
         .single();
 
@@ -48,7 +48,9 @@ export const AssetPanel = ({
           description,
           brand: {
             businessName: businesses?.business_name,
-            tagline: businesses?.tagline
+            tagline: businesses?.tagline,
+            logoUrl: businesses?.logo_svg,
+            brandColors: businesses?.brand_colors || ['#6366f1', '#8b5cf6']
           },
           length: 'medium'
         }
