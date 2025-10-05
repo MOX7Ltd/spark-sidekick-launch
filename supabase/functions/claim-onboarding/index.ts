@@ -122,6 +122,16 @@ Deno.serve(async (req) => {
 
     console.log('[claim-onboarding] Claim complete:', result);
 
+    // Log telemetry event for onboarding completion
+    await supabase.from('events').insert({
+      session_id: session_id,
+      trace_id: `claim-${session_id}-${Date.now()}`,
+      action: 'onboarding_completed',
+      step: 'claim-data',
+      ok: true,
+      payload_keys: ['businesses', 'products', 'campaigns'],
+    });
+
     return new Response(
       JSON.stringify(result),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

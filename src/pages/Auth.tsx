@@ -45,7 +45,7 @@ export default function Auth() {
             });
             
             // Redirect to hub/dashboard
-            navigate('/hub');
+            navigate('/hub/dashboard');
           } else {
             toast({
               title: "Account created",
@@ -68,7 +68,7 @@ export default function Auth() {
           description: "You've been signed in successfully.",
         });
         
-        navigate('/hub');
+        navigate('/hub/dashboard');
       }
     } catch (error) {
       console.error('Auth error:', error);
@@ -128,11 +128,12 @@ export default function Auth() {
                 </p>
               )}
             </div>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
+      <Button
+        type="submit"
+        variant="hero"
+        className="w-full"
+        disabled={isLoading}
+      >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isSignUp ? 'Create account' : 'Sign in'}
             </Button>

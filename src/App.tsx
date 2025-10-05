@@ -8,6 +8,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { HubLayout } from "./components/hub/HubLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Dashboard from "./pages/hub/Dashboard";
 import Products from "./pages/hub/Products";
 import Profile from "./pages/hub/Profile";
 import Marketing from "./pages/hub/Marketing";
@@ -31,7 +32,8 @@ const App = () => (
           
           {/* Hub routes */}
           <Route path="/hub" element={<ProtectedRoute><HubLayout /></ProtectedRoute>}>
-            <Route index element={<Navigate to="/hub/products" replace />} />
+            <Route index element={<Navigate to="/hub/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
             <Route path="products" element={<Products />} />
             <Route path="profile" element={<Profile />} />
             <Route path="marketing" element={<Marketing />} />

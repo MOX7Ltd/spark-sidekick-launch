@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Package, User, Megaphone, MessageSquare, Calendar, Star, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Package, User, Megaphone, MessageSquare, Calendar, Star, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +11,7 @@ interface SidebarProps {
 }
 
 const navItems = [
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/hub/dashboard' },
   { icon: Package, label: 'Products', path: '/hub/products' },
   { icon: User, label: 'Profile', path: '/hub/profile' },
   { icon: Megaphone, label: 'Marketing', path: '/hub/marketing' },
