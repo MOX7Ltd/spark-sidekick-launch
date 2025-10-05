@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,13 +9,43 @@ import { supabase } from '@/integrations/supabase/client';
 import { claimOnboardingData } from '@/lib/onboardingStorage';
 import { Loader2 } from 'lucide-react';
 
+function useQuery() {
+  const { search } = useLocation();
+  return new URLSearchParams(search);
+}
+
 export default function Auth() {
   const navigate = useNavigate();
+  const query = useQuery();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const next = query.get('next') || '/hub/dashboard';
+  const claimSession = query.get('claimSession') || localStorage.getItem('pending_claim_session');
+
+  const handlePostAuth = async (userId: string) => {
+    try {
+      if (claimSession) {
+        const result = await claimOnboardingData(userId);
+        localStorage.removeItem('pending_claim_session');
+        
+        if (result.success) {
+          toast({
+            title: "🎉 Your business is ready!",
+            description: `Successfully claimed ${result.claimed?.businesses || 0} business(es) and ${result.claimed?.products || 0} product(s).`,
+          });
+        }
+      }
+    } catch (e) {
+      console.error('Claim failed', e);
+      // Non-blocking; still navigate
+    } finally {
+      navigate(next);
+    }
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,22 +74,8 @@ export default function Auth() {
         }
 
         if (data.user && data.session) {
-          // User is auto-confirmed, claim onboarding data
-          const result = await claimOnboardingData(data.user.id);
-          
-          if (result.success) {
-            toast({
-              title: "Welcome to SideHive!",
-              description: `Your account has been created and ${result.claimed?.businesses || 0} business(es) have been linked.`,
-            });
-          } else {
-            toast({
-              title: "Welcome to SideHive!",
-              description: "Your account has been created successfully.",
-            });
-          }
-          
-          navigate('/hub/dashboard');
+          // User is auto-confirmed, handle post-auth and claim
+          await handlePostAuth(data.user.id);
         }
       } else {
         // Sign in
@@ -70,12 +86,9 @@ export default function Auth() {
 
         if (error) throw error;
 
-        toast({
-          title: "Welcome back!",
-          description: "You've been signed in successfully.",
-        });
-        
-        navigate('/hub/dashboard');
+        if (data.user) {
+          await handlePostAuth(data.user.id);
+        }
       }
     } catch (error) {
       console.error('Auth error:', error);
@@ -98,8 +111,8 @@ export default function Auth() {
           </CardTitle>
           <CardDescription className="text-center">
             {isSignUp 
-              ? 'Sign up to claim your business and get started' 
-              : 'Sign in to access your business hub'
+              ? '🎉 Your business is ready! Create an account to claim it and enter your Hub.' 
+              : 'Welcome back — sign in to access your Hub.'
             }
           </CardDescription>
         </CardHeader>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 import { Button } from '@/components/ui/button';
@@ -19,8 +20,12 @@ import {
   Clock
 } from 'lucide-react';
 import type { OnboardingData } from '@/types/onboarding';
+import { getSessionId } from '@/lib/telemetry';
+import { supabase } from '@/integrations/supabase/client';
+import { claimOnboardingData } from '@/lib/onboardingStorage';
 
 const Index = () => {
+  const navigate = useNavigate();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [completedData, setCompletedData] = useState<OnboardingData | null>(null);
 
@@ -28,10 +33,23 @@ const Index = () => {
     setShowOnboarding(true);
   };
 
-  const handleOnboardingComplete = (data: OnboardingData) => {
-    setCompletedData(data);
-    // In a real app, this would redirect to dashboard or show success
-    console.log('Onboarding completed:', data);
+  const handleOnboardingComplete = async (data: OnboardingData) => {
+    const sessionId = getSessionId();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user?.id) {
+      // User is already authenticated - claim immediately
+      try {
+        await claimOnboardingData(user.id);
+      } catch (e) {
+        console.error('Immediate claim failed', e);
+      }
+      navigate('/hub/dashboard');
+    } else {
+      // User not authenticated - save session and redirect to auth
+      localStorage.setItem('pending_claim_session', sessionId);
+      navigate(`/auth?next=${encodeURIComponent('/hub/dashboard')}&claimSession=${encodeURIComponent(sessionId)}`);
+    }
   };
 
   const resetOnboarding = () => {
