@@ -97,6 +97,45 @@ export type Database = {
           },
         ]
       }
+      calendar_events: {
+        Row: {
+          created_at: string
+          end_at: string | null
+          id: string
+          location_url: string | null
+          price: number | null
+          product_id: string | null
+          start_at: string
+          title: string
+          type: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_at?: string | null
+          id?: string
+          location_url?: string | null
+          price?: number | null
+          product_id?: string | null
+          start_at: string
+          title: string
+          type?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_at?: string | null
+          id?: string
+          location_url?: string | null
+          price?: number | null
+          product_id?: string | null
+          start_at?: string
+          title?: string
+          type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       campaign_items: {
         Row: {
           campaign_id: string
@@ -314,6 +353,66 @@ export type Database = {
         }
         Relationships: []
       }
+      message_threads: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string
+          subject: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          subject?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          subject?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          body: string
+          created_at: string
+          from_email: string | null
+          from_name: string | null
+          id: string
+          is_from_customer: boolean
+          product_id: string | null
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          from_email?: string | null
+          from_name?: string | null
+          id?: string
+          is_from_customer?: boolean
+          product_id?: string | null
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          from_email?: string | null
+          from_name?: string | null
+          id?: string
+          is_from_customer?: boolean
+          product_id?: string | null
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           business_id: string | null
@@ -384,6 +483,42 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           timezone?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          is_hidden: boolean
+          product_id: string
+          rating: number | null
+          reply: string | null
+          reviewer_name: string | null
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          is_hidden?: boolean
+          product_id: string
+          rating?: number | null
+          reply?: string | null
+          reviewer_name?: string | null
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          is_hidden?: boolean
+          product_id?: string
+          rating?: number | null
+          reply?: string | null
+          reviewer_name?: string | null
           user_id?: string
         }
         Relationships: []
