@@ -40,7 +40,7 @@ const Index = () => {
     if (user?.id) {
       // User is already authenticated - claim immediately
       try {
-        await claimOnboardingData(user.id);
+        await claimOnboardingData(user.id, sessionId);
       } catch (e) {
         console.error('Immediate claim failed', e);
       }

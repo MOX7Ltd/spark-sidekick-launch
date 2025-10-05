@@ -25,7 +25,7 @@ export const HubLayout = () => {
         if (!identity) {
           // User has no identity but has pending session - attempt claim
           console.log('Safety net: Attempting to claim onboarding data');
-          await claimOnboardingData(user.id);
+          await claimOnboardingData(user.id, pendingSession);
         }
       } catch (e) {
         console.warn('Safety claim failed:', e);

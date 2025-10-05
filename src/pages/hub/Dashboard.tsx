@@ -7,6 +7,7 @@ import { WelcomeModal } from '@/components/hub/WelcomeModal';
 import { ProgressTracker } from '@/components/hub/ProgressTracker';
 import { CreateProfileBanner } from '@/components/hub/CreateProfileBanner';
 import { supabase } from '@/integrations/supabase/client';
+import { claimOnboardingData } from '@/lib/onboardingStorage';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Package, 
@@ -51,9 +52,22 @@ export default function Dashboard() {
         return;
       }
 
+      // Attempt fallback claim if pending session exists
+      const pendingSession = localStorage.getItem('pending_claim_session');
+      if (pendingSession) {
+        try {
+          const claim = await claimOnboardingData(user.id, pendingSession);
+          if (claim.success && claim.claimed && ((claim.claimed.businesses + claim.claimed.products + claim.claimed.campaigns) > 0)) {
+            toast({ title: 'Claimed your onboarding data', description: 'We linked your pre-signup data to your account.' });
+            localStorage.removeItem('pending_claim_session');
+          }
+        } catch (e) {
+          console.warn('[Dashboard] Fallback claim failed', e);
+        }
+      }
+
       // Check if user has seen welcome modal
       const welcomeShown = localStorage.getItem('sidehive_welcome_shown');
-      
       // Load business name and id
       const { data: business } = await supabase
         .from('businesses')

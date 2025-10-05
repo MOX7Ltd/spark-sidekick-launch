@@ -44,6 +44,39 @@ Deno.serve(async (req) => {
 
     console.log(`[claim-onboarding] Claiming data for session ${session_id} to user ${user.id}`);
 
+    // Idempotency pre-check: if nothing to claim, return early
+    const [bizCountRes, prodCountRes, campCountRes] = await Promise.all([
+      supabase
+        .from('businesses')
+        .select('id', { count: 'exact', head: true })
+        .eq('session_id', session_id)
+        .is('owner_id', null),
+      supabase
+        .from('products')
+        .select('id', { count: 'exact', head: true })
+        .eq('session_id', session_id)
+        .is('user_id', null),
+      supabase
+        .from('campaigns')
+        .select('id', { count: 'exact', head: true })
+        .eq('session_id', session_id),
+    ]);
+
+    const preBiz = bizCountRes.count || 0;
+    const preProd = prodCountRes.count || 0;
+    const preCamp = campCountRes.count || 0;
+
+    if (preBiz === 0 && preProd === 0 && preCamp === 0) {
+      console.log('[claim-onboarding] Nothing to claim for session', session_id);
+      return new Response(
+        JSON.stringify({
+          claimed: { businesses: 0, products: 0, campaigns: 0 },
+          ids: { businessIds: [], productIds: [], campaignIds: [] }
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Check if this session has already been claimed by a different user
     const { data: existingBusiness } = await supabase
       .from('businesses')

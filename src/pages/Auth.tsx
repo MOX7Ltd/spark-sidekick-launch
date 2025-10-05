@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,24 +24,30 @@ export default function Auth() {
   const [password, setPassword] = useState('');
 
   const next = query.get('next') || '/hub/dashboard';
-  const claimSession = query.get('claimSession') || localStorage.getItem('pending_claim_session');
-
+  const rawClaimParam = query.get('claimSession');
+  useEffect(() => {
+    if (rawClaimParam) {
+      localStorage.setItem('pending_claim_session', rawClaimParam);
+    }
+  }, [rawClaimParam]);
+  const claimSession = rawClaimParam || localStorage.getItem('pending_claim_session');
   const handlePostAuth = async (userId: string) => {
     try {
-      if (claimSession) {
-        const result = await claimOnboardingData(userId);
-        localStorage.removeItem('pending_claim_session');
-        
+      const sessionId = localStorage.getItem('pending_claim_session');
+      if (sessionId) {
+        const result = await claimOnboardingData(userId, sessionId);
         if (result.success && result.claimed) {
           toast({
-            title: "Welcome to SideHive! 🎉",
-            description: `Successfully claimed your business with ${result.claimed.products} products and ${result.claimed.campaigns} campaigns`,
+            title: 'Onboarding data linked',
+            description: `Claimed ${result.claimed.businesses} business, ${result.claimed.products} products, ${result.claimed.campaigns} campaigns`,
           });
+          localStorage.removeItem('pending_claim_session');
+        } else if (!result.success) {
+          toast({ title: 'Could not link onboarding data', description: result.error || 'Please try again later.', variant: 'destructive' });
         }
       }
     } catch (e) {
       console.error('Claim failed:', e);
-      // Non-blocking - still allow user to proceed
     } finally {
       navigate(next);
     }

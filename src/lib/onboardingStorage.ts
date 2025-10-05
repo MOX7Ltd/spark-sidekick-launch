@@ -228,7 +228,7 @@ export async function saveIntroCampaign(
 /**
  * Claim all onboarding data for the authenticated user
  */
-export async function claimOnboardingData(userId: string): Promise<{
+export async function claimOnboardingData(userId: string, sessionId: string): Promise<{
   success: boolean;
   claimed?: {
     businesses: number;
@@ -237,27 +237,31 @@ export async function claimOnboardingData(userId: string): Promise<{
   };
   error?: string;
 }> {
-  const sessionId = getSessionId();
-  
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    
     if (!session) {
       return { success: false, error: 'Not authenticated' };
     }
 
-    const response = await supabase.functions.invoke('claim-onboarding', {
-      body: { session_id: sessionId }
+    if (!sessionId) {
+      console.error('[claimOnboardingData] No pending session to claim');
+      return { success: false, error: 'No pending session to claim' };
+    }
+
+    console.log('[claimOnboardingData] Claiming session', { userId, sessionId });
+
+    const { data, error } = await supabase.functions.invoke('claim-onboarding', {
+      body: { session_id: sessionId },
     });
 
-    if (response.error) {
-      console.error('Error claiming onboarding data:', response.error);
-      return { success: false, error: response.error.message };
+    if (error) {
+      console.error('[claimOnboardingData] Edge function error', error);
+      return { success: false, error: error.message };
     }
 
     return {
       success: true,
-      claimed: response.data.claimed
+      claimed: data?.claimed,
     };
   } catch (error: any) {
     console.error('Exception in claimOnboardingData:', error);
