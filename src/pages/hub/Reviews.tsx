@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SectionHeader } from '@/components/hub/SectionHeader';
 import { EmptyState } from '@/components/hub/EmptyState';
+import { SkeletonCard } from '@/components/hub/SkeletonCard';
+import { MicroGuidance } from '@/components/hub/MicroGuidance';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { listReviews, replyToReview, toggleHidden, deleteReview, type Review } from '@/lib/db/reviews';
@@ -133,8 +135,12 @@ export default function Reviews() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-8">
+        <SectionHeader
+          title="Reviews"
+          subtitle="Manage customer feedback and build trust."
+        />
+        <SkeletonCard />
       </div>
     );
   }
@@ -143,14 +149,16 @@ export default function Reviews() {
     <div className="space-y-6">
       <SectionHeader
         title="Reviews"
-        subtitle="See what customers say and respond."
+        subtitle="Manage customer feedback and build trust."
       />
+
+      <MicroGuidance text="Customer feedback is gold — your first fans will be here soon! ⭐" />
 
       {reviews.length === 0 && productFilter === 'all' && ratingFilter === 'all' && !search ? (
         <EmptyState
           icon={Star}
-          title="No reviews yet"
-          description="Customer reviews will appear here as they come in."
+          title="No customer feedback yet"
+          description="Reviews will appear here once customers start sharing their experience with your products."
         />
       ) : (
         <>
@@ -192,7 +200,7 @@ export default function Reviews() {
           </div>
 
           {/* Reviews table */}
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-2xl overflow-hidden shadow-md">
             <Table>
               <TableHeader>
                 <TableRow>

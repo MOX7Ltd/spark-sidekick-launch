@@ -21,7 +21,7 @@ export const HubLayout = () => {
 
         {/* Page content */}
         <main className="flex-1 overflow-auto">
-          <div className="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
+          <div className="container mx-auto px-4 py-6 md:py-8 max-w-7xl animate-fade-in">
             <Outlet />
           </div>
         </main>

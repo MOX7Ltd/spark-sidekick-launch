@@ -8,7 +8,8 @@ import { ProductEditor } from '@/components/products/ProductEditor';
 import { ProductGenerator } from '@/components/products/ProductGenerator';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { SkeletonGrid } from '@/components/hub/SkeletonCard';
+import { MicroGuidance } from '@/components/hub/MicroGuidance';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { ProductIdea } from '@/lib/api';
 
@@ -163,8 +164,12 @@ export default function Products() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-8">
+        <SectionHeader
+          title="Products"
+          subtitle="Manage your creations and add them to your shopfront."
+        />
+        <SkeletonGrid count={3} />
       </div>
     );
   }
@@ -183,7 +188,7 @@ export default function Products() {
     <div>
       <SectionHeader
         title="Products"
-        subtitle="Everything you created in onboarding is ready to edit here."
+        subtitle="Manage your creations and add them to your shopfront."
         primaryAction={{
           label: 'Create Product',
           icon: Plus,
@@ -193,14 +198,16 @@ export default function Products() {
 
       {products.length === 0 ? (
         <div className="space-y-6">
+          <MicroGuidance text="Ready to grow your SideHive? Let's spark your next creation. 🐝" />
           <EmptyState
             icon={Package}
-            title="No products yet"
-            description="Start by creating your first product with AI."
+            title="You haven't created any products yet"
+            description="Let's change that! Use AI to generate your first digital product in seconds."
           />
           <div className="flex justify-center">
             <Button
               variant="hero"
+              size="lg"
               onClick={() => setShowGenerator(true)}
               className="gap-2"
             >
@@ -210,18 +217,21 @@ export default function Products() {
           </div>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              {...product}
-              onEdit={(id) => {
-                const product = products.find(p => p.id === id);
-                if (product) setEditingProduct(product);
-              }}
-              onToggleVisible={handleToggleVisible}
-            />
-          ))}
+        <div className="space-y-6">
+          <MicroGuidance text="These products will help you reach your first customers — keep creating! 🚀" />
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {products.map((product) => (
+              <ProductCard
+                key={product.id}
+                {...product}
+                onEdit={(id) => {
+                  const product = products.find(p => p.id === id);
+                  if (product) setEditingProduct(product);
+                }}
+                onToggleVisible={handleToggleVisible}
+              />
+            ))}
+          </div>
         </div>
       )}
 

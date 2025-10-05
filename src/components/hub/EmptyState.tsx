@@ -9,16 +9,16 @@ interface EmptyStateProps {
 
 export const EmptyState = ({ icon: Icon, title, description }: EmptyStateProps) => {
   return (
-    <Card className="border-2 border-dashed">
-      <CardContent className="flex flex-col items-center justify-center py-12 px-4 text-center">
+    <Card className="border-2 border-dashed border-primary/20 bg-gradient-to-b from-background to-muted/20 rounded-2xl shadow-md hover:shadow-lg transition-shadow">
+      <CardContent className="flex flex-col items-center justify-center py-16 px-4 text-center">
         {Icon && (
-          <div className="mb-4 p-3 rounded-full bg-muted">
-            <Icon className="h-8 w-8 text-muted-foreground" />
+          <div className="mb-6 p-4 rounded-full bg-gradient-hero animate-scale-in">
+            <Icon className="h-10 w-10 text-white" />
           </div>
         )}
-        <h3 className="text-lg font-semibold mb-1">{title}</h3>
+        <h3 className="text-xl font-semibold mb-2">{title}</h3>
         {description && (
-          <p className="text-sm text-muted-foreground max-w-md">{description}</p>
+          <p className="text-base text-muted-foreground max-w-md leading-relaxed">{description}</p>
         )}
       </CardContent>
     </Card>

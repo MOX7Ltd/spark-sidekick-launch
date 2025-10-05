@@ -6,6 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { SectionHeader } from '@/components/hub/SectionHeader';
 import { EmptyState } from '@/components/hub/EmptyState';
+import { SkeletonCard } from '@/components/hub/SkeletonCard';
+import { MicroGuidance } from '@/components/hub/MicroGuidance';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { getThreads, getMessagesByThread, sendReply, type MessageThread, type Message } from '@/lib/db/messages';
@@ -98,8 +100,15 @@ export default function Messages() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-8">
+        <SectionHeader
+          title="Messages"
+          subtitle="Respond to customer inquiries and build relationships."
+        />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       </div>
     );
   }
@@ -108,20 +117,22 @@ export default function Messages() {
     <div className="space-y-6">
       <SectionHeader
         title="Messages"
-        subtitle="Reply to customers in one place."
+        subtitle="Respond to customer inquiries and build relationships."
       />
+
+      <MicroGuidance text="Great customer service starts with quick replies — stay connected! 💬" />
 
       {threads.length === 0 ? (
         <EmptyState
           icon={MessageSquare}
           title="No messages yet"
-          description="Customer messages will appear here when they reach out."
+          description="Your first customer message will appear here. Check back soon! 📬"
         />
       ) : (
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Inbox - hide on mobile when thread selected */}
           <div className={`lg:col-span-1 ${selectedThread ? 'hidden lg:block' : ''}`}>
-            <Card>
+            <Card className="rounded-2xl">
               <CardContent className="p-4 space-y-3">
                 <Input
                   placeholder="Search name, email, subject..."
@@ -158,7 +169,7 @@ export default function Messages() {
           {/* Thread view */}
           <div className={`lg:col-span-2 ${!selectedThread ? 'hidden lg:block' : ''}`}>
             {selectedThread ? (
-              <Card className="h-[700px] flex flex-col">
+              <Card className="h-[700px] flex flex-col rounded-2xl shadow-md">
                 <div className="p-4 border-b flex items-center gap-3">
                   <Button
                     variant="ghost"

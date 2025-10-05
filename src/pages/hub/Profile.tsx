@@ -12,8 +12,9 @@ import { BioTaglineRegenerator } from '@/components/profile/BioTaglineRegenerato
 import { getBusinessIdentity, updateBusinessIdentity, type BusinessIdentity } from '@/lib/db/identity';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, Upload, ExternalLink, Edit } from 'lucide-react';
-import { generateTraceId } from '@/lib/telemetry';
+import { Loader2, Save, Edit } from 'lucide-react';
+import { SkeletonCard } from '@/components/hub/SkeletonCard';
+import { MicroGuidance } from '@/components/hub/MicroGuidance';
 
 export default function Profile() {
   const [identity, setIdentity] = useState<BusinessIdentity | null>(null);
@@ -139,8 +140,15 @@ export default function Profile() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-8">
+        <SectionHeader
+          title="Your Business Profile"
+          subtitle="Edit your brand identity and preview your live storefront."
+        />
+        <div className="grid gap-8 lg:grid-cols-2">
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       </div>
     );
   }
@@ -160,8 +168,9 @@ export default function Profile() {
     <div className="space-y-8">
       <SectionHeader
         title="Your Business Profile"
-        subtitle="Name, logo, bio, and brand colors that customers see."
+        subtitle="Edit your brand identity and preview your live storefront."
       />
+      <MicroGuidance text="Your profile is the face of your business — make it shine! ✨" />
 
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Left column: Edit form */}

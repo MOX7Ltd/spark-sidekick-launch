@@ -6,7 +6,10 @@ import { PostPreviewCard } from '@/components/marketing/PostPreviewCard';
 import { SavedPostsGallery } from '@/components/marketing/SavedPostsGallery';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { SkeletonGrid } from '@/components/hub/SkeletonCard';
+import { MicroGuidance } from '@/components/hub/MicroGuidance';
+import { EmptyState } from '@/components/hub/EmptyState';
+import { MessageSquare } from 'lucide-react';
 
 interface GeneratedPost {
   platform: string;
@@ -183,8 +186,10 @@ export default function Marketing() {
     <div className="space-y-8">
       <SectionHeader
         title="Marketing"
-        subtitle="Generate posts that help you sell."
+        subtitle="Generate posts and grow your audience across all platforms."
       />
+
+      <MicroGuidance text="These posts will help you reach your first customers — let's make some magic! 🎯" />
 
       {/* Chat and generation panel */}
       <div className="space-y-6">
@@ -222,9 +227,13 @@ export default function Marketing() {
       <div>
         <h3 className="text-lg font-semibold mb-4">Your Saved Posts</h3>
         {isLoadingSaved ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <SkeletonGrid count={4} />
+        ) : savedPosts.length === 0 ? (
+          <EmptyState
+            icon={MessageSquare}
+            title="No saved posts yet"
+            description="Generate your first marketing campaign above and save your favorite posts here."
+          />
         ) : (
           <SavedPostsGallery
             posts={savedPosts}

@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SectionHeader } from '@/components/hub/SectionHeader';
 import { EmptyState } from '@/components/hub/EmptyState';
+import { SkeletonCard } from '@/components/hub/SkeletonCard';
+import { MicroGuidance } from '@/components/hub/MicroGuidance';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { listEvents, createEvent, updateEvent, deleteEvent, type CalendarEvent, type CreateEventData } from '@/lib/db/calendar';
@@ -143,8 +145,12 @@ export default function Calendar() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-8">
+        <SectionHeader
+          title="Calendar"
+          subtitle="Schedule sessions, workshops, and events with your customers."
+        />
+        <SkeletonCard />
       </div>
     );
   }
@@ -153,7 +159,7 @@ export default function Calendar() {
     <div className="space-y-6">
       <SectionHeader
         title="Calendar"
-        subtitle="Plan sessions, workshops, and classes."
+        subtitle="Schedule sessions, workshops, and events with your customers."
         primaryAction={{
           label: 'Add Event',
           icon: Plus,
@@ -161,14 +167,16 @@ export default function Calendar() {
         }}
       />
 
+      <MicroGuidance text="Time to plan your next buzz — schedule your sessions and connect with customers! 📅" />
+
       {events.length === 0 ? (
         <EmptyState
           icon={CalendarIcon}
-          title="No events scheduled"
-          description="Create your first event to start scheduling with customers."
+          title="No upcoming sessions"
+          description="Your calendar is empty. Time to schedule your first event and start connecting with customers!"
         />
       ) : (
-        <Card>
+        <Card className="rounded-2xl shadow-md">
           <CardContent className="p-4">
             {/* Month navigation */}
             <div className="flex items-center justify-between mb-4">
