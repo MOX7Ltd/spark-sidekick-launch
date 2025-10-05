@@ -14,48 +14,76 @@ export async function saveBusinessIdentity(identity: BusinessIdentity): Promise<
       .from('businesses')
       .select('id')
       .eq('session_id', sessionId)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       // Update existing
+      const updatePayload = {
+        business_name: identity.name,
+        tagline: identity.tagline,
+        bio: identity.bio,
+        brand_colors: identity.colors,
+        logo_url: identity.logoUrl || null,
+        logo_svg: identity.logoSVG || null,
+        updated_at: new Date().toISOString()
+      };
+      
       const { error } = await supabase
         .from('businesses')
-        .update({
-          business_name: identity.name,
-          tagline: identity.tagline,
-          bio: identity.bio,
-          brand_colors: identity.colors,
-          logo_url: identity.logoUrl || null, // Primary: CDN URL
-          logo_svg: identity.logoSVG || identity.logoUrl, // Fallback: base64
-          updated_at: new Date().toISOString()
-        })
+        .update(updatePayload)
         .eq('id', existing.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('[saveBusinessIdentity] UPDATE failed', { 
+          businessId: existing.id,
+          session_id: sessionId, 
+          payload: updatePayload, 
+          error 
+        });
+        throw error;
+      }
       return existing.id;
     } else {
-      // Insert new
+      // Insert new business for anonymous onboarding
+      const insertPayload = {
+        session_id: sessionId,
+        owner_id: null, // Explicitly null for anonymous users
+        business_name: identity.name,
+        tagline: identity.tagline,
+        bio: identity.bio,
+        brand_colors: identity.colors,
+        logo_url: identity.logoUrl || null,
+        logo_svg: identity.logoSVG || null,
+        status: 'draft'
+      };
+
       const { data, error } = await supabase
         .from('businesses')
-        .insert({
-          session_id: sessionId,
-          owner_id: null,
-          business_name: identity.name,
-          tagline: identity.tagline,
-          bio: identity.bio,
-          brand_colors: identity.colors,
-          logo_url: identity.logoUrl || null, // Primary: CDN URL
-          logo_svg: identity.logoSVG || identity.logoUrl, // Fallback: base64
-          status: 'draft'
-        })
+        .insert(insertPayload)
         .select('id')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[saveBusinessIdentity] INSERT failed', { 
+          session_id: sessionId, 
+          payload: insertPayload, 
+          error,
+          errorCode: error.code,
+          errorMessage: error.message,
+          errorDetails: error.details
+        });
+        throw error;
+      }
+      
+      console.log('[saveBusinessIdentity] INSERT succeeded', { 
+        businessId: data.id, 
+        session_id: sessionId 
+      });
+      
       return data?.id || null;
     }
   } catch (error) {
-    console.error('Error saving business identity:', error);
+    console.error('[saveBusinessIdentity] Exception caught:', error);
     return null;
   }
 }
