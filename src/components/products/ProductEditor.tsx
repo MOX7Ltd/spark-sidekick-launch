@@ -6,7 +6,6 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Save, Loader2, AlertCircle } from 'lucide-react';
-import { AssetPanel } from './AssetPanel';
 import { PDFGeneratorButton } from './PDFGeneratorButton';
 import { Product } from '@/pages/hub/Products';
 import { BusinessIdentity, getBusinessIdentity } from '@/lib/db/identity';
@@ -132,14 +131,14 @@ export const ProductEditor = ({ product, onSave, onCancel }: ProductEditorProps)
                 id="visible"
                 checked={formData.visible}
                 onCheckedChange={(checked) => setFormData({ ...formData, visible: checked })}
-                disabled={formData.asset_status !== 'ready'}
+                disabled={!formData.pdf_url}
               />
               <Label htmlFor="visible" className="cursor-pointer flex-1">
                 <div className="font-medium">Show on shopfront</div>
                 <div className="text-sm text-muted-foreground">
-                  {formData.asset_status === 'ready' 
+                  {formData.pdf_url
                     ? 'Make this product visible to customers'
-                    : 'Attach a file first to publish'
+                    : 'Generate a PDF first to publish'
                   }
                 </div>
               </Label>
@@ -193,22 +192,6 @@ export const ProductEditor = ({ product, onSave, onCancel }: ProductEditorProps)
         </CardContent>
       </Card>
 
-      {/* Asset Panel */}
-      <div className="mt-6">
-        <AssetPanel
-          productId={product.id}
-          productName={formData.title}
-          productFormat={formData.format}
-          description={formData.description || ''}
-          assetUrl={formData.asset_url}
-          assetStatus={formData.asset_status}
-          assetVersion={formData.asset_version}
-          onAssetGenerated={() => {
-            // Reload product data to get latest asset info
-            window.location.reload();
-          }}
-        />
-      </div>
     </div>
   );
 };
