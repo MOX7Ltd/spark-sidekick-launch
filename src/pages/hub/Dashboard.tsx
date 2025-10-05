@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { SectionHeader } from '@/components/hub/SectionHeader';
 import { WelcomeModal } from '@/components/hub/WelcomeModal';
 import { ProgressTracker } from '@/components/hub/ProgressTracker';
+import { CreateProfileBanner } from '@/components/hub/CreateProfileBanner';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -36,6 +37,7 @@ export default function Dashboard() {
   const [progress, setProgress] = useState(0);
   const [completedMilestones, setCompletedMilestones] = useState<string[]>([]);
   const [nextActions, setNextActions] = useState<Array<{ title: string; path: string }>>([]);
+  const [showCreateProfileBanner, setShowCreateProfileBanner] = useState(false);
 
   useEffect(() => {
     loadDashboard();
@@ -64,6 +66,14 @@ export default function Dashboard() {
       if (business?.business_name) {
         setBusinessName(business.business_name);
       }
+
+      // Check if user needs to create profile (no business name and no products)
+      const { count: productCount } = await supabase
+        .from('products')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      setShowCreateProfileBanner(!business?.business_name && (productCount === 0));
 
       // Load stats in parallel
       const [productsRes, campaignsRes, reviewsRes, messagesRes, eventsRes] = await Promise.all([
@@ -253,6 +263,9 @@ export default function Dashboard() {
         title={`Welcome back! 👋`}
         subtitle="Your command center for building and growing your business."
       />
+
+      {/* Create Profile Banner */}
+      <CreateProfileBanner show={showCreateProfileBanner} />
 
       {/* Progress Tracker */}
       {completedMilestones.length > 0 && (
