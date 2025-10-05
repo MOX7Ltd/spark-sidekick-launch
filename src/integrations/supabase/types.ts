@@ -413,13 +413,59 @@ export type Database = {
         }
         Relationships: []
       }
+      product_assets: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          meta: Json | null
+          product_id: string
+          storage_path: string
+          type: string
+          version: number
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          meta?: Json | null
+          product_id: string
+          storage_path: string
+          type: string
+          version: number
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          meta?: Json | null
+          product_id?: string
+          storage_path?: string
+          type?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_assets_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
+          asset_status: string | null
+          asset_type: string | null
+          asset_url: string | null
+          asset_version: number | null
           business_id: string | null
           created_at: string | null
           description: string | null
           format: string | null
           id: string
+          is_draft: boolean | null
           price: number | null
           session_id: string | null
           title: string
@@ -428,11 +474,16 @@ export type Database = {
           visible: boolean | null
         }
         Insert: {
+          asset_status?: string | null
+          asset_type?: string | null
+          asset_url?: string | null
+          asset_version?: number | null
           business_id?: string | null
           created_at?: string | null
           description?: string | null
           format?: string | null
           id?: string
+          is_draft?: boolean | null
           price?: number | null
           session_id?: string | null
           title: string
@@ -441,11 +492,16 @@ export type Database = {
           visible?: boolean | null
         }
         Update: {
+          asset_status?: string | null
+          asset_type?: string | null
+          asset_url?: string | null
+          asset_version?: number | null
           business_id?: string | null
           created_at?: string | null
           description?: string | null
           format?: string | null
           id?: string
+          is_draft?: boolean | null
           price?: number | null
           session_id?: string | null
           title?: string
