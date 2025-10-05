@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { SkeletonGrid } from '@/components/hub/SkeletonCard';
 import { MicroGuidance } from '@/components/hub/MicroGuidance';
 import { EmptyState } from '@/components/hub/EmptyState';
+import { ReEngagementBanner } from '@/components/hub/ReEngagementBanner';
 import { MessageSquare } from 'lucide-react';
 
 interface GeneratedPost {
@@ -189,7 +190,10 @@ export default function Marketing() {
         subtitle="Generate posts and grow your audience across all platforms."
       />
 
-      <MicroGuidance text="These posts will help you reach your first customers — let's make some magic! 🎯" />
+      <MicroGuidance text="These posts will bring you your first customers — let's create some magic! 🎯✨" />
+
+      {/* Re-engagement banner */}
+      <ReEngagementBanner />
 
       {/* Chat and generation panel */}
       <div className="space-y-6">

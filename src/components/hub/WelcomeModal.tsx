@@ -9,7 +9,8 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Sparkles, Store, Megaphone, TrendingUp } from 'lucide-react';
+import { Sparkles, Store, Megaphone, TrendingUp, Share2 } from 'lucide-react';
+import { ShareModal } from './ShareModal';
 
 interface WelcomeModalProps {
   isOpen: boolean;
@@ -34,6 +35,8 @@ export const WelcomeModal = ({ isOpen, onClose, businessName = 'your business', 
     }
   }, [isOpen]);
 
+  const [showShareModal, setShowShareModal] = useState(false);
+
   const handleViewProfile = () => {
     onClose();
     navigate('/hub/profile');
@@ -42,6 +45,11 @@ export const WelcomeModal = ({ isOpen, onClose, businessName = 'your business', 
   const handleStartPromoting = () => {
     onClose();
     navigate('/hub/marketing');
+  };
+
+  const handleShare = () => {
+    onClose();
+    setShowShareModal(true);
   };
 
   return (
@@ -69,10 +77,11 @@ export const WelcomeModal = ({ isOpen, onClose, businessName = 'your business', 
             <Sparkles className="h-8 w-8 text-white" />
           </div>
           <DialogTitle className="text-3xl font-bold">
-            🎉 Welcome to Your SideHive Hub!
+            🎉 You Did It!
           </DialogTitle>
           <DialogDescription className="text-lg">
-            You've just launched {businessName}. Here's what's ready for you:
+            You've launched your first business on SideHive!<br />
+            Your shopfront, logo, bio, and products are live and ready.
           </DialogDescription>
         </DialogHeader>
 
@@ -132,31 +141,47 @@ export const WelcomeModal = ({ isOpen, onClose, businessName = 'your business', 
           </Card>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col gap-3">
           <Button
             variant="hero"
             size="lg"
-            onClick={handleViewProfile}
-            className="flex-1"
+            onClick={handleShare}
+            className="w-full"
           >
-            <Store className="mr-2 h-5 w-5" />
-            See My Shopfront
+            <Share2 className="mr-2 h-5 w-5" />
+            📢 Share My Launch
           </Button>
-          <Button
-            variant="accent"
-            size="lg"
-            onClick={handleStartPromoting}
-            className="flex-1"
-          >
-            <Megaphone className="mr-2 h-5 w-5" />
-            Start Promoting
-          </Button>
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={handleViewProfile}
+            >
+              <Store className="mr-2 h-5 w-5" />
+              View Shopfront
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={handleStartPromoting}
+            >
+              <Megaphone className="mr-2 h-5 w-5" />
+              Start Promoting
+            </Button>
+          </div>
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-4">
-          Your journey starts now — let's make it amazing! 🚀
+          Share your success — inspire others to start their own! 🚀
         </p>
       </DialogContent>
+
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        businessName={businessName}
+        tagline={stats?.products ? `${stats.products} products ready to sell` : undefined}
+      />
     </Dialog>
   );
 };

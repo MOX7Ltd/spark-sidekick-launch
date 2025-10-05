@@ -468,6 +468,8 @@ export type Database = {
           created_at: string | null
           display_name: string | null
           email: string | null
+          last_active_at: string | null
+          starter_pack_shared: boolean
           timezone: string | null
           user_id: string
         }
@@ -475,6 +477,8 @@ export type Database = {
           created_at?: string | null
           display_name?: string | null
           email?: string | null
+          last_active_at?: string | null
+          starter_pack_shared?: boolean
           timezone?: string | null
           user_id: string
         }
@@ -482,6 +486,8 @@ export type Database = {
           created_at?: string | null
           display_name?: string | null
           email?: string | null
+          last_active_at?: string | null
+          starter_pack_shared?: boolean
           timezone?: string | null
           user_id?: string
         }

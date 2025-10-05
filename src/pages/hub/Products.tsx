@@ -190,7 +190,7 @@ export default function Products() {
         title="Products"
         subtitle="Manage your creations and add them to your shopfront."
         primaryAction={{
-          label: 'Create Product',
+          label: '💡 Create Something New',
           icon: Plus,
           onClick: () => setShowGenerator(true),
         }}
@@ -198,7 +198,7 @@ export default function Products() {
 
       {products.length === 0 ? (
         <div className="space-y-6">
-          <MicroGuidance text="Ready to grow your SideHive? Let's spark your next creation. 🐝" />
+          <MicroGuidance text="Ready to bring your ideas to life? Let's create your first amazing product! 🎨" />
           <EmptyState
             icon={Package}
             title="You haven't created any products yet"
@@ -212,13 +212,13 @@ export default function Products() {
               className="gap-2"
             >
               <Sparkles className="h-4 w-4" />
-              Generate Products with AI
+              💡 Generate Your First Product
             </Button>
           </div>
         </div>
       ) : (
         <div className="space-y-6">
-          <MicroGuidance text="These products will help you reach your first customers — keep creating! 🚀" />
+          <MicroGuidance text="Your products are looking great — keep building your catalog! 🚀" />
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {products.map((product) => (
               <ProductCard

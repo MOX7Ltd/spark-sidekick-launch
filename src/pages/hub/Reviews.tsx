@@ -152,7 +152,7 @@ export default function Reviews() {
         subtitle="Manage customer feedback and build trust."
       />
 
-      <MicroGuidance text="Customer feedback is gold — your first fans will be here soon! ⭐" />
+      <MicroGuidance text="Your first fans are on their way — be ready to shine! ⭐🌟" />
 
       {reviews.length === 0 && productFilter === 'all' && ratingFilter === 'all' && !search ? (
         <EmptyState

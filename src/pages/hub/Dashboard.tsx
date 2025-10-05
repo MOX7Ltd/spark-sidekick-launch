@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SectionHeader } from '@/components/hub/SectionHeader';
 import { WelcomeModal } from '@/components/hub/WelcomeModal';
+import { ProgressTracker } from '@/components/hub/ProgressTracker';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -14,7 +15,9 @@ import {
   Star, 
   Megaphone,
   Loader2,
-  ArrowRight
+  ArrowRight,
+  Sparkles,
+  Zap
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -30,6 +33,9 @@ export default function Dashboard() {
     events: 0,
   });
   const [businessName, setBusinessName] = useState('your business');
+  const [progress, setProgress] = useState(0);
+  const [completedMilestones, setCompletedMilestones] = useState<string[]>([]);
+  const [nextActions, setNextActions] = useState<Array<{ title: string; path: string }>>([]);
 
   useEffect(() => {
     loadDashboard();
@@ -93,6 +99,9 @@ export default function Dashboard() {
         });
       }
 
+      // Calculate progress based on events
+      await calculateProgress(user.id);
+
     } catch (error) {
       console.error('Error loading dashboard:', error);
       toast({
@@ -102,6 +111,74 @@ export default function Dashboard() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const calculateProgress = async (userId: string) => {
+    try {
+      // Get recent events
+      const { data: events } = await supabase
+        .from('events')
+        .select('action')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      const actionSet = new Set(events?.map(e => e.action) || []);
+      
+      const milestones = [];
+      let progressScore = 0;
+
+      if (actionSet.has('onboarding_completed')) {
+        milestones.push('Launched shopfront');
+        progressScore += 20;
+      }
+      if (actionSet.has('launch_shared')) {
+        milestones.push('Shared launch post');
+        progressScore += 15;
+      }
+      if (stats.products > 0) {
+        milestones.push(`Created ${stats.products} product${stats.products > 1 ? 's' : ''}`);
+        progressScore += 20;
+      }
+      if (stats.campaigns > 0) {
+        milestones.push('Generated marketing campaign');
+        progressScore += 15;
+      }
+      if (actionSet.has('product_updated')) {
+        milestones.push('Updated product details');
+        progressScore += 10;
+      }
+      if (actionSet.has('profile_updated')) {
+        milestones.push('Polished brand identity');
+        progressScore += 10;
+      }
+      if (stats.messages > 0) {
+        milestones.push('Received customer message');
+        progressScore += 10;
+      }
+
+      setCompletedMilestones(milestones);
+      setProgress(Math.min(progressScore, 100));
+
+      // Calculate next actions
+      const actions = [];
+      if (!actionSet.has('launch_shared')) {
+        actions.push({ title: '📢 Share your launch on social media', path: '/hub/dashboard' });
+      }
+      if (stats.campaigns === 0) {
+        actions.push({ title: '🚀 Generate your first marketing campaign', path: '/hub/marketing' });
+      }
+      if (stats.products < 3) {
+        actions.push({ title: '💡 Add more products to your catalog', path: '/hub/products' });
+      }
+      if (!actionSet.has('profile_updated')) {
+        actions.push({ title: '✨ Polish your brand story', path: '/hub/profile' });
+      }
+
+      setNextActions(actions.slice(0, 3));
+
+    } catch (error) {
+      console.error('Error calculating progress:', error);
     }
   };
 
@@ -116,7 +193,7 @@ export default function Dashboard() {
   const quickActions = [
     {
       title: 'Products',
-      description: 'Manage your offerings',
+      description: '💡 Create something new',
       icon: Package,
       count: stats.products,
       path: '/hub/products',
@@ -125,7 +202,7 @@ export default function Dashboard() {
     },
     {
       title: 'Profile',
-      description: 'Edit your brand',
+      description: '✨ Polish your story',
       icon: User,
       count: null,
       path: '/hub/profile',
@@ -134,7 +211,7 @@ export default function Dashboard() {
     },
     {
       title: 'Marketing',
-      description: 'Create campaigns',
+      description: '🚀 Boost your reach',
       icon: Megaphone,
       count: stats.campaigns,
       path: '/hub/marketing',
@@ -143,7 +220,7 @@ export default function Dashboard() {
     },
     {
       title: 'Messages',
-      description: 'Customer inquiries',
+      description: '💬 Connect with customers',
       icon: MessageSquare,
       count: stats.messages,
       path: '/hub/messages',
@@ -152,7 +229,7 @@ export default function Dashboard() {
     },
     {
       title: 'Calendar',
-      description: 'Schedule sessions',
+      description: '📅 Schedule sessions',
       icon: CalendarIcon,
       count: stats.events,
       path: '/hub/calendar',
@@ -161,7 +238,7 @@ export default function Dashboard() {
     },
     {
       title: 'Reviews',
-      description: 'Customer feedback',
+      description: '⭐ Build trust',
       icon: Star,
       count: stats.reviews,
       path: '/hub/reviews',
@@ -173,9 +250,18 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       <SectionHeader
-        title={`Welcome to ${businessName}! 👋`}
+        title={`Welcome back! 👋`}
         subtitle="Your command center for building and growing your business."
       />
+
+      {/* Progress Tracker */}
+      {completedMilestones.length > 0 && (
+        <ProgressTracker
+          progress={progress}
+          completedMilestones={completedMilestones}
+          nextActions={nextActions}
+        />
+      )}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {quickActions.map((action) => (

@@ -167,7 +167,7 @@ export default function Calendar() {
         }}
       />
 
-      <MicroGuidance text="Time to plan your next buzz — schedule your sessions and connect with customers! 📅" />
+      <MicroGuidance text="Time to plan your next buzz — every session is a chance to connect and earn! 📅💰" />
 
       {events.length === 0 ? (
         <EmptyState
