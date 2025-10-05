@@ -236,16 +236,17 @@ export async function claimOnboardingData(userId: string, sessionId: string): Pr
     campaigns: number;
   };
   error?: string;
+  code?: string;
 }> {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      return { success: false, error: 'Not authenticated' };
+      return { success: false, error: 'Not authenticated', code: 'NO_SESSION' };
     }
 
     if (!sessionId) {
       console.error('[claimOnboardingData] No pending session to claim');
-      return { success: false, error: 'No pending session to claim' };
+      return { success: false, error: 'No pending session to claim', code: 'NO_SESSION_ID' };
     }
 
     console.log('[claimOnboardingData] Claiming session', { userId, sessionId });
@@ -256,7 +257,17 @@ export async function claimOnboardingData(userId: string, sessionId: string): Pr
 
     if (error) {
       console.error('[claimOnboardingData] Edge function error', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message, code: 'EDGE_FUNCTION_ERROR' };
+    }
+
+    // Check if the edge function returned an error response
+    if (data && !data.success) {
+      console.error('[claimOnboardingData] Edge function returned error', data);
+      return { 
+        success: false, 
+        error: data.error || 'Unknown error', 
+        code: data.code || 'UNKNOWN_ERROR' 
+      };
     }
 
     return {
@@ -264,7 +275,7 @@ export async function claimOnboardingData(userId: string, sessionId: string): Pr
       claimed: data?.claimed,
     };
   } catch (error: any) {
-    console.error('Exception in claimOnboardingData:', error);
-    return { success: false, error: error?.message || 'Unknown error' };
+    console.error('[claimOnboardingData] Exception:', error);
+    return { success: false, error: error?.message || 'Unknown error', code: 'EXCEPTION' };
   }
 }

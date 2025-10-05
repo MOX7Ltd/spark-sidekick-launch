@@ -33,6 +33,25 @@ export default function Auth() {
   const claimSession = rawClaimParam || localStorage.getItem('pending_claim_session');
   const handlePostAuth = async (userId: string) => {
     try {
+      // Quick validation: ensure profile exists before claiming
+      const { data: prof, error: pErr } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (pErr) {
+        console.warn('[postAuth] Profile check failed:', pErr);
+      }
+      
+      if (!prof) {
+        console.log('[postAuth] Creating profile for user:', userId);
+        const { error: insertErr } = await supabase.from('profiles').insert({ user_id: userId });
+        if (insertErr && insertErr.code !== '23505') {
+          console.warn('[postAuth] Profile creation failed (may exist already):', insertErr);
+        }
+      }
+
       const sessionId = localStorage.getItem('pending_claim_session');
       if (sessionId) {
         const result = await claimOnboardingData(userId, sessionId);
@@ -43,11 +62,23 @@ export default function Auth() {
           });
           localStorage.removeItem('pending_claim_session');
         } else if (!result.success) {
-          toast({ title: 'Could not link onboarding data', description: result.error || 'Please try again later.', variant: 'destructive' });
+          const errorMsg = result.error || 'Unknown error';
+          const code = (result as any).code || 'UNKNOWN';
+          toast({ 
+            title: 'Could not link onboarding data', 
+            description: `${code}: ${errorMsg}`, 
+            variant: 'destructive' 
+          });
+          console.error('[postAuth] Claim failed:', code, errorMsg);
         }
       }
     } catch (e) {
-      console.error('Claim failed:', e);
+      console.error('[postAuth] Claim failed:', e);
+      toast({
+        title: 'Error linking onboarding data',
+        description: e instanceof Error ? e.message : 'An unexpected error occurred',
+        variant: 'destructive'
+      });
     } finally {
       navigate(next);
     }

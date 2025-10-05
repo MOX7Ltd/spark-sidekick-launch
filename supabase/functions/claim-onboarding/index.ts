@@ -44,6 +44,35 @@ Deno.serve(async (req) => {
 
     console.log(`[claim-onboarding] Claiming data for session ${session_id} to user ${user.id}`);
 
+    // Ensure profile exists before claiming (defense-in-depth)
+    const ensureProfile = async (uid: string) => {
+      const { data: existing, error: selErr } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('user_id', uid)
+        .maybeSingle();
+
+      if (selErr) {
+        console.error('[claim-onboarding] Error checking profile:', selErr);
+        throw selErr;
+      }
+
+      if (!existing) {
+        console.log('[claim-onboarding] Creating missing profile for user:', uid);
+        const { error: insErr } = await supabase
+          .from('profiles')
+          .insert({ user_id: uid });
+        
+        // Ignore conflict errors (23505) in case of race condition
+        if (insErr && insErr.code !== '23505') {
+          console.error('[claim-onboarding] Error creating profile:', insErr);
+          throw insErr;
+        }
+      }
+    };
+
+    await ensureProfile(user.id);
+
     // Idempotency pre-check: if nothing to claim, return early
     const [bizCountRes, prodCountRes, campCountRes] = await Promise.all([
       supabase
@@ -70,6 +99,7 @@ Deno.serve(async (req) => {
       console.log('[claim-onboarding] Nothing to claim for session', session_id);
       return new Response(
         JSON.stringify({
+          success: true,
           claimed: { businesses: 0, products: 0, campaigns: 0 },
           ids: { businessIds: [], productIds: [], campaignIds: [] }
         }),
@@ -101,8 +131,16 @@ Deno.serve(async (req) => {
       .select('id, logo_url');
 
     if (businessError) {
-      console.error('Error claiming businesses:', businessError);
-      throw businessError;
+      console.error('[claim-onboarding] Error claiming businesses:', businessError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          code: 'CLAIM_BUSINESSES_FAILED', 
+          error: businessError.message,
+          details: businessError.details || businessError.hint 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const businessIds = claimedBusinesses?.map(b => b.id) || [];
@@ -179,8 +217,16 @@ Deno.serve(async (req) => {
       .select('id');
 
     if (productsError) {
-      console.error('Error claiming products:', productsError);
-      throw productsError;
+      console.error('[claim-onboarding] Error claiming products:', productsError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          code: 'CLAIM_PRODUCTS_FAILED', 
+          error: productsError.message,
+          details: productsError.details || productsError.hint 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const productIds = claimedProducts?.map(p => p.id) || [];
@@ -195,8 +241,16 @@ Deno.serve(async (req) => {
       .select('id');
 
     if (campaignsError) {
-      console.error('Error claiming campaigns:', campaignsError);
-      throw campaignsError;
+      console.error('[claim-onboarding] Error claiming campaigns:', campaignsError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          code: 'CLAIM_CAMPAIGNS_FAILED', 
+          error: campaignsError.message,
+          details: campaignsError.details || campaignsError.hint 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const campaignIds = claimedCampaigns?.map(c => c.id) || [];
@@ -228,15 +282,19 @@ Deno.serve(async (req) => {
     });
 
     return new Response(
-      JSON.stringify(result),
+      JSON.stringify({ success: true, ...result }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error in claim-onboarding:', error);
+    console.error('[claim-onboarding] Fatal error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ 
+        success: false, 
+        code: 'CLAIM_FATAL_ERROR', 
+        error: errorMessage 
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
