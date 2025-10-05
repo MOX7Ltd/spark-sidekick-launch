@@ -48,6 +48,7 @@ export type Database = {
           logo_svg: string | null
           naming_preference: string | null
           owner_id: string
+          session_id: string | null
           status: string | null
           tagline: string | null
           updated_at: string | null
@@ -64,6 +65,7 @@ export type Database = {
           logo_svg?: string | null
           naming_preference?: string | null
           owner_id: string
+          session_id?: string | null
           status?: string | null
           tagline?: string | null
           updated_at?: string | null
@@ -80,6 +82,7 @@ export type Database = {
           logo_svg?: string | null
           naming_preference?: string | null
           owner_id?: string
+          session_id?: string | null
           status?: string | null
           tagline?: string | null
           updated_at?: string | null
@@ -145,6 +148,7 @@ export type Database = {
           id: string
           name: string | null
           objective: string | null
+          session_id: string | null
           status: string | null
           type: string | null
         }
@@ -154,6 +158,7 @@ export type Database = {
           id?: string
           name?: string | null
           objective?: string | null
+          session_id?: string | null
           status?: string | null
           type?: string | null
         }
@@ -163,6 +168,7 @@ export type Database = {
           id?: string
           name?: string | null
           objective?: string | null
+          session_id?: string | null
           status?: string | null
           type?: string | null
         }
@@ -271,6 +277,56 @@ export type Database = {
           session_id?: string
         }
         Relationships: []
+      }
+      products: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          description: string | null
+          format: string | null
+          id: string
+          price: number | null
+          session_id: string | null
+          title: string
+          updated_at: string | null
+          user_id: string | null
+          visible: boolean | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          format?: string | null
+          id?: string
+          price?: number | null
+          session_id?: string | null
+          title: string
+          updated_at?: string | null
+          user_id?: string | null
+          visible?: boolean | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          format?: string | null
+          id?: string
+          price?: number | null
+          session_id?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+          visible?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

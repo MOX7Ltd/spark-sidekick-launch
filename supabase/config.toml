@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.generate-logos]
 verify_jwt = false
+
+[functions.claim-onboarding]
+verify_jwt = true

@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
 import { DebugPanel } from '@/components/debug/DebugPanel';
 import type { OnboardingData } from '@/types/onboarding';
+import { saveBusinessIdentity, saveProducts, saveIntroCampaign } from '@/lib/onboardingStorage';
 
 interface OnboardingFlowProps {
   onComplete?: (data: OnboardingData) => void;
@@ -38,13 +39,17 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   }, [currentStep]);
 
   // Stage 1: Idea + Products
-  const handleStepOne = (idea: string, products: any[]) => {
+  const handleStepOne = async (idea: string, products: any[]) => {
     logFrontendEvent({
       eventType: 'user_action',
       step: 'StepOne',
       payload: { action: 'submit_idea', productCount: products.length }
     });
     setFormData(prev => ({ ...prev, idea, products }));
+    
+    // Save products to database with session_id
+    await saveProducts(products);
+    
     setCurrentStep(2);
   };
 
@@ -99,7 +104,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   };
 
   // Stage 4: Business Identity (Name + Logo)
-  const handleBusinessIdentity = (businessIdentity: OnboardingData['businessIdentity']) => {
+  const handleBusinessIdentity = async (businessIdentity: OnboardingData['businessIdentity']) => {
     logFrontendEvent({
       eventType: 'user_action',
       step: 'StepBusinessIdentity',
@@ -110,6 +115,14 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
       }
     });
     setFormData(prev => ({ ...prev, businessIdentity }));
+    
+    // Save business identity to database with session_id
+    const businessId = await saveBusinessIdentity(businessIdentity);
+    if (businessId && formData.products) {
+      // Update products with business_id
+      await saveProducts(formData.products, businessId);
+    }
+    
     setCurrentStep(5); // Go to shopfront preview
   };
 
