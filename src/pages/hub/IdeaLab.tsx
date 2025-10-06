@@ -37,16 +37,35 @@ export default function IdeaLab() {
       // Get brand context
       const { data: business } = await supabase
         .from('businesses')
-        .select('business_name, tagline, bio, brand_colors, audience, tone_tags')
+        .select('*')
         .eq('owner_id', user.id)
         .maybeSingle();
 
-      // Call generate-ideas edge function (we'll update this next)
+      // Sanitize brand_context before sending
+      const toHexArray = (v: any) =>
+        Array.isArray(v) 
+          ? v.filter((x: any) => typeof x === 'string')
+          : v && typeof v === 'object' 
+            ? Object.values(v).filter((x: any) => typeof x === 'string')
+            : undefined;
+
+      const brand_context = business ? {
+        business_name: business.business_name || undefined,
+        tagline: business.tagline || undefined,
+        bio: business.bio || undefined,
+        brand_colors: toHexArray(business.brand_colors),
+        audience: (typeof business.audience === 'string' && business.audience.trim()) || undefined,
+        tone_tags: Array.isArray(business.tone_tags) ? business.tone_tags : undefined
+      } : undefined;
+
+      console.log('[IdeaLab] business.id:', business?.id, 'brand_context:', brand_context);
+
+      // Call generate-ideas edge function
       const { data, error } = await supabase.functions.invoke('generate-ideas', {
         body: {
-          input_text: input,
-          brand_context: business || {},
-          max_ideas: 12
+          input_text: input.trim(),
+          max_ideas: 4,
+          brand_context
         },
         headers: {
           'X-Session-Id': sessionId,

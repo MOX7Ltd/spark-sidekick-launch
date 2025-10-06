@@ -15,8 +15,15 @@ const requestSchema = z.object({
     business_name: z.string().optional(),
     tagline: z.string().optional(),
     bio: z.string().optional(),
-    brand_colors: z.array(z.string()).optional(),
-    audience: z.string().optional(),
+    brand_colors: z.preprocess(
+      (v) => Array.isArray(v)
+        ? v
+        : (v && typeof v === 'object')
+          ? Object.values(v as Record<string, unknown>).filter((x): x is string => typeof x === 'string')
+          : undefined,
+      z.array(z.string()).optional()
+    ),
+    audience: z.string().nullish().transform(v => (v && v.trim()) || undefined),
     tone_tags: z.array(z.string()).optional(),
   }).optional(),
   max_ideas: z.number().min(8).max(12).default(12),

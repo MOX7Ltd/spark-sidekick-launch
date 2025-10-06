@@ -116,8 +116,12 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     });
     setFormData(prev => ({ ...prev, businessIdentity }));
     
-    // Save business identity to database with session_id
-    const businessId = await saveBusinessIdentity(businessIdentity);
+    // Save business identity to database with session_id, including audiences and vibes
+    const businessId = await saveBusinessIdentity(
+      businessIdentity,
+      formData.audiences,
+      formData.vibes
+    );
     if (businessId && formData.products) {
       // Update products with business_id
       await saveProducts(formData.products, businessId);

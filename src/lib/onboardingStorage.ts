@@ -5,8 +5,22 @@ import type { BusinessIdentity, ProductIdea, IntroCampaign } from '@/types/onboa
 /**
  * Save business identity data during onboarding (before signup)
  */
-export async function saveBusinessIdentity(identity: BusinessIdentity): Promise<string | null> {
+export async function saveBusinessIdentity(
+  identity: BusinessIdentity,
+  audiences?: string[],
+  vibes?: string[]
+): Promise<string | null> {
   const sessionId = getSessionId();
+  
+  // Normalize audiences: pick first one for the audience column
+  const audienceStr = Array.isArray(audiences) && audiences.length > 0
+    ? audiences[0]
+    : undefined;
+  
+  // Normalize vibes: filter valid strings for tone_tags
+  const toneTags = Array.isArray(vibes) 
+    ? vibes.filter(v => typeof v === 'string' && v.trim())
+    : undefined;
   
   try {
     // Check if business already exists for this session
@@ -25,6 +39,8 @@ export async function saveBusinessIdentity(identity: BusinessIdentity): Promise<
         brand_colors: identity.colors,
         logo_url: identity.logoUrl || null,
         logo_svg: identity.logoSVG || null,
+        audience: audienceStr ?? null,
+        tone_tags: toneTags ?? [],
         updated_at: new Date().toISOString()
       };
       
@@ -54,6 +70,8 @@ export async function saveBusinessIdentity(identity: BusinessIdentity): Promise<
         brand_colors: identity.colors,
         logo_url: identity.logoUrl || null,
         logo_svg: identity.logoSVG || null,
+        audience: audienceStr ?? null,
+        tone_tags: toneTags ?? [],
         status: 'draft'
       };
 
