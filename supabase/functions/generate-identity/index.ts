@@ -147,6 +147,9 @@ serve(async (req) => {
       regenerateNamesOnly,
       appliedDefaults,
     } = normalized;
+    
+    // Extract regenerateSingleName flag
+    const regenerateSingleName = validationResult.data.regenerateSingleName ?? false;
 
     // Extract tone for prompts
     const primaryTone = vibes[0] ?? 'friendly';
@@ -164,7 +167,8 @@ serve(async (req) => {
 
     // Build name prompt with constraints
     const nameInfo = shouldIncludeName(aboutYou);
-    let namePrompt = `Generate 6 business names for: ${idea}.\nTarget audience: ${audienceStr}.\nTone: ${primaryTone}`;
+    const nameCount = regenerateSingleName ? 2 : 6; // Generate fewer for single regeneration
+    let namePrompt = `Generate ${nameCount} business names for: ${idea}.\nTarget audience: ${audienceStr}.\nTone: ${primaryTone}`;
     
     if (toneHints.length > 0) {
       namePrompt += ` with hints of ${toneHints.join(', ')}`;
@@ -190,7 +194,7 @@ serve(async (req) => {
       ? 'Generate memorable, unique names that are easy to spell and pronounce. Avoid generic terms. Focus on emotional resonance and brand differentiation.'
       : 'Generate business names based on user inputs.';
     
-    namePrompt += `\n${nameGuidance}\nReturn ONLY a JSON array with exactly 6 objects, each with "name", "tagline", and "style" properties. Example: [{"name":"CompanyName","tagline":"A tagline","style":"modern"}]`;
+    namePrompt += `\n${nameGuidance}\nReturn ONLY a JSON array with exactly ${nameCount} objects, each with "name", "tagline", and "style" properties. Example: [{"name":"CompanyName","tagline":"A tagline","style":"modern"}]`;
 
     // Tagline prompt
     const taglinePrompt = `Generate a short, memorable tagline for a business about: ${idea}.\nTarget audience: ${audienceStr}.\nTone: ${primaryTone}.\nMax 8 words.`;
@@ -262,13 +266,27 @@ serve(async (req) => {
 
     const parsedColors = safeParseJSON(colors, ['#2563eb', '#1d4ed8', '#1e40af']);
 
-    const result = {
-      nameOptions: parsedNames.slice(0, 6), // Ensure max 6
-      tagline,
-      bio,
-      colors: parsedColors.slice(0, 5), // Max 5 colors
-      products: products ?? [],
-    };
+    // Build response based on regenerateSingleName flag
+    let result;
+    if (regenerateSingleName) {
+      // For single name regeneration, return just one name option
+      result = {
+        nameOption: parsedNames[0], // Return first name as single object
+        tagline,
+        bio,
+        colors: parsedColors.slice(0, 5),
+        products: products ?? [],
+      };
+    } else {
+      // For batch generation, return array of names
+      result = {
+        nameOptions: parsedNames.slice(0, 6), // Ensure max 6
+        tagline,
+        bio,
+        colors: parsedColors.slice(0, 5), // Max 5 colors
+        products: products ?? [],
+      };
+    }
     
     const durationMs = Math.round(performance.now() - startTime);
     const response = {

@@ -257,13 +257,14 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
       const newName = await regenerateSingleName({
         idea,
         audiences,
-        vibes, // Use vibes from Step 3
+        vibes,
         aboutYou,
         bannedWords: [...bannedWords, ...wordsInName],
         rejectedNames: [...rejectedNames, rejectedOption.name, ...existingNames]
       });
       
-      if (!existingNames.includes(newName.name)) {
+      // Add defensive checks for the response
+      if (newName && newName.name && !existingNames.includes(newName.name)) {
         setNameOptions(prev => {
           const updated = [...prev];
           updated[index] = newName;
@@ -274,11 +275,14 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
           title: "✨ Fresh name generated!",
           description: "Let us know if you like this one better"
         });
+      } else {
+        throw new Error('No valid name returned or duplicate generated');
       }
     } catch (error) {
+      console.error('Failed to regenerate single name:', error);
       toast({
-        title: "Failed to generate replacement",
-        description: error.message,
+        title: "Couldn't replace name",
+        description: "Please try again in a moment.",
         variant: "destructive"
       });
     } finally {
