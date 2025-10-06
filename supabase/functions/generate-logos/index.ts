@@ -66,69 +66,87 @@ serve(async (req) => {
 
     console.log('Generating logos for:', businessName, 'with style:', primaryStyle, 'and vibes:', vibes);
 
-    // Expanded style descriptions map (must match frontend IDs)
+    // Strengthened style descriptions
     const styleDescriptions: Record<string, string> = {
-      minimalist: "minimalist, lots of negative space, clean geometric forms, simple iconography, limited color palette",
-      playful: "playful, rounded forms, bubbly shapes, friendly iconography, lively motion cues, vibrant color accents",
-      bold: "bold, heavy weight shapes, strong contrast, assertive composition, high legibility, punchy silhouettes",
-      "icon-based": "icon-led, memorable symbol first, scalable mark, simplified contours, balanced with subtle wordmark",
-      icon: "icon-led, memorable symbol first, scalable mark, simplified contours, balanced with subtle wordmark",
-      handdrawn: "hand-drawn, sketch texture, organic lines, human warmth, imperfect strokes, approachable feel",
-      retro: "retro, vintage motifs, classic typography, nostalgic colorways, subtle grain",
-      "modern-gradient": "modern with gradient accents, soft blends, contemporary color transitions, smooth shapes",
-      gradient: "modern with gradient accents, soft blends, contemporary color transitions, smooth shapes",
-      "typography-first": "wordmark-first, custom letterforms, kerning care, smart ligatures, subtle typographic flair",
-      typography: "wordmark-first, custom letterforms, kerning care, smart ligatures, subtle typographic flair",
+      minimalist: "ultra-minimal, generous negative space, flat vector, crisp geometric shapes, 1–2 colors max, no gradients, no shadows, no 3D, no bevels, no mockups, high contrast, balanced symmetry, grid-aligned, scalable at 16px",
+      playful: "friendly rounded shapes, simple mascot/icon hints, limited bright accents, flat vector, legible at small sizes",
+      bold: "heavy shapes, strong contrast, simple silhouettes, flat vector, minimal details",
+      "icon-based": "memorable symbol-first mark, simplified contours, flat vector, works at favicon size",
+      icon: "memorable symbol-first mark, simplified contours, flat vector, works at favicon size",
+      handdrawn: "clean hand-drawn lines, controlled irregularity, flat fills, limited palette",
+      retro: "vintage motifs, simplified forms, subtle grain allowed, flat colors (no heavy textures)",
+      "modern-gradient": "modern with *subtle* gradient accents only, otherwise flat, clean edges",
+      gradient: "modern with *subtle* gradient accents only, otherwise flat, clean edges",
+      "typography-first": "wordmark-first, custom letterforms, careful kerning, smart ligatures, strong spacing discipline",
+      typography: "wordmark-first, custom letterforms, careful kerning, smart ligatures, strong spacing discipline",
       modern: "modern, clean, versatile"
     };
 
     const styleDescriptor = styleDescriptions[primaryStyle.toLowerCase()] || styleDescriptions.modern;
     
-    // Use vibes as tone hints only (do not override style)
-    const toneHint = vibes.length
-      ? `Tone hint: ${vibes.join(", ")} (influence color/emotion only; do not change the ${primaryStyle} style).`
-      : "Tone hint: neutral, versatile.";
+    // Derive initials from business name
+    const words = businessName.trim().split(/\s+/);
+    const initials = words.slice(0, 3).map(w => w[0]?.toUpperCase() || '').join('');
     
-    // Conditional business name handling based on style
-    let nameInstruction = "";
-    const normalizedStyle = primaryStyle.toLowerCase();
+    // Use vibes as tone hints only
+    const toneHint = vibes.length ? vibes.join(', ') : 'professional';
     
-    switch (normalizedStyle) {
-      case "typography-first":
-      case "typography":
-      case "bold":
-      case "retro":
-        nameInstruction = `The logo must prominently feature the brand name "${businessName}" as a wordmark.`;
-        break;
-      case "icon-based":
-      case "icon":
-      case "playful":
-      case "minimalist":
-      case "modern-gradient":
-      case "gradient":
-      case "handdrawn":
-        nameInstruction = `The logo should include at least one variant as a standalone icon (no text), and one variant where the icon is paired with the brand name "${businessName}" in a balanced lockup.`;
-        break;
-      default:
-        nameInstruction = `The logo may use the brand name "${businessName}" in some variants, but should also support a standalone mark.`;
+    // Default brand palette
+    const palette = 'navy #0A2342 and teal #2EC4B6';
+    
+    // Name handling policy based on style
+    function nameInstructionFor(style: string, businessName: string, initials: string): string {
+      switch (style.toLowerCase()) {
+        case "typography":
+        case "typography-first":
+        case "bold":
+        case "retro":
+          return `Primary focus is a refined wordmark of "${businessName}". Keep it clean and professional. No decorative effects. Icon optional and must be subordinate.`;
+        case "icon-based":
+        case "icon":
+        case "minimalist":
+        case "playful":
+        case "gradient":
+        case "modern-gradient":
+          return `Design the logo to work as a standalone icon with NO full business name. If you include letters, restrict to an optional small monogram ("${initials}") that is secondary. Do not typeset "${businessName}" as large text.`;
+        default:
+          return `Logo must support a standalone icon. If text appears, it must be subtle and never dominate.`;
+      }
     }
+    
+    const nameInstruction = nameInstructionFor(primaryStyle, businessName, initials);
 
-    // Generate exactly 4 style-consistent variations with structured axes
+    // Clearer creative variation axes
     const variationPlans = [
-      "Lockup: icon above wordmark; Color: primary palette; Motif: literal/obvious",
-      "Lockup: icon left of wordmark; Color: secondary palette; Motif: abstract symbol",
-      "Lockup: standalone icon (no wordmark); Color: monochrome; Motif: monogram/initial",
-      "Lockup: integrated wordmark (typography-first emphasis); Color: accent highlight; Motif: negative space trick"
+      `Icon-only, centered, simple abstract symbol related to the domain. Flat 1–2 colors. No text.`,
+      `Icon-only, negative-space trick. Monochrome. No text.`,
+      `Monogram variant using initials only (e.g., "${initials}") inside a simple geometric container. No full name.`,
+      `Compact icon with subtle motion cue. Flat vector. Optional tiny monogram only if it enhances balance. No full name.`
     ];
 
-    const basePrompt = `Design a logo concept for the business "${businessName}".
-Style: ${styleDescriptor}.
-${toneHint}
-${nameInstruction}
-Constraints: Keep all 4 variants within the same ${primaryStyle} style. Logos must be vector-friendly, scalable, and professional.`;
+    // New prompt template for each variation
+    const prompts = variationPlans.map((variationPlan, i) => `Design a professional logo for the business "${businessName}".
 
-    const prompts = variationPlans.map((plan, i) => `${basePrompt}
-Variation plan ${i + 1}: ${plan}`);
+STYLE
+- ${styleDescriptor}
+- Tone hint: ${toneHint} (influence mood only; do not override the style)
+
+NAME POLICY
+- ${nameInstruction}
+
+COLOR & OUTPUT
+- Use this palette or close relatives: ${palette}. Prefer 1–2 colors; ensure high contrast.
+- Flat vector look. No gradients for minimalist. No shadows, bevels, 3D, textures, or mockups.
+- Deliver a clean, centered logo on a square canvas, generous padding, transparent or white background.
+
+COMPOSITION & QUALITY
+- Crisp edges, balanced symmetry, simple geometry. Legible at favicon size.
+- Avoid dense details, tiny text, photo elements, clip-art, badges, ribbons, crests, watermarks, stock icons.
+
+VARIATION PLAN
+- ${variationPlan}
+
+Return only the image.`);
 
     // Generate 4 logos only
     const logoPromises = prompts.map(async (prompt) => {
