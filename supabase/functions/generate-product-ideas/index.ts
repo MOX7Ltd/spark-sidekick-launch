@@ -124,6 +124,7 @@ Return a JSON object with this exact structure:
 {
   "products": [
     {
+      "id": "unique-identifier",
       "category": "Digital | Teach | Services | Physical",
       "format": "Specific format from that category",
       "title": "Clear, specific product name (≤60 chars)",
@@ -133,6 +134,7 @@ Return a JSON object with this exact structure:
 }
 
 Critical Rules:
+- Each product MUST include an id field (use short unique strings)
 - Each product MUST include a category field
 - Choose formats that make sense for the category
 - Focus on practical, monetizable offerings
@@ -211,6 +213,14 @@ Return a JSON object with this exact structure:
     const data = await response.json();
     const content = data.choices[0].message.content;
     const productIdeas = JSON.parse(content);
+
+    // Ensure all products have IDs (fallback if AI doesn't generate them)
+    if (productIdeas.products && Array.isArray(productIdeas.products)) {
+      productIdeas.products = productIdeas.products.map((product: any, index: number) => ({
+        ...product,
+        id: product.id || `product-${Date.now()}-${index}`
+      }));
+    }
 
     console.log('Generated product ideas:', productIdeas);
 

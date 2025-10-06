@@ -156,7 +156,7 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
     setRegeneratingIds(prev => new Set(prev).add(productId));
     
     try {
-      const excludeIds = products.map(p => p.id);
+      const excludeIds = products.map(p => p.id).filter(Boolean);
       const newProducts = await generateProductIdeas({
         idea_text: idea.trim(),
         idea_source: ideaSource,
@@ -165,16 +165,23 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
         smart_family_gen: true,
       });
       
-      if (newProducts.length > 0) {
+      if (newProducts && newProducts.length > 0 && newProducts[0].id) {
         setProducts(prev => prev.map(p => 
-          p.id === productId ? newProducts[0] : p
+          p.id === productId ? { ...newProducts[0], id: newProducts[0].id || productId } : p
         ));
+        
+        toast({
+          title: "New idea generated",
+          description: "Refreshed with a different product option.",
+        });
+      } else {
+        throw new Error('No valid product returned');
       }
     } catch (error) {
       console.error('Failed to refresh product:', error);
       toast({
         title: "Couldn't refresh",
-        description: "Please try again.",
+        description: "Please try again in a moment.",
         variant: "destructive"
       });
     } finally {
