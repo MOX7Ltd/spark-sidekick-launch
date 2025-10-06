@@ -133,7 +133,8 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
       const productIdeas = await generateProductIdeas({
         idea_text: idea.trim(),
         idea_source: ideaSource,
-        max_ideas: 4
+        max_ideas: 4,
+        smart_family_gen: true,
       });
       
       setProducts(productIdeas);
@@ -160,7 +161,8 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
         idea_text: idea.trim(),
         idea_source: ideaSource,
         max_ideas: 1,
-        exclude_ids: excludeIds
+        exclude_ids: excludeIds,
+        smart_family_gen: true,
       });
       
       if (newProducts.length > 0) {
@@ -418,7 +420,14 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
                         <>
                           <div className="mb-3">
                             <h4 className="font-semibold text-sm sm:text-base mb-1 break-words">{product.title}</h4>
-                            <Badge variant="outline" className="text-xs whitespace-nowrap">{product.format}</Badge>
+                            <div className="flex gap-2">
+                              {product.category && (
+                                <Badge variant="outline" className="text-xs font-medium whitespace-nowrap">
+                                  {product.category}
+                                </Badge>
+                              )}
+                              <Badge variant="secondary" className="text-xs whitespace-nowrap">{product.format}</Badge>
+                            </div>
                             <p className="text-sm text-muted-foreground mt-2 leading-relaxed break-words">
                               {product.description}
                             </p>

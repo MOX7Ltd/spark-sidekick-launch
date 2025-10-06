@@ -10,6 +10,7 @@ export interface ProductIdea {
   title: string;
   format: string;
   description: string;
+  category?: string; // Digital, Teach, Services, Physical
 }
 
 export interface AboutYou {

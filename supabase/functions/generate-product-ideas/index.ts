@@ -17,6 +17,7 @@ const requestSchema = z.object({
   tone_tags: z.array(z.string()).min(1).default(['Friendly']),
   max_ideas: z.number().min(1).max(10).default(5),
   exclude_ids: z.array(z.string()).optional(),
+  smart_family_gen: z.boolean().optional().default(true),
 });
 
 console.log('[generate-product-ideas] Function started and deployed successfully');
@@ -68,7 +69,7 @@ serve(async (req) => {
       });
     }
     
-    const { idea_text, audience_tags, tone_tags, max_ideas, exclude_ids = [] } = validationResult.data;
+    const { idea_text, audience_tags, tone_tags, max_ideas, exclude_ids = [], smart_family_gen } = validationResult.data;
     
     // Normalize inputs with defaults
     const normalized = normalizeOnboardingInput({
@@ -83,7 +84,8 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const systemPrompt = `You are generating preview product ideas for a storefront. The user already has a monetizable idea.
+    // Legacy system prompt for backward compatibility
+    const legacySystemPrompt = `You are generating preview product ideas for a storefront. The user already has a monetizable idea.
 Return concise, revenue-ready ideas that map directly to the user's description.
 
 Rules:
@@ -96,16 +98,63 @@ Rules:
 - Generate exactly ${max_ideas} unique product ideas.
 ${exclude_ids.length > 0 ? `- Do NOT generate ideas similar to these IDs: ${exclude_ids.join(', ')}` : ''}`;
 
-    // Use feature flag for better product generation
-    const useBetterPrompt = featureFlags.includes('better_product_gen');
-    const finalSystemPrompt = useBetterPrompt 
-      ? systemPrompt + '\n\nFocus on highly specific, actionable product ideas that solve real problems. Emphasize outcomes over formats.'
-      : systemPrompt;
+    // Smart family-aware system prompt
+    const smartFamilySystemPrompt = `You are an expert product strategist helping new entrepreneurs turn their idea into sellable products.
+
+The user will provide a short business concept.  
+Analyze the description carefully and infer what kinds of products best fit that concept.
+
+You can generate ideas from any of these four product families:
+1. Digital — downloadable files, templates, toolkits, eBooks, planners, guides, workbooks, checklists
+2. Teach — courses, coaching programs, workshops, memberships, challenges, masterclasses, bootcamps
+3. Services — done-for-you or 1:1 offerings, consulting, creative services, audits, strategy sessions
+4. Physical — tangible products, kits, merchandise, bundles, supplies, materials
+
+Rules:
+- Generate exactly ${max_ideas} unique, revenue-ready products the user could sell
+- You may choose any mix of families (e.g. all digital, 2 digital + 2 teach, etc.) depending on what fits best
+- Each idea must be achievable by an individual or small business
+- Avoid repetition and generic "bundle" filler ideas
+- Be concise: no emojis, no hashtags, no prices
+- Descriptions: first sentence = outcome/result, second = what's inside/how it works
+- Names must sound real and brand-neutral
+${exclude_ids.length > 0 ? `- Do NOT generate ideas similar to previously rejected ones` : ''}
+
+Return a JSON object with this exact structure:
+{
+  "products": [
+    {
+      "category": "Digital | Teach | Services | Physical",
+      "format": "Specific format from that category",
+      "title": "Clear, specific product name (≤60 chars)",
+      "description": "1-2 sentences: outcome-focused, then what's included"
+    }
+  ]
+}
+
+Critical Rules:
+- Each product MUST include a category field
+- Choose formats that make sense for the category
+- Focus on practical, monetizable offerings
+- Ensure diversity across the ${max_ideas} products`;
+
+    const finalSystemPrompt = smart_family_gen ? smartFamilySystemPrompt : legacySystemPrompt;
     
     console.log('[generate-product-ideas] Feature flags:', featureFlags);
-    console.log('[generate-product-ideas] Using better prompt:', useBetterPrompt);
+    console.log('[generate-product-ideas] Using smart family generation:', smart_family_gen);
 
-    const userPrompt = `Generate ${max_ideas} revenue-ready product ideas for this business concept: "${idea_text}"
+    const userPrompt = smart_family_gen
+      ? `Generate ${max_ideas} monetizable product ideas for this business concept:
+"${idea_text}"
+
+${normalized.audiences && normalized.audiences.length > 0 ? `Target audience: ${normalized.audiences.join(', ')}` : ''}
+${normalized.vibes && normalized.vibes.length > 0 ? `Desired tone/style: ${normalized.vibes.join(', ')}` : ''}
+
+Infer which product families (Digital, Teach, Services, Physical) best fit this concept.
+If unsure, choose the most likely families based on common-sense reasoning.
+
+Return a JSON object matching the schema with category field included.`
+      : `Generate ${max_ideas} revenue-ready product ideas for this business concept: "${idea_text}"
 
 ${normalized.audiences && normalized.audiences.length > 0 ? `Target audience: ${normalized.audiences.join(', ')}` : ''}
 ${normalized.vibes && normalized.vibes.length > 0 ? `Tone preferences: ${normalized.vibes.join(', ')}` : ''}

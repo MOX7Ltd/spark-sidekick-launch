@@ -135,6 +135,7 @@ export interface GenerateProductIdeasRequest {
   tone_tags?: string[];
   max_ideas?: number;
   exclude_ids?: string[];
+  smart_family_gen?: boolean;
 }
 
 export async function generateProductIdeas(request: GenerateProductIdeasRequest): Promise<ProductIdea[]> {
