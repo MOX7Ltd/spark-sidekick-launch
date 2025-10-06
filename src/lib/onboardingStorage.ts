@@ -113,14 +113,32 @@ export async function saveProducts(products: ProductIdea[], businessId?: string)
   const sessionId = getSessionId();
   
   try {
-    // Delete existing products for this session to avoid duplicates
-    await supabase
-      .from('products')
-      .delete()
-      .eq('session_id', sessionId);
+    // Normalize titles (trim whitespace)
+    const normalizedProducts = products.map(p => ({
+      ...p,
+      title: p.title.trim()
+    }));
+    
+    // Get current titles for pruning
+    const currentTitles = normalizedProducts.map(p => p.title);
 
-    // Insert new products
-    const productsToInsert = products.map(product => ({
+    // Delete products that are no longer in the current list (prune step)
+    if (currentTitles.length > 0) {
+      await supabase
+        .from('products')
+        .delete()
+        .eq('session_id', sessionId)
+        .not('title', 'in', `(${currentTitles.map(t => `"${t}"`).join(',')})`);
+    } else {
+      // If no products, delete all session products
+      await supabase
+        .from('products')
+        .delete()
+        .eq('session_id', sessionId);
+    }
+
+    // Upsert products (update existing, insert new)
+    const productsToUpsert = normalizedProducts.map(product => ({
       session_id: sessionId,
       user_id: null,
       business_id: businessId || null,
@@ -132,7 +150,10 @@ export async function saveProducts(products: ProductIdea[], businessId?: string)
 
     const { error } = await supabase
       .from('products')
-      .insert(productsToInsert);
+      .upsert(productsToUpsert, {
+        onConflict: 'session_id,title',
+        ignoreDuplicates: false // Update existing records
+      });
 
     if (error) throw error;
     return true;
