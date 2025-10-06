@@ -120,20 +120,13 @@ export default function IdeaLab() {
         .insert({
           user_id: user.id,
           title: idea.title,
-          subtitle: idea.listing_copy.subtitle,
-          description: idea.promise,
+          description: `${idea.listing_copy.subtitle}\n\n${idea.promise}`,
           type: idea.type,
           status: 'draft',
           generation_source: 'idea-lab',
-          price_cents: idea.price_band.mid * 100,
-          currency: 'USD',
+          price: idea.price_band.mid,
           visible: false,
-          tags: idea.listing_copy.seo_keywords,
-          fulfillment: {},
-          seo: {
-            keywords: idea.listing_copy.seo_keywords,
-            excerpt: idea.listing_copy.subtitle
-          }
+          fulfillment: {}
         })
         .select()
         .single();

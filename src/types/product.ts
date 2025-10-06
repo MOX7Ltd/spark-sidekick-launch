@@ -60,29 +60,29 @@ export interface Product {
   id: string;
   user_id: string;
   title: string;
-  subtitle?: string;
+  // subtitle?: string;  // NOT IN DB - combine into description
   description: string;
-  description_md?: string;
-  audience?: string;
+  // description_md?: string;  // NOT IN DB
+  // audience?: string;  // NOT IN DB
   type?: ProductType;
   status?: ProductStatus;
   generation_source?: GenerationSource;
   
-  price?: number;
-  price_cents?: number;
-  currency?: string;
+  price?: number;  // Numeric in DB
+  // price_cents?: number;  // NOT IN DB
+  // currency?: string;  // NOT IN DB
   
   visible: boolean;
   
-  media?: string[];
-  tags?: string[];
+  // media?: string[];  // NOT IN DB
+  // tags?: string[];  // NOT IN DB
   
   fulfillment?: Partial<FulfillmentSpec[ProductType]>;
   
-  seo?: {
-    keywords: string[];
-    excerpt: string;
-  };
+  // seo?: {  // NOT IN DB
+  //   keywords: string[];
+  //   excerpt: string;
+  // };
   
   // Legacy fields
   format?: string;

@@ -87,12 +87,11 @@ export default function ProductEdit() {
     if (!product) return;
     let score = 0;
 
-    // Title + cover image → 30 pts
-    if (product.title && product.media && product.media.length > 0) score += 30;
+    // Title + description → 30 pts
+    if (product.title && product.description) score += 30;
 
-    // Benefits 3-7 → 20 pts
-    const benefits = product.seo?.keywords?.length || 0;
-    if (benefits >= 3 && benefits <= 7) score += 20;
+    // Price set → 20 pts
+    if (product.price && product.price > 0) score += 20;
 
     // Fulfillment checklist satisfied → 30 pts
     if (product.type && product.fulfillment) {
@@ -124,13 +123,9 @@ export default function ProductEdit() {
         .from('products')
         .update({
           title: product.title,
-          subtitle: product.subtitle,
           description: product.description,
-          price_cents: product.price_cents,
-          media: product.media,
-          tags: product.tags,
+          price: product.price,
           fulfillment: product.fulfillment,
-          seo: product.seo,
           updated_at: new Date().toISOString()
         })
         .eq('id', product.id);
@@ -237,14 +232,6 @@ export default function ProductEdit() {
                 />
               </div>
               <div>
-                <Label htmlFor="subtitle">Subtitle</Label>
-                <Input
-                  id="subtitle"
-                  value={product.subtitle || ''}
-                  onChange={(e) => setProduct({ ...product, subtitle: e.target.value })}
-                />
-              </div>
-              <div>
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
@@ -258,8 +245,9 @@ export default function ProductEdit() {
                 <Input
                   id="price"
                   type="number"
-                  value={(product.price_cents || 0) / 100}
-                  onChange={(e) => setProduct({ ...product, price_cents: Math.round(parseFloat(e.target.value) * 100) })}
+                  step="0.01"
+                  value={product.price || ''}
+                  onChange={(e) => setProduct({ ...product, price: parseFloat(e.target.value) || 0 })}
                 />
               </div>
             </CardContent>
