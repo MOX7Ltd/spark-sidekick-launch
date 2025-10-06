@@ -94,7 +94,7 @@ export default function Products() {
     }
   };
 
-  const handleSaveProduct = async (updatedProduct: Product, skipToast = false) => {
+  const handleSaveProduct = async (updatedProduct: Product) => {
     try {
       const { error } = await supabase
         .from('products')
@@ -104,7 +104,6 @@ export default function Products() {
           format: updatedProduct.format,
           price: updatedProduct.price,
           visible: updatedProduct.visible,
-          pdf_url: updatedProduct.pdf_url,
           updated_at: new Date().toISOString()
         })
         .eq('id', updatedProduct.id);
@@ -117,12 +116,10 @@ export default function Products() {
 
       setEditingProduct(null);
       
-      if (!skipToast) {
-        toast({
-          title: "Product updated",
-          description: "Your changes have been saved.",
-        });
-      }
+      toast({
+        title: "Product updated",
+        description: "Your changes have been saved.",
+      });
     } catch (error) {
       console.error('Error saving product:', error);
       toast({

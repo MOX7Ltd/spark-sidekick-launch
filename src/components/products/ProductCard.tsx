@@ -3,9 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Edit, Eye, EyeOff, FileText, Loader2, AlertCircle, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useState } from 'react';
-import { downloadPDF } from '@/lib/pdfDownloader';
-import { useToast } from '@/hooks/use-toast';
 
 interface ProductCardProps {
   id: string;
@@ -32,33 +29,6 @@ export const ProductCard = ({
   onEdit,
   onToggleVisible,
 }: ProductCardProps) => {
-  const [isDownloading, setIsDownloading] = useState(false);
-  const { toast } = useToast();
-
-  const handleDownloadPDF = async () => {
-    if (!pdf_url) return;
-    
-    setIsDownloading(true);
-    try {
-      const filename = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`;
-      await downloadPDF(pdf_url, filename);
-      
-      toast({
-        title: "PDF downloaded",
-        description: "Your product PDF has been downloaded.",
-      });
-    } catch (error) {
-      console.error('Download error:', error);
-      toast({
-        title: "Download failed",
-        description: "Please try again or contact support.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
   const getAssetStatusBadge = () => {
     if (!asset_status) return null;
     
@@ -142,15 +112,10 @@ export const ProductCard = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={handleDownloadPDF}
-              disabled={isDownloading}
+              onClick={() => window.open(pdf_url, '_blank')}
               className="gap-1.5"
             >
-              {isDownloading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Download className="h-3.5 w-3.5" />
-              )}
+              <Download className="h-3.5 w-3.5" />
               PDF
             </Button>
           )}

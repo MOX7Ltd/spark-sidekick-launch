@@ -37,25 +37,20 @@ export const PDFGeneratorButton = ({
         throw new Error('Print container not ready');
       }
 
-      // Capture the inner .pdf-a4 node specifically (not the wrapper)
-      const contentNode = printContainerRef.current.querySelector('.pdf-a4') as HTMLElement | null;
-      if (!contentNode) {
-        console.error('[PDF] .pdf-a4 element not found in DOM');
-        throw new Error('PDF template not ready. Please try again.');
-      }
-
-      console.log('[PDF] Capturing .pdf-a4 node:', {
-        width: contentNode.offsetWidth,
-        height: contentNode.offsetHeight,
-        innerHTML: contentNode.innerHTML.length
-      });
-
       const pdfUrl = await generateAndUploadPDF({
         productId: product.id,
         productName: product.title,
-        htmlElement: contentNode,
+        htmlElement: printContainerRef.current,
         userId: user.id
       });
+
+      // Update product with PDF URL
+      const { error: updateError } = await supabase
+        .from('products')
+        .update({ pdf_url: pdfUrl })
+        .eq('id', product.id);
+
+      if (updateError) throw updateError;
 
       toast({
         title: '🎉 Your branded PDF is ready!',
@@ -97,18 +92,15 @@ export const PDFGeneratorButton = ({
         )}
       </Button>
 
-      {/* Invisible but painted print container */}
+      {/* Hidden print container */}
       {createPortal(
         <div
-          id="pdf-capture-root"
           ref={printContainerRef}
           style={{
             position: 'fixed',
-            top: 0,
-            left: 0,
-            opacity: 0,
-            pointerEvents: 'none',
-            zIndex: 2147483647
+            left: '-9999px',
+            top: '0',
+            zIndex: -1
           }}
         >
           <BrandedPDFTemplate
