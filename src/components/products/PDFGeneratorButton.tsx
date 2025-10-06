@@ -106,8 +106,6 @@ export const PDFGeneratorButton = ({
             position: 'fixed',
             top: 0,
             left: 0,
-            width: '210mm',
-            minHeight: '297mm',
             opacity: 0,
             pointerEvents: 'none',
             zIndex: 2147483647

@@ -9,6 +9,8 @@ export interface PDFGenerationOptions {
   userId: string;
 }
 
+const A4_PX = { w: 794, h: 1123 }; // 210x297mm @ ~96dpi
+
 function hasRealContent(el: HTMLElement): boolean {
   const text = (el.innerText || '').trim();
   const hasImages = !!el.querySelector('img,svg');
@@ -45,6 +47,101 @@ async function uploadPdfBlob(blob: Blob, userId: string, productId: string, file
   return urlData.publicUrl;
 }
 
+function createHtml2CanvasOptions(foreignObjectRendering: boolean) {
+  return {
+    scale: 2,
+    useCORS: true,
+    allowTaint: false,
+    backgroundColor: '#ffffff',
+    width: A4_PX.w,
+    height: A4_PX.h,
+    foreignObjectRendering,
+    onclone: (doc: Document) => {
+      const el = doc.querySelector('.pdf-a4') as HTMLElement | null;
+      if (el) {
+        Object.assign(el.style, {
+          opacity: '1',
+          position: 'static',
+          transform: 'none',
+          zIndex: '0',
+          marginLeft: '0',
+          marginRight: '0'
+        });
+        
+        const computed = doc.defaultView?.getComputedStyle(el);
+        console.log('[PDF] Clone computed styles:', {
+          opacity: computed?.opacity,
+          position: computed?.position,
+          transform: computed?.transform,
+          width: computed?.width,
+          marginLeft: computed?.marginLeft
+        });
+
+        // Scan for problematic children
+        el.querySelectorAll('*').forEach(node => {
+          const cs = doc.defaultView?.getComputedStyle(node as Element);
+          if (!cs) return;
+          if (
+            cs.position === 'sticky' ||
+            cs.position === 'fixed' ||
+            cs.transform !== 'none' ||
+            parseFloat(cs.marginLeft) < 0 ||
+            parseFloat(cs.marginRight) < 0
+          ) {
+            console.warn('[PDF] Suspect node:', {
+              tag: (node as HTMLElement).tagName,
+              class: (node as HTMLElement).className,
+              position: cs.position,
+              transform: cs.transform,
+              marginLeft: cs.marginLeft,
+              marginRight: cs.marginRight
+            });
+          }
+        });
+      }
+
+      const style = doc.createElement('style');
+      style.textContent = `
+        .pdf-a4, .pdf-a4 * {
+          transform: none !important;
+          position: static !important;
+          filter: none !important;
+          overflow: visible !important;
+          margin-left: 0 !important;
+          margin-right: 0 !important;
+        }
+        .pdf-a4 { left: 0 !important; top: 0 !important; }
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      `;
+      doc.head.appendChild(style);
+    }
+  };
+}
+
+async function preflightDiagnostics(el: HTMLElement): Promise<void> {
+  const rect = el.getBoundingClientRect();
+  const computed = getComputedStyle(el);
+  
+  console.log('[PDF] Pre-capture diagnostics:', {
+    selector: '.pdf-a4',
+    tagName: el.tagName,
+    className: el.className,
+    rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+    offset: { width: el.offsetWidth, height: el.offsetHeight },
+    scroll: { width: el.scrollWidth, height: el.scrollHeight },
+    computed: {
+      position: computed.position,
+      transform: computed.transform,
+      opacity: computed.opacity,
+      width: computed.width,
+      marginLeft: computed.marginLeft,
+      marginRight: computed.marginRight,
+      paddingLeft: computed.paddingLeft,
+      paddingRight: computed.paddingRight
+    }
+  });
+}
+
 async function generatePdfWithConfig(el: HTMLElement, filename: string, foreignObjectRendering: boolean): Promise<Blob> {
   console.log(`[PDF] Generating with foreignObjectRendering: ${foreignObjectRendering}`);
   
@@ -52,32 +149,7 @@ async function generatePdfWithConfig(el: HTMLElement, filename: string, foreignO
     margin: [10, 10, 10, 10] as [number, number, number, number],
     filename,
     image: { type: 'jpeg' as const, quality: 0.95 },
-    html2canvas: {
-      scale: Math.min(window.devicePixelRatio || 2, 2),
-      useCORS: true,
-      allowTaint: false,
-      backgroundColor: '#ffffff',
-      windowWidth: el.scrollWidth,
-      windowHeight: el.scrollHeight,
-      foreignObjectRendering,
-      onclone: (doc: Document) => {
-        // Force visibility in the cloned DOM
-        const cloneEl = doc.querySelector('.pdf-a4') as HTMLElement | null;
-        if (cloneEl) {
-          Object.assign(cloneEl.style, {
-            opacity: '1',
-            position: 'static',
-            transform: 'none',
-            zIndex: '0',
-          });
-          console.log('[PDF] Clone prepared, opacity set to 1');
-        }
-        // Force print color accuracy
-        const style = doc.createElement('style');
-        style.textContent = `*{-webkit-print-color-adjust:exact;print-color-adjust:exact}`;
-        doc.head.appendChild(style);
-      }
-    },
+    html2canvas: createHtml2CanvasOptions(foreignObjectRendering),
     jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
   };
 
@@ -102,6 +174,9 @@ export async function generateAndUploadPDF({
   
   // Wait for fonts, images, and layout
   await waitForPdfReadiness(htmlElement);
+
+  // Run diagnostics
+  await preflightDiagnostics(htmlElement);
 
   // Verify content exists
   if (!hasRealContent(htmlElement)) {
