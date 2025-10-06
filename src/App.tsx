@@ -11,6 +11,8 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/hub/Dashboard";
 import CreateProfile from "./pages/hub/CreateProfile";
 import Products from "./pages/hub/Products";
+import ProductEdit from "./pages/hub/ProductEdit";
+import IdeaLab from "./pages/hub/IdeaLab";
 import Profile from "./pages/hub/Profile";
 import Marketing from "./pages/hub/Marketing";
 import Messages from "./pages/hub/Messages";
@@ -36,7 +38,9 @@ const App = () => (
             <Route index element={<Navigate to="/hub/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="create-profile" element={<CreateProfile />} />
+            <Route path="ideas" element={<IdeaLab />} />
             <Route path="products" element={<Products />} />
+            <Route path="products/edit/:id" element={<ProductEdit />} />
             <Route path="profile" element={<Profile />} />
             <Route path="marketing" element={<Marketing />} />
             <Route path="messages" element={<Messages />} />

@@ -6,8 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Save, Loader2, AlertCircle } from 'lucide-react';
-import { PDFGeneratorButton } from './PDFGeneratorButton';
-import { Product } from '@/pages/hub/Products';
+import { Product } from '@/types/product';
 import { BusinessIdentity, getBusinessIdentity } from '@/lib/db/identity';
 import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -53,10 +52,6 @@ export const ProductEditor = ({ product, onSave, onCancel }: ProductEditorProps)
     }
   };
 
-  const handlePDFGenerated = (pdfUrl: string) => {
-    setFormData({ ...formData, pdf_url: pdfUrl });
-    setContentChanged(false);
-  };
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -131,27 +126,14 @@ export const ProductEditor = ({ product, onSave, onCancel }: ProductEditorProps)
                 id="visible"
                 checked={formData.visible}
                 onCheckedChange={(checked) => setFormData({ ...formData, visible: checked })}
-                disabled={!formData.pdf_url}
               />
               <Label htmlFor="visible" className="cursor-pointer flex-1">
                 <div className="font-medium">Show on shopfront</div>
                 <div className="text-sm text-muted-foreground">
-                  {formData.pdf_url
-                    ? 'Make this product visible to customers'
-                    : 'Generate a PDF first to publish'
-                  }
+                  Make this product visible to customers
                 </div>
               </Label>
             </div>
-
-            {contentChanged && formData.pdf_url && (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Content changed — consider regenerating the PDF to keep it up to date.
-                </AlertDescription>
-              </Alert>
-            )}
 
             <div className="flex gap-3 pt-4">
               <Button
@@ -172,13 +154,6 @@ export const ProductEditor = ({ product, onSave, onCancel }: ProductEditorProps)
                   </>
                 )}
               </Button>
-              {businessIdentity && (
-                <PDFGeneratorButton
-                  product={formData}
-                  businessIdentity={businessIdentity}
-                  onPDFGenerated={handlePDFGenerated}
-                />
-              )}
               <Button
                 type="button"
                 variant="outline"

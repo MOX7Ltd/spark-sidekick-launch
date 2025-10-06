@@ -52,6 +52,7 @@ export type Database = {
           session_id: string | null
           status: string | null
           tagline: string | null
+          tone_tags: string[] | null
           updated_at: string | null
         }
         Insert: {
@@ -70,6 +71,7 @@ export type Database = {
           session_id?: string | null
           status?: string | null
           tagline?: string | null
+          tone_tags?: string[] | null
           updated_at?: string | null
         }
         Update: {
@@ -88,6 +90,7 @@ export type Database = {
           session_id?: string | null
           status?: string | null
           tagline?: string | null
+          tone_tags?: string[] | null
           updated_at?: string | null
         }
         Relationships: [
@@ -293,6 +296,38 @@ export type Database = {
         }
         Relationships: []
       }
+      ideas: {
+        Row: {
+          created_at: string | null
+          id: string
+          ideas_json: Json
+          input_text: string
+          owner_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ideas_json: Json
+          input_text: string
+          owner_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ideas_json?: Json
+          input_text?: string
+          owner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ideas_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       idempotent_responses: {
         Row: {
           created_at: string
@@ -467,12 +502,16 @@ export type Database = {
           created_at: string | null
           description: string | null
           format: string | null
+          fulfillment: Json | null
+          generation_source: string | null
           id: string
           is_draft: boolean | null
-          pdf_url: string | null
+          legacy_pdf_url: string | null
           price: number | null
           session_id: string | null
+          status: string | null
           title: string
+          type: string | null
           updated_at: string | null
           user_id: string | null
           visible: boolean | null
@@ -486,12 +525,16 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           format?: string | null
+          fulfillment?: Json | null
+          generation_source?: string | null
           id?: string
           is_draft?: boolean | null
-          pdf_url?: string | null
+          legacy_pdf_url?: string | null
           price?: number | null
           session_id?: string | null
+          status?: string | null
           title: string
+          type?: string | null
           updated_at?: string | null
           user_id?: string | null
           visible?: boolean | null
@@ -505,12 +548,16 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           format?: string | null
+          fulfillment?: Json | null
+          generation_source?: string | null
           id?: string
           is_draft?: boolean | null
-          pdf_url?: string | null
+          legacy_pdf_url?: string | null
           price?: number | null
           session_id?: string | null
+          status?: string | null
           title?: string
+          type?: string | null
           updated_at?: string | null
           user_id?: string | null
           visible?: boolean | null

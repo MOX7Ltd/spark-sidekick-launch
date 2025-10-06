@@ -5,29 +5,13 @@ import { SectionHeader } from '@/components/hub/SectionHeader';
 import { EmptyState } from '@/components/hub/EmptyState';
 import { ProductCard } from '@/components/products/ProductCard';
 import { ProductEditor } from '@/components/products/ProductEditor';
-import { ProductGenerator } from '@/components/products/ProductGenerator';
 import { supabase } from '@/integrations/supabase/client';
+import { Product } from '@/types/product';
 import { useToast } from '@/hooks/use-toast';
 import { SkeletonGrid } from '@/components/hub/SkeletonCard';
 import { MicroGuidance } from '@/components/hub/MicroGuidance';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { ProductIdea } from '@/lib/api';
-
-export interface Product {
-  id: string;
-  user_id: string;
-  title: string;
-  description: string;
-  format?: string;
-  price?: number;
-  visible: boolean;
-  asset_url?: string;
-  asset_status?: string;
-  asset_version?: number;
-  pdf_url?: string;
-  created_at: string;
-  updated_at: string;
-}
 
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -52,7 +36,7 @@ export default function Products() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProducts(data || []);
+      setProducts((data || []) as Product[]);
     } catch (error) {
       console.error('Error loading products:', error);
       toast({
@@ -75,7 +59,7 @@ export default function Products() {
       if (error) throw error;
 
       setProducts(prev => prev.map(p => 
-        p.id === id ? { ...p, visible } : p
+        p.id === id ? { ...p, visible } as Product : p
       ));
 
       toast({
@@ -150,7 +134,7 @@ export default function Products() {
 
       if (error) throw error;
 
-      setProducts(prev => [data, ...prev]);
+      setProducts(prev => [data as Product, ...prev]);
       
       // Trigger asset generation in background
       triggerAssetGeneration(data.id, product);
@@ -275,19 +259,27 @@ export default function Products() {
         </div>
       )}
 
-      {/* Product Generator Dialog */}
+      {/* Idea Lab link */}
       <Dialog open={showGenerator} onOpenChange={setShowGenerator}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              Generate Products with AI
+              Create Products
             </DialogTitle>
           </DialogHeader>
-          <ProductGenerator
-            onProductsGenerated={() => {}}
-            onAddProduct={handleAddGeneratedProduct}
-          />
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Use our Idea Lab to get AI-generated product ideas, then add your own files and details to publish.
+            </p>
+            <Button
+              onClick={() => window.location.href = '/hub/ideas'}
+              className="w-full"
+              size="lg"
+            >
+              Go to Idea Lab
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

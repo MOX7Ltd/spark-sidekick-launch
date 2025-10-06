@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.claim-onboarding]
 verify_jwt = true
+
+[functions.generate-ideas]
+verify_jwt = false
