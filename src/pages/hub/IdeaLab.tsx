@@ -59,12 +59,19 @@ export default function IdeaLab() {
 
       setIdeas(data.ideas);
 
-      // Save to database
-      await supabase.from('ideas').insert({
-        owner_id: user.id,
-        input_text: input,
-        ideas_json: data.ideas
-      });
+      // Save to database (softly - don't block UI on errors)
+      try {
+        const { error: saveError } = await supabase.from('ideas').insert({
+          owner_id: user.id,
+          input_text: input.trim(),
+          ideas_json: data.ideas
+        });
+        if (saveError) {
+          console.warn('[IdeaLab] ideas insert failed:', saveError);
+        }
+      } catch (e) {
+        console.warn('[IdeaLab] ideas persistence skipped:', e);
+      }
 
       toast({
         title: 'Ideas generated!',
