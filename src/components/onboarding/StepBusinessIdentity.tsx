@@ -362,7 +362,14 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     setIsGeneratingLogos(true);
     
     try {
-      const logos = await generateLogos(selectedName, styleId, vibes);
+      const logos = await generateLogos(
+        selectedName, 
+        styleId, 
+        vibes,
+        idea,
+        undefined, // productCategories - could be inferred from products if available
+        generatedColors.length > 0 ? generatedColors : undefined
+      );
       setGeneratedLogos(logos);
       setSelectedLogoIndex(null);
       setLikedLogos(new Set());
@@ -389,7 +396,14 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     
     setIsGeneratingLogos(true);
     try {
-      const logos = await generateLogos(selectedName, selectedLogoStyle, vibes);
+      const logos = await generateLogos(
+        selectedName, 
+        selectedLogoStyle, 
+        vibes,
+        idea,
+        undefined,
+        generatedColors.length > 0 ? generatedColors : undefined
+      );
       // Limit to 4 options for mobile-friendliness
       setGeneratedLogos(logos.slice(0, 4));
       setSelectedLogoIndex(null);
@@ -415,7 +429,14 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     setRegeneratingLogoIndex(index);
     
     try {
-      const newLogos = await generateLogos(selectedName, selectedLogoStyle, vibes);
+      const newLogos = await generateLogos(
+        selectedName, 
+        selectedLogoStyle, 
+        vibes,
+        idea,
+        undefined,
+        generatedColors.length > 0 ? generatedColors : undefined
+      );
       
       setGeneratedLogos(prev => {
         const updated = [...prev];
