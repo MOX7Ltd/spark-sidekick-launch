@@ -37,10 +37,23 @@ export const PDFGeneratorButton = ({
         throw new Error('Print container not ready');
       }
 
+      // Capture the inner .pdf-a4 node specifically (not the wrapper)
+      const contentNode = printContainerRef.current.querySelector('.pdf-a4') as HTMLElement | null;
+      if (!contentNode) {
+        console.error('[PDF] .pdf-a4 element not found in DOM');
+        throw new Error('PDF template not ready. Please try again.');
+      }
+
+      console.log('[PDF] Capturing .pdf-a4 node:', {
+        width: contentNode.offsetWidth,
+        height: contentNode.offsetHeight,
+        innerHTML: contentNode.innerHTML.length
+      });
+
       const pdfUrl = await generateAndUploadPDF({
         productId: product.id,
         productName: product.title,
-        htmlElement: printContainerRef.current,
+        htmlElement: contentNode,
         userId: user.id
       });
 
