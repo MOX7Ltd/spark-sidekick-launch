@@ -84,15 +84,19 @@ export const PDFGeneratorButton = ({
         )}
       </Button>
 
-      {/* Hidden print container */}
+      {/* Invisible but painted print container */}
       {createPortal(
         <div
           ref={printContainerRef}
           style={{
             position: 'fixed',
-            left: '-9999px',
-            top: '0',
-            zIndex: -1
+            top: 0,
+            left: 0,
+            width: '210mm',
+            minHeight: '297mm',
+            opacity: 0,
+            pointerEvents: 'none',
+            zIndex: 2147483647
           }}
         >
           <BrandedPDFTemplate

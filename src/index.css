@@ -289,4 +289,24 @@
     stroke-dashoffset: 283;
     transition: stroke-dashoffset 0.3s ease;
   }
+
+  /* PDF Print Styles */
+  .pdf-a4 {
+    width: 210mm;
+    min-height: 297mm;
+    box-sizing: border-box;
+    background: #fff;
+    color: #000;
+  }
+
+  @media print {
+    .pdf-a4 {
+      width: 210mm;
+      min-height: 297mm;
+    }
+    * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
 }

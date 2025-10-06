@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { Product } from "@/pages/hub/Products";
 import { BusinessIdentity } from "@/lib/db/identity";
+import { buildAIBaseline, Baseline } from "@/lib/aiProductBaseline";
 
 interface BrandedPDFTemplateProps {
   product: Product;
@@ -7,34 +9,38 @@ interface BrandedPDFTemplateProps {
 }
 
 export const BrandedPDFTemplate = ({ product, businessIdentity }: BrandedPDFTemplateProps) => {
-  const primaryColor = businessIdentity.brand_colors?.[0] || '#1A4D8F';
-  const tone = businessIdentity.idea?.toLowerCase().includes('playful') || 
-                businessIdentity.idea?.toLowerCase().includes('fun') 
-                ? 'uplifting and energetic' 
-                : 'clear and professional';
+  const [baseline, setBaseline] = useState<Baseline | null>(null);
+
+  useEffect(() => {
+    buildAIBaseline(product, businessIdentity).then(setBaseline);
+  }, [product, businessIdentity]);
+
+  if (!baseline) return null;
 
   return (
-    <div style={{
+    <div 
+      className="pdf-a4"
+      style={{
       width: '210mm',
       minHeight: '297mm',
-      padding: '18mm',
+      padding: '16mm',
       backgroundColor: 'white',
-      fontFamily: "'Inter', sans-serif",
+      fontFamily: "'Inter', 'system-ui', sans-serif",
       color: '#1a1a1a',
-      position: 'relative'
+      boxSizing: 'border-box'
     }}>
       {/* Header with brand color bar and logo */}
       <div style={{
-        borderTop: `6px solid ${primaryColor}`,
+        borderTop: `6px solid ${baseline.brand.primary}`,
         paddingTop: '24px',
         marginBottom: '32px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between'
       }}>
-        {businessIdentity.logo_svg && (
+        {baseline.brand.logoSvg && (
           <div 
-            dangerouslySetInnerHTML={{ __html: businessIdentity.logo_svg }}
+            dangerouslySetInnerHTML={{ __html: baseline.brand.logoSvg }}
             style={{ width: '120px', height: 'auto' }}
           />
         )}
@@ -54,83 +60,116 @@ export const BrandedPDFTemplate = ({ product, businessIdentity }: BrandedPDFTemp
       <h1 style={{
         fontSize: '32px',
         fontWeight: 700,
-        color: primaryColor,
+        color: baseline.brand.primary,
         marginBottom: '8px',
         lineHeight: 1.2
       }}>
-        {product.title}
+        {baseline.headline}
       </h1>
 
-      {/* Format Badge */}
-      {product.format && (
-        <div style={{
-          display: 'inline-block',
-          padding: '6px 16px',
-          backgroundColor: `${primaryColor}15`,
-          color: primaryColor,
-          borderRadius: '6px',
-          fontSize: '14px',
-          fontWeight: 500,
-          marginBottom: '24px'
-        }}>
-          {product.format}
-        </div>
-      )}
+      {/* Subheadline */}
+      <p style={{
+        fontSize: '16px',
+        color: '#666',
+        marginTop: '4px',
+        marginBottom: '24px'
+      }}>
+        {baseline.subheadline}
+      </p>
+
+      {/* Key Benefits */}
+      <div style={{ marginBottom: '24px' }}>
+        <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '12px' }}>
+          Key Benefits
+        </h3>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: 1.8 }}>
+          {baseline.bullets.map((bullet, i) => (
+            <li key={i} style={{ marginBottom: '8px' }}>{bullet}</li>
+          ))}
+        </ul>
+      </div>
 
       {/* Description */}
       <div style={{
         fontSize: '16px',
         lineHeight: 1.8,
         color: '#333',
-        marginBottom: '32px',
+        marginBottom: '24px',
         whiteSpace: 'pre-wrap'
       }}>
-        {product.description}
+        {baseline.body}
       </div>
 
+      {/* Features Table */}
+      <table style={{
+        width: '100%',
+        borderCollapse: 'collapse',
+        marginTop: '16px',
+        marginBottom: '24px'
+      }}>
+        <tbody>
+          {baseline.features.map((feature, i) => (
+            <tr key={i}>
+              <td style={{
+                fontWeight: 600,
+                padding: '8px 0',
+                borderBottom: '1px solid #e0e0e0',
+                width: '40%'
+              }}>
+                {feature.label}
+              </td>
+              <td style={{
+                padding: '8px 0',
+                borderBottom: '1px solid #e0e0e0'
+              }}>
+                {feature.value}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
       {/* Price */}
-      {product.price && (
+      {baseline.priceBlock && (
         <div style={{
           padding: '24px',
           backgroundColor: '#f8f9fa',
           borderRadius: '8px',
-          marginBottom: '32px'
+          marginBottom: '24px'
         }}>
           <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#666' }}>
             Investment
           </p>
-          <p style={{ margin: 0, fontSize: '36px', fontWeight: 700, color: primaryColor }}>
-            ${Number(product.price).toFixed(2)}
+          <p style={{ margin: 0, fontSize: '36px', fontWeight: 700, color: baseline.brand.primary }}>
+            {baseline.priceBlock.price}
           </p>
+          {baseline.priceBlock.note && (
+            <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#666' }}>
+              {baseline.priceBlock.note}
+            </p>
+          )}
         </div>
       )}
 
       {/* CTA Section */}
       <div style={{
         padding: '24px',
-        backgroundColor: `${primaryColor}08`,
-        borderLeft: `4px solid ${primaryColor}`,
+        backgroundColor: `${baseline.brand.primary}08`,
+        borderLeft: `4px solid ${baseline.brand.primary}`,
         borderRadius: '8px',
-        marginTop: '48px'
+        marginTop: '32px'
       }}>
         <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: 600 }}>
-          {tone === 'uplifting and energetic' 
-            ? "Ready to Get Started? 🚀" 
-            : "Ready to Begin?"}
+          Ready to Get Started?
         </h3>
         <p style={{ margin: 0, fontSize: '14px', color: '#666', lineHeight: 1.6 }}>
-          {tone === 'uplifting and energetic'
-            ? "Let's make this happen together! Reach out to get started on your journey."
-            : "Contact us to learn more about this offering and how we can help you achieve your goals."}
+          {baseline.cta}
         </p>
       </div>
 
       {/* Footer */}
       <div style={{
-        position: 'absolute',
-        bottom: '18mm',
-        left: '18mm',
-        right: '18mm',
+        marginTop: '48px',
         paddingTop: '16px',
         borderTop: '1px solid #e0e0e0',
         fontSize: '12px',

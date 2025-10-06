@@ -1,5 +1,6 @@
 import html2pdf from 'html2pdf.js';
 import { supabase } from '@/integrations/supabase/client';
+import { waitForPdfReadiness, roughlyHasContent } from './pdfReady';
 
 export interface PDFGenerationOptions {
   productId: string;
@@ -14,6 +15,22 @@ export async function generateAndUploadPDF({
   htmlElement,
   userId
 }: PDFGenerationOptions): Promise<string> {
+  // Wait for fonts, images, and layout
+  await waitForPdfReadiness(htmlElement);
+
+  // Verify content exists
+  if (!roughlyHasContent(htmlElement)) {
+    console.error('[PDF] No content detected in element');
+    throw new Error('PDF template has no content. Please try again.');
+  }
+
+  // Log element dimensions for debugging
+  console.log('[PDF] Element dimensions:', {
+    width: htmlElement.offsetWidth,
+    height: htmlElement.offsetHeight,
+    contentLength: htmlElement.innerHTML.length
+  });
+
   // Slugify product name for filename
   const slugifiedName = productName
     .toLowerCase()
@@ -25,14 +42,29 @@ export async function generateAndUploadPDF({
   // Generate PDF as array buffer
   const pdfArrayBuffer = await html2pdf()
     .set({
-      margin: 18,
+      margin: [10, 10, 10, 10],
       filename,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: {
+        scale: Math.min(window.devicePixelRatio || 2, 2),
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        windowWidth: htmlElement.scrollWidth,
+        windowHeight: htmlElement.scrollHeight
+      },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     })
     .from(htmlElement)
     .outputPdf('arraybuffer');
+
+  // Log PDF buffer size
+  const bufferSize = pdfArrayBuffer.byteLength;
+  console.log('[PDF] Generated buffer size:', bufferSize, 'bytes');
+  
+  if (bufferSize < 10000) {
+    console.warn('[PDF] Buffer size suspiciously small, PDF may be blank');
+  }
 
   // Upload to Supabase Storage
   const filePath = `${userId}/${productId}/${filename}`;
