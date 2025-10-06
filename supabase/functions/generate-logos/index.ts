@@ -2,6 +2,21 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { checkIdempotency, storeIdempotentResponse, hashRequest, parseFeatureFlags } from '../_shared/idempotency.ts';
 
+// Domain keyword extraction helper
+function extractDomainTokens(input: string | undefined): string[] {
+  if (!input) return [];
+  const text = input.toLowerCase();
+  const stop = new Set(['the','and','for','with','your','of','to','in','on','at','by','from','a','an','&','co','academy','institute','company','studio','llc','inc','ltd']);
+  return Array.from(
+    new Set(
+      text
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter(w => w && w.length > 2 && !stop.has(w))
+    )
+  ).slice(0, 12); // cap for prompt brevity
+}
+
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
 const corsHeaders = {
@@ -53,14 +68,18 @@ serve(async (req) => {
     
     console.log('[generate-logos] Feature flags:', featureFlags);
     
+    // Create enhanced idempotency key that includes brand context
+    const contextHash = await hashRequest({ brand_context: brandCtx, style: primaryStyle });
+    const enhancedIdempotencyKey = `${idempotencyKey}-${contextHash}`;
+    
     // Check for cached response
-    const cachedResponse = await checkIdempotency(sessionId, idempotencyKey, 'logos');
+    const cachedResponse = await checkIdempotency(sessionId, enhancedIdempotencyKey, 'logos');
     if (cachedResponse) {
-      console.log('Returning cached logos for idempotency key:', idempotencyKey);
+      console.log('Returning cached logos for idempotency key:', enhancedIdempotencyKey);
       return new Response(JSON.stringify({
         ...cachedResponse,
         deduped: true,
-        idempotency_key: idempotencyKey,
+        idempotency_key: enhancedIdempotencyKey,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -72,7 +91,7 @@ serve(async (req) => {
         error: 'Business name is required',
         trace_id: traceId,
         session_id: sessionId,
-        idempotency_key: idempotencyKey,
+        idempotency_key: enhancedIdempotencyKey,
         duration_ms: durationMs,
         ok: false,
       }), {
@@ -81,7 +100,10 @@ serve(async (req) => {
       });
     }
 
-    console.log('Generating logos for:', businessName, 'with style:', primaryStyle, 'and vibes:', vibes);
+    // Extract domain tokens from context
+    const domainTokens = extractDomainTokens(
+      [brandCtx?.idea_text, brandCtx?.bio].filter(Boolean).join(' ')
+    );
 
     // Strengthened style descriptions
     const styleDescriptions: Record<string, string> = {
@@ -113,11 +135,22 @@ serve(async (req) => {
       ? (brandCtx?.brand_colors || []).join(', ')
       : 'navy #0A2342 and teal #2EC4B6';
     
+    console.log('Generating logos for:', businessName, 'with style:', primaryStyle, 'and vibes:', vibes);
+    console.log('[logos] style=', primaryStyle, 'initials=', initials);
+    console.log('[logos] context=', { 
+      idea: brandCtx?.idea_text, 
+      audience: brandCtx?.audience, 
+      tone: toneHint, 
+      colors: palette, 
+      tokens: domainTokens 
+    });
+    
     // Build context lines for the prompt
     const contextLines = [
       brandCtx?.idea_text ? `- idea: ${brandCtx.idea_text}` : null,
-      brandCtx?.bio ? `- bio: ${brandCtx.bio}` : null,
+      brandCtx?.bio ? `- bio/positioning: ${brandCtx.bio}` : null,
       brandCtx?.audience ? `- audience: ${brandCtx.audience}` : null,
+      domainTokens.length ? `- domain tokens: ${domainTokens.join(', ')}` : null,
       `- tone: ${toneHint}`,
       `- palette: ${palette}`
     ].filter(Boolean).join('\n');
@@ -129,94 +162,121 @@ serve(async (req) => {
         case "typography-first":
         case "bold":
         case "retro":
-          return `Primary focus is a refined wordmark of "${businessName}". Keep it clean and professional. No decorative effects. Icon optional and must be subordinate.`;
+          return `Wordmark can be primary, but create a companion icon rooted in the domain cues.`;
         case "icon-based":
         case "icon":
         case "minimalist":
         case "playful":
         case "gradient":
         case "modern-gradient":
-          return `Design the logo to work as a standalone icon with NO full business name. If you include letters, restrict to an optional small monogram ("${initials}") that is secondary. Do not typeset "${businessName}" as large text.`;
+        case "handdrawn":
+        case "modern":
+          return `Icon-first. NO full business name in the icon-only variants; a small monogram ("${initials}") is optional and must be secondary.`;
         default:
-          return `Logo must support a standalone icon. If text appears, it must be subtle and never dominate.`;
+          return `Icon-first. Wordmark optional and secondary.`;
       }
     }
     
     const nameInstruction = nameInstructionFor(primaryStyle, businessName, initials);
 
-    // Clearer creative variation axes
+    // Variation plans - domain-driven concepts
     const variationPlans = [
-      `Icon-only, centered, simple abstract symbol related to the domain. Flat 1–2 colors. No text.`,
-      `Icon-only, negative-space trick. Monochrome. No text.`,
-      `Monogram variant using initials only (e.g., "${initials}") inside a simple geometric container. No full name.`,
-      `Compact icon with subtle motion cue. Flat vector. Optional tiny monogram only if it enhances balance. No full name.`
+      `Icon-only derived from domain tokens (no text).`,
+      `Icon-only negative-space/geometry concept from domain tokens (no text).`,
+      `Monogram: subtle initials integrated into a domain motif (no full name).`,
+      `Icon + micro-lockup: compact icon plus a very small wordmark; icon dominates.`
     ];
 
-    // New prompt template for each variation
-    const prompts = variationPlans.map((variationPlan, i) => `Design a professional logo for "${businessName}".
+    // Enhanced prompt template for each variation
+    const prompts = variationPlans.map((variationPlan, i) => {
+      const domainGuidance = domainTokens.length 
+        ? `Derive the icon's motif from these domain cues: ${domainTokens.join(', ')}`
+        : `If domain cues are unclear, favor abstract geometric forms suggesting the domain broadly; do not invent generic business icons.`;
+      
+      return `Design a professional logo for "${businessName}".
 
 BRAND CONTEXT (use all signals)
 ${contextLines}
-- Treat suffixes like "Academy/Co/Studio" as labels only. Do NOT let them drive the visual concept.
+- Treat suffix words (e.g., Academy/Co/Studio) as labels only. Do NOT let them drive the visual concept.
 
 STYLE
 - ${styleDescriptor}
-- Keep style consistent across variants.
+- Keep the chosen style consistent across all variants.
 
 NAME POLICY
 - ${nameInstruction}
 
 PRIMARY DIRECTION — DOMAIN FIRST
-- Derive the visual motif from the domain and benefits implied above (idea/bio/audience), not from the literal business name string.
+- ${domainGuidance}
 
 COLOR & OUTPUT
 - Flat vector; 1–2 colors; high contrast.
-- No shadows, 3D, bevels, textures, or mockups.
+- No shadows, bevels, 3D, textures, or mockups.
 - Centered on a square canvas; transparent or white background.
+- Icon must be legible at 16–24 px.
 
 COMPOSITION
-- Crisp, simple geometry; balanced; legible at 16–24px.
+- Crisp, simple geometry; balanced symmetry; avoid clutter.
 
 VARIATION PLAN
 - ${variationPlan}
 
-Return only the image.`);
+Return only the image.`;
+    });
 
-    // Generate 4 logos only
-    const logoPromises = prompts.map(async (prompt) => {
+    // Icon-led styles that must not have full business name
+    const iconFirstStyles = new Set(['icon-based', 'icon', 'minimalist', 'playful', 'gradient', 'modern-gradient', 'handdrawn', 'modern']);
+    const isIconFirst = iconFirstStyles.has(primaryStyle.toLowerCase());
+    
+    // Generate 4 logos with retry logic for text violations
+    const logoPromises = prompts.map(async (prompt, index) => {
+      const generateLogo = async (promptText: string, attempt: number = 1): Promise<string> => {
+        const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${lovableApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash-image-preview',
+            messages: [
+              {
+                role: 'user',
+                content: promptText
+              }
+            ],
+            modalities: ['image', 'text']
+          }),
+        });
 
-      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${lovableApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash-image-preview',
-          messages: [
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          modalities: ['image', 'text']
-        }),
-      });
+        if (!response.ok) {
+          const error = await response.text();
+          console.error('Lovable AI API error:', error);
+          throw new Error(`Lovable AI API error: ${error}`);
+        }
 
-      if (!response.ok) {
-        const error = await response.text();
-        console.error('Lovable AI API error:', error);
-        throw new Error(`Lovable AI API error: ${error}`);
-      }
-
-      const data = await response.json();
+        const data = await response.json();
+        
+        // Gemini returns base64 in images array
+        if (data.choices?.[0]?.message?.images?.[0]?.image_url?.url) {
+          const imageUrl = data.choices[0].message.images[0].image_url.url;
+          
+          // For icon-first styles on first 2 variants, retry once if we detect issues
+          // (This is a heuristic; actual text detection would require image analysis)
+          if (isIconFirst && index < 2 && attempt === 1) {
+            // Retry with stronger prompt
+            const retryPrompt = `${promptText}\n\nHARD REQUIREMENT: This variant must be icon-only (no full business name).`;
+            console.log(`[logos] Re-prompting variant ${index + 1} for text violation`);
+            return generateLogo(retryPrompt, 2);
+          }
+          
+          return imageUrl;
+        }
+        
+        throw new Error('Invalid response format from Lovable AI');
+      };
       
-      // Gemini returns base64 in images array
-      if (data.choices?.[0]?.message?.images?.[0]?.image_url?.url) {
-        return data.choices[0].message.images[0].image_url.url;
-      }
-      
-      throw new Error('Invalid response format from Lovable AI');
+      return generateLogo(prompt);
     });
 
     const logos = await Promise.all(logoPromises);
@@ -229,10 +289,10 @@ Return only the image.`);
       styleUsed: primaryStyle,
       trace_id: traceId,
       session_id: sessionId,
-      idempotency_key: idempotencyKey,
+      idempotency_key: enhancedIdempotencyKey,
       duration_ms: durationMs,
       feature_flags: featureFlags,
-      payload_keys: ['businessName', 'style', 'vibes'],
+      payload_keys: ['businessName', 'style', 'vibes', 'brand_context'],
       vibes_used: vibes,
       deduped: false,
       ok: true,
@@ -240,7 +300,7 @@ Return only the image.`);
     
     // Store for idempotency
     const requestHash = await hashRequest(requestBody);
-    await storeIdempotentResponse(sessionId, idempotencyKey, 'logos', requestHash, responseData);
+    await storeIdempotentResponse(sessionId, enhancedIdempotencyKey, 'logos', requestHash, responseData);
     
     return new Response(JSON.stringify(responseData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
