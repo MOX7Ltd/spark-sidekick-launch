@@ -93,8 +93,16 @@ export async function regenerateBusinessNames(request: GenerateIdentityRequest):
 }
 
 export async function regenerateSingleName(request: GenerateIdentityRequest): Promise<NameOption> {
+  const traceId = generateTraceId();
+  const flags = await getAllFeatureFlags();
+  
   const { data, error } = await supabase.functions.invoke('generate-identity', {
-    body: { ...request, regenerateSingleName: true }
+    body: { ...request, regenerateSingleName: true },
+    headers: {
+      ...getTelemetryHeaders(),
+      'X-Idempotency-Key': traceId,
+      'X-Feature-Flags': getFeatureFlagsHeader(flags),
+    },
   });
 
   if (error) {

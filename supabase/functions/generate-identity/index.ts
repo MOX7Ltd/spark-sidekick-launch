@@ -264,14 +264,20 @@ serve(async (req) => {
       });
     }
 
+    // Safety check: ensure we have at least one name after filtering
+    if (!parsedNames || parsedNames.length === 0) {
+      console.warn('[generate-identity] All names filtered out, using fallback name');
+      parsedNames = [{ name: "BusinessName", tagline: "A great business", style: primaryTone }];
+    }
+
     const parsedColors = safeParseJSON(colors, ['#2563eb', '#1d4ed8', '#1e40af']);
 
     // Build response based on regenerateSingleName flag
     let result;
     if (regenerateSingleName) {
-      // For single name regeneration, return just one name option
+      // For single name regeneration, return just one name option (guaranteed to exist)
       result = {
-        nameOption: parsedNames[0], // Return first name as single object
+        nameOption: parsedNames[0],
         tagline,
         bio,
         colors: parsedColors.slice(0, 5),
@@ -280,10 +286,10 @@ serve(async (req) => {
     } else {
       // For batch generation, return array of names
       result = {
-        nameOptions: parsedNames.slice(0, 6), // Ensure max 6
+        nameOptions: parsedNames.slice(0, 6),
         tagline,
         bio,
-        colors: parsedColors.slice(0, 5), // Max 5 colors
+        colors: parsedColors.slice(0, 5),
         products: products ?? [],
       };
     }
