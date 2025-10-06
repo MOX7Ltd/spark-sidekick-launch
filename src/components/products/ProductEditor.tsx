@@ -53,9 +53,13 @@ export const ProductEditor = ({ product, onSave, onCancel }: ProductEditorProps)
     }
   };
 
-  const handlePDFGenerated = (pdfUrl: string) => {
-    setFormData({ ...formData, pdf_url: pdfUrl });
+  const handlePDFGenerated = async (pdfUrl: string) => {
+    const updatedProduct = { ...formData, pdf_url: pdfUrl };
+    setFormData(updatedProduct);
     setContentChanged(false);
+    
+    // Immediately save to update parent state
+    await onSave(updatedProduct);
   };
 
   return (

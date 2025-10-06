@@ -44,14 +44,6 @@ export const PDFGeneratorButton = ({
         userId: user.id
       });
 
-      // Update product with PDF URL
-      const { error: updateError } = await supabase
-        .from('products')
-        .update({ pdf_url: pdfUrl })
-        .eq('id', product.id);
-
-      if (updateError) throw updateError;
-
       toast({
         title: '🎉 Your branded PDF is ready!',
         description: 'You can now download it anytime.',
