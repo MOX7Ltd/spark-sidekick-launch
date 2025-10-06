@@ -32,7 +32,24 @@ serve(async (req) => {
     const vibes: string[] = Array.isArray(requestBody.vibes) ? requestBody.vibes : [];
     const primaryStyle = styleFromClient || 'modern';
     
-    const { businessName } = requestBody;
+    const { businessName, brand_context } = requestBody;
+    
+    // Sanitize brand_context
+    const toHexArray = (v: any) =>
+      Array.isArray(v) 
+        ? v.filter((x: any) => typeof x === 'string')
+        : v && typeof v === 'object' 
+          ? Object.values(v).filter((x: any) => typeof x === 'string')
+          : undefined;
+    
+    const brandCtx = brand_context ? {
+      idea_text: brand_context.idea_text || undefined,
+      bio: brand_context.bio || undefined,
+      audience: (typeof brand_context.audience === 'string' && brand_context.audience.trim()) || undefined,
+      tone_tags: Array.isArray(brand_context.tone_tags) ? brand_context.tone_tags : undefined,
+      brand_colors: toHexArray(brand_context.brand_colors),
+      tagline: brand_context.tagline || undefined
+    } : undefined;
     
     console.log('[generate-logos] Feature flags:', featureFlags);
     
@@ -88,11 +105,22 @@ serve(async (req) => {
     const words = businessName.trim().split(/\s+/);
     const initials = words.slice(0, 3).map(w => w[0]?.toUpperCase() || '').join('');
     
-    // Use vibes as tone hints only
-    const toneHint = vibes.length ? vibes.join(', ') : 'professional';
+    // Use vibes and brand context for tone hints
+    const toneHint = (brandCtx?.tone_tags || vibes || []).join(', ') || 'professional';
     
-    // Default brand palette
-    const palette = 'navy #0A2342 and teal #2EC4B6';
+    // Use brand colors if available
+    const palette = (brandCtx?.brand_colors || []).length > 0 
+      ? (brandCtx?.brand_colors || []).join(', ')
+      : 'navy #0A2342 and teal #2EC4B6';
+    
+    // Build context lines for the prompt
+    const contextLines = [
+      brandCtx?.idea_text ? `- idea: ${brandCtx.idea_text}` : null,
+      brandCtx?.bio ? `- bio: ${brandCtx.bio}` : null,
+      brandCtx?.audience ? `- audience: ${brandCtx.audience}` : null,
+      `- tone: ${toneHint}`,
+      `- palette: ${palette}`
+    ].filter(Boolean).join('\n');
     
     // Name handling policy based on style
     function nameInstructionFor(style: string, businessName: string, initials: string): string {
@@ -125,23 +153,29 @@ serve(async (req) => {
     ];
 
     // New prompt template for each variation
-    const prompts = variationPlans.map((variationPlan, i) => `Design a professional logo for the business "${businessName}".
+    const prompts = variationPlans.map((variationPlan, i) => `Design a professional logo for "${businessName}".
+
+BRAND CONTEXT (use all signals)
+${contextLines}
+- Treat suffixes like "Academy/Co/Studio" as labels only. Do NOT let them drive the visual concept.
 
 STYLE
 - ${styleDescriptor}
-- Tone hint: ${toneHint} (influence mood only; do not override the style)
+- Keep style consistent across variants.
 
 NAME POLICY
 - ${nameInstruction}
 
-COLOR & OUTPUT
-- Use this palette or close relatives: ${palette}. Prefer 1–2 colors; ensure high contrast.
-- Flat vector look. No gradients for minimalist. No shadows, bevels, 3D, textures, or mockups.
-- Deliver a clean, centered logo on a square canvas, generous padding, transparent or white background.
+PRIMARY DIRECTION — DOMAIN FIRST
+- Derive the visual motif from the domain and benefits implied above (idea/bio/audience), not from the literal business name string.
 
-COMPOSITION & QUALITY
-- Crisp edges, balanced symmetry, simple geometry. Legible at favicon size.
-- Avoid dense details, tiny text, photo elements, clip-art, badges, ribbons, crests, watermarks, stock icons.
+COLOR & OUTPUT
+- Flat vector; 1–2 colors; high contrast.
+- No shadows, 3D, bevels, textures, or mockups.
+- Centered on a square canvas; transparent or white background.
+
+COMPOSITION
+- Crisp, simple geometry; balanced; legible at 16–24px.
 
 VARIATION PLAN
 - ${variationPlan}

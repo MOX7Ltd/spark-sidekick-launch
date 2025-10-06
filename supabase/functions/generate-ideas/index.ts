@@ -26,7 +26,7 @@ const requestSchema = z.object({
     audience: z.string().nullish().transform(v => (v && v.trim()) || undefined),
     tone_tags: z.array(z.string()).optional(),
   }).optional(),
-  max_ideas: z.number().min(8).max(12).default(12),
+  max_ideas: z.number().min(1).max(12).default(4),
 });
 
 const ideaCardSchema = z.object({
