@@ -87,6 +87,7 @@ export const PDFGeneratorButton = ({
       {/* Invisible but painted print container */}
       {createPortal(
         <div
+          id="pdf-capture-root"
           ref={printContainerRef}
           style={{
             position: 'fixed',

@@ -51,7 +51,20 @@ export async function generateAndUploadPDF({
         allowTaint: false,
         backgroundColor: '#ffffff',
         windowWidth: htmlElement.scrollWidth,
-        windowHeight: htmlElement.scrollHeight
+        windowHeight: htmlElement.scrollHeight,
+        foreignObjectRendering: true,
+        onclone: (doc: Document) => {
+          const cloneRoot = doc.getElementById('pdf-capture-root') as HTMLElement | null;
+          if (cloneRoot) {
+            cloneRoot.style.opacity = '1';
+            cloneRoot.style.position = 'static';
+            cloneRoot.style.transform = 'none';
+            cloneRoot.style.zIndex = '0';
+          }
+          const style = doc.createElement('style');
+          style.textContent = `*{-webkit-print-color-adjust:exact;print-color-adjust:exact}`;
+          doc.head.appendChild(style);
+        }
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     })
