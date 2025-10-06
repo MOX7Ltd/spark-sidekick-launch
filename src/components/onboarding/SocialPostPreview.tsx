@@ -4,9 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Sparkles, Instagram, Linkedin, ArrowRight, Copy, RefreshCw, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateCampaign } from '@/lib/api';
-import { saveIntroCampaign } from '@/lib/onboardingStorage';
-import { supabase } from '@/integrations/supabase/client';
-import { getSessionId } from '@/lib/telemetry';
 
 import type { ProductIdea, AboutYou } from '@/types/onboarding';
 
@@ -91,28 +88,6 @@ export const SocialPostPreview = ({
         
         if (long) {
           setLongPost({ caption: long.caption });
-        }
-        
-        // Save intro campaign to database
-        if (short && long) {
-          const sessionId = getSessionId();
-          const { data: business } = await supabase
-            .from('businesses')
-            .select('id')
-            .eq('session_id', sessionId)
-            .single();
-            
-          if (business?.id) {
-            await saveIntroCampaign({
-              shortPost: {
-                caption: short.caption,
-                hashtags: short.hashtags || []
-              },
-              longPost: {
-                caption: long.caption
-              }
-            }, business.id);
-          }
         }
       } else {
         console.error('Invalid response structure:', response);

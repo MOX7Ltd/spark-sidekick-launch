@@ -164,53 +164,33 @@ serve(async (req) => {
 
     // Build name prompt with constraints
     const nameInfo = shouldIncludeName(aboutYou);
-    const toneHintsCSV = toneHints.join(', ');
-    const motivationLine = aboutYou.motivation ? `; motivation: ${aboutYou.motivation}` : '';
-    const optionalName = (nameInfo.includeFirst || nameInfo.includeLast) 
-      ? [nameInfo.firstName, nameInfo.lastName].filter(Boolean).join(' ')
-      : 'none';
-    const bannedAllCSV = Array.from(new Set([
-      ...(bannedWords || []), 
-      'apex', 'vista', 'velocity', 'catalyst', 'matrix', 'synergy', 'growth', 'grid', 
-      'labs', 'solutions', 'partners', 'dynamics', 'global', 'enterprise', 'hub', 
-      'zone', 'store', 'pro', 'guru'
-    ])).join(', ');
-    const rejectedCSV = (rejectedNames || []).join(', ');
+    let namePrompt = `Generate 6 business names for: ${idea}.\nTarget audience: ${audienceStr}.\nTone: ${primaryTone}`;
+    
+    if (toneHints.length > 0) {
+      namePrompt += ` with hints of ${toneHints.join(', ')}`;
+    }
 
-    const namePrompt = `You are a brand strategist naming a new digital business. Consider the full context, generate widely, rank, then return only the best.
+    if (nameInfo.includeFirst || nameInfo.includeLast) {
+      const nameParts = [];
+      if (nameInfo.includeFirst) nameParts.push(nameInfo.firstName);
+      if (nameInfo.includeLast) nameParts.push(nameInfo.lastName);
+      namePrompt += `\nInclude the name: ${nameParts.join(' ')}`;
+    }
 
-CONTEXT
-- Idea/Niche: ${idea}
-- Audience: ${audienceStr}
-- Primary tone: ${primaryTone}; extra tones: ${toneHintsCSV}
-- Creator expertise: ${aboutYou.expertise}${motivationLine}
-- Optional name element (if requested): ${optionalName}
-- Avoid terms: ${bannedAllCSV}
-- Do not resemble: ${rejectedCSV}
+    if (bannedWords.length > 0) {
+      namePrompt += `\nAvoid these words: ${bannedWords.join(', ')}`;
+    }
 
-TASK
-1) Generate 10 strong, brandable candidates internally.
-2) Rank them by: (a) domain fit, (b) memorability, (c) clarity, (d) vibe match.
-3) Return ONLY the top 6 as JSON (schema below), ordered best → worst.
+    if (rejectedNames.length > 0) {
+      namePrompt += `\nDo NOT use names similar to: ${rejectedNames.join(', ')}`;
+    }
 
-QUALITY RULES
-- Domain-first: at least 4 of 6 must clearly reflect the domain implied by the idea/audience; up to 2 may be broader but still relevant.
-- Brevity & clarity: 1–3 words, ≤ 24 characters, ASCII only. No numbers, hyphens, or emojis.
-- Avoid generic corporate clichés and vague abstractions (e.g., apex, vista, velocity, catalyst, synergy, matrix, growth, grid, labs, solutions, partners, dynamics, global, enterprise, hub, zone, store, pro, guru).
-- Variety: include both short/punchy options and a few descriptive options. Do not repeat the same key word across the set.
-- Audience-appropriate language (e.g., for youth/parents: approachable, energetic; not corporate).
-- Optional personal name: only append ${optionalName} if it genuinely improves authenticity.
-
-TAGLINES
-- Outcome-focused, ≤ 70 characters; may acknowledge online delivery; no hype or earnings claims.
-
-STYLE FIELD
-- Choose one that best matches tone: "playful" | "modern" | "bold".
-
-OUTPUT (STRICT)
-Return ONLY a JSON array with EXACTLY 6 objects, each:
-{ "name": string, "tagline": string, "style": "playful"|"modern"|"bold" }
-No other keys (no rationale, score, or notes).`;
+    const useNewPrompt = featureFlags.includes('new_name_prompt');
+    const nameGuidance = useNewPrompt
+      ? 'Generate memorable, unique names that are easy to spell and pronounce. Avoid generic terms. Focus on emotional resonance and brand differentiation.'
+      : 'Generate business names based on user inputs.';
+    
+    namePrompt += `\n${nameGuidance}\nReturn ONLY a JSON array with exactly 6 objects, each with "name", "tagline", and "style" properties. Example: [{"name":"CompanyName","tagline":"A tagline","style":"modern"}]`;
 
     // Tagline prompt
     const taglinePrompt = `Generate a short, memorable tagline for a business about: ${idea}.\nTarget audience: ${audienceStr}.\nTone: ${primaryTone}.\nMax 8 words.`;

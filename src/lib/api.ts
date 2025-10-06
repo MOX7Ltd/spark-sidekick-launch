@@ -102,7 +102,7 @@ export async function regenerateSingleName(request: GenerateIdentityRequest): Pr
     throw new Error(error.message || 'Failed to regenerate name');
   }
 
-  return data.nameOptions?.[0] || data.nameOption;
+  return data.nameOption;
 }
 
 export async function generateLogos(businessName: string, style: string, vibes: string[] = []): Promise<string[]> {

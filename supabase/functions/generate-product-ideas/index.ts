@@ -83,7 +83,7 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const legacySystemPrompt = `You are generating preview product ideas for a storefront. The user already has a monetizable idea.
+    const systemPrompt = `You are generating preview product ideas for a storefront. The user already has a monetizable idea.
 Return concise, revenue-ready ideas that map directly to the user's description.
 
 Rules:
@@ -96,35 +96,16 @@ Rules:
 - Generate exactly ${max_ideas} unique product ideas.
 ${exclude_ids.length > 0 ? `- Do NOT generate ideas similar to these IDs: ${exclude_ids.join(', ')}` : ''}`;
 
-    const creativeSystemPrompt = `You generate concise, revenue-ready product ideas for a storefront.
-Return JSON only, strictly matching the provided schema.
-
-Rules:
-- Generate exactly ${max_ideas} unique product ideas.
-- No emojis, no hashtags, no prices, and no earnings promises.
-- Each idea must feel like a thing someone can purchase or book (concrete deliverables).
-- Allowed formats (choose from these only):
-  Digital Guide, Template Pack, Workshop, Challenge, Course, Coaching, Physical Product, Service
-- DO NOT suggest memberships, subscriptions, or cohorts.
-- Description is 1–2 sentences, outcome-first; you may hint at tangible deliverables
-  (e.g., "includes a training plan PDF and a weekly tracker").
-- Titles must be specific and brand-neutral (≤ 60 chars).
-- Maximize variety across the set:
-  • Use at least 3 distinct formats among the results.
-  • Avoid near-duplicates or trivial rewordings.
-- Prefer niche-specific angles, quick wins, and clear buyer outcomes.
-- If the idea implies local/community delivery (e.g., "club", "meetups"),
-  prefer an in-person Workshop or done-for-you Service INSTEAD of membership.
-${exclude_ids.length > 0 ? `- Do NOT generate ideas similar to these IDs: ${exclude_ids.join(', ')}` : ''}`;
-
-    // Use feature flag for creative product generation
-    const useCreativePrompt = featureFlags.includes('creative_product_gen');
-    const finalSystemPrompt = useCreativePrompt ? creativeSystemPrompt : legacySystemPrompt;
+    // Use feature flag for better product generation
+    const useBetterPrompt = featureFlags.includes('better_product_gen');
+    const finalSystemPrompt = useBetterPrompt 
+      ? systemPrompt + '\n\nFocus on highly specific, actionable product ideas that solve real problems. Emphasize outcomes over formats.'
+      : systemPrompt;
     
     console.log('[generate-product-ideas] Feature flags:', featureFlags);
-    console.log('[generate-product-ideas] Using creative prompt:', useCreativePrompt);
+    console.log('[generate-product-ideas] Using better prompt:', useBetterPrompt);
 
-    const legacyUserPrompt = `Generate ${max_ideas} revenue-ready product ideas for this business concept: "${idea_text}"
+    const userPrompt = `Generate ${max_ideas} revenue-ready product ideas for this business concept: "${idea_text}"
 
 ${normalized.audiences && normalized.audiences.length > 0 ? `Target audience: ${normalized.audiences.join(', ')}` : ''}
 ${normalized.vibes && normalized.vibes.length > 0 ? `Tone preferences: ${normalized.vibes.join(', ')}` : ''}
@@ -141,35 +122,6 @@ Return a JSON object with this exact structure:
   ]
 }`;
 
-    const creativeUserPrompt = `Generate ${max_ideas} revenue-ready product ideas based on:
-Idea: "${idea_text}"
-Target audience tags: ${normalized.audiences.join(', ')}
-Tone tags: ${normalized.vibes.join(', ')}
-
-Return strict JSON:
-{
-  "products": [
-    {
-      "id": "<unique identifier>",
-      "title": "<max 60 chars>",
-      "format": "<Digital Guide|Template Pack|Workshop|Challenge|Course|Coaching|Physical Product|Service>",
-      "description": "<1–2 sentences, outcome-first (hint deliverables where helpful)>"
-    }
-  ]
-}
-
-Diversity constraints:
-- Use at least 3 distinct formats across the ${max_ideas} results.
-- Ideas must be concretely different in deliverable and buyer value.
-- No memberships, subscriptions, or cohorts.
-
-Creativity nudges:
-- Include one "quick win" offer (fast to launch).
-- Include one "premium" or done-for-you option (higher perceived value).
-- If the idea suggests local delivery, include one in-person Workshop or Service.`;
-
-    const finalUserPrompt = useCreativePrompt ? creativeUserPrompt : legacyUserPrompt;
-
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -180,7 +132,7 @@ Creativity nudges:
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: finalSystemPrompt },
-          { role: 'user', content: finalUserPrompt }
+          { role: 'user', content: userPrompt }
         ],
         response_format: { type: "json_object" }
       }),
@@ -209,24 +161,7 @@ Creativity nudges:
 
     const data = await response.json();
     const content = data.choices[0].message.content;
-    let productIdeas = JSON.parse(content);
-
-    // Optional diversity guard for creative mode
-    if (useCreativePrompt && productIdeas.products) {
-      const formats = new Set(productIdeas.products.map((p: any) => p.format));
-      if (formats.size < 3 && productIdeas.products.length >= 3) {
-        console.log('[generate-product-ideas] Warning: Low format diversity detected:', formats.size);
-        // Keep only the first occurrence of each format to encourage variety
-        const seen = new Set();
-        productIdeas.products = productIdeas.products.filter((p: any) => {
-          if (seen.has(p.format) && seen.size < 3) {
-            return false; // Drop duplicate format if we haven't hit 3 unique yet
-          }
-          seen.add(p.format);
-          return true;
-        });
-      }
-    }
+    const productIdeas = JSON.parse(content);
 
     console.log('Generated product ideas:', productIdeas);
 

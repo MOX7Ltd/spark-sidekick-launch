@@ -1,5 +1,4 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, Sparkles, ArrowRight } from 'lucide-react';
@@ -10,18 +9,6 @@ interface StarterPackCheckoutProps {
 }
 
 export const StarterPackCheckout = ({ onContinue, businessName }: StarterPackCheckoutProps) => {
-  const navigate = useNavigate();
-  
-  const handleLaunch = () => {
-    // Navigate to auth page for signup
-    navigate('/auth');
-  };
-  
-  const handleSkip = () => {
-    // Call the original onContinue for backward compatibility
-    onContinue();
-  };
-  
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 md:py-8 animate-fade-in">
       <div className="text-center mb-6 md:mb-8 space-y-2 md:space-y-3">
@@ -102,7 +89,7 @@ export const StarterPackCheckout = ({ onContinue, businessName }: StarterPackChe
           <Button 
             size="lg"
             variant="hero"
-            onClick={handleLaunch}
+            onClick={onContinue}
             className="w-full h-12 md:h-14 text-base md:text-lg font-semibold group"
           >
             🔥 Launch My Business
@@ -118,7 +105,7 @@ export const StarterPackCheckout = ({ onContinue, businessName }: StarterPackChe
       <div className="text-center mt-8">
         <Button 
           variant="ghost"
-          onClick={handleSkip}
+          onClick={onContinue}
           className="text-muted-foreground hover:text-foreground"
         >
           Skip for now
