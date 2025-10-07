@@ -114,13 +114,12 @@ export async function regenerateSingleName(request: GenerateIdentityRequest): Pr
 }
 
 export async function generateLogos(
-  businessName: string, 
-  style: string, 
+  businessName: string,
+  style: string,
   vibes: string[] = [],
   ideaText?: string,
   productCategories?: string[],
-  palette?: string[],
-  rejectedNotes?: string[]
+  palette?: string[]
 ): Promise<string[]> {
   const traceId = generateTraceId();
   bumpVersion('logos');
@@ -128,14 +127,13 @@ export async function generateLogos(
   const flags = await getAllFeatureFlags();
   
   const { data, error } = await supabase.functions.invoke('generate-logos', {
-    body: { 
-      businessName, 
-      style, 
+    body: {
+      businessName,
+      style,
       vibes,
       ideaText,
       productCategories,
       palette,
-      rejectedNotes,
       featureFlags: ['idea_aware_logo_gen']
     },
     headers: {

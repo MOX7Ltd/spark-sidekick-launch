@@ -32,8 +32,7 @@ serve(async (req) => {
     const vibes: string[] = Array.isArray(requestBody.vibes) ? requestBody.vibes : [];
     const primaryStyle = styleFromClient || 'modern';
     
-    const { businessName, ideaText, productCategories = [], palette = [], rejectedNotes = [] } = requestBody;
-    const ideaAware = requestBody.featureFlags?.includes('idea_aware_logo_gen') || false;
+    const { businessName, ideaText } = requestBody;
     
     console.log('[generate-logos] Feature flags:', featureFlags);
     
@@ -65,60 +64,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('Generating logos for:', businessName, 'with style:', primaryStyle, 'vibes:', vibes, 'idea-aware:', ideaAware);
-
-    // Helper: ban literal objects derived from business name
-    function bannedFromName(name: string): string[] {
-      const nouns = (name || '').toLowerCase()
-        .replace(/[^a-z\s]/g, '')
-        .split(/\s+/)
-        .filter(w => w.length > 2);
-      
-      const literalMap: Record<string, string[]> = {
-        pitch: ['megaphone', 'microphone', 'speaker', 'podium'],
-        learn: ['book', 'open book', 'pencil', 'graduation cap', 'backpack'],
-        coach: ['whistle', 'clipboard', 'stopwatch'],
-        music: ['guitar', 'note', 'headphones', 'vinyl'],
-        eco: ['leaf', 'tree', 'plant'],
-        food: ['fork', 'spoon', 'knife', 'plate', 'chef hat'],
-        kitchen: ['pot', 'pan', 'spatula', 'whisk'],
-        digital: ['computer', 'laptop', 'mouse', 'keyboard'],
-        coffee: ['cup', 'mug', 'bean'],
-        fit: ['dumbbell', 'barbell', 'kettlebell'],
-        travel: ['airplane', 'suitcase', 'passport'],
-        photo: ['camera', 'lens', 'tripod'],
-      };
-      
-      const bans: string[] = [];
-      nouns.forEach(word => {
-        if (literalMap[word]) bans.push(...literalMap[word]);
-      });
-      return bans;
-    }
-
-    const nameLiteralBans = bannedFromName(businessName);
-
-    // Helper: derive concept-aware motif from idea text
-    function conceptMotif(idea?: string): string {
-      const t = (idea || '').toLowerCase();
-      if (/(digital|ai|data|tech|cloud|api|app|saas|software|platform)/.test(t)) 
-        return 'abstract nodes, paths, circuits, or modular geometry';
-      if (/(teach|learn|coach|course|workshop|mentor|education|training)/.test(t)) 
-        return 'progression/growth geometry (steps, arcs, ladders, paths)';
-      if (/(eco|green|sustain|nature|outdoor|environment|organic)/.test(t)) 
-        return 'flowing abstract forms (no literal leaves/trees)';
-      if (/(wellness|mind|therapy|fitness|balance|health|yoga|meditation)/.test(t)) 
-        return 'balanced minimal forms (symmetry, circles, breath-like curves)';
-      if (/(creative|studio|design|maker|craft|artisan|handmade)/.test(t)) 
-        return 'minimal negative-space shape play';
-      if (/(finance|invest|money|capital|wealth|accounting|banking)/.test(t))
-        return 'solid geometric foundations / upward arrows (abstract)';
-      if (/(food|restaurant|cafe|culinary|cooking|kitchen)/.test(t))
-        return 'circular/organic forms (no literal utensils)';
-      return 'timeless abstract geometric motif';
-    }
-
-    const motif = conceptMotif(ideaText);
+    console.log('Generating logos for:', businessName, 'with style:', primaryStyle, 'vibes:', vibes);
 
     // Expanded style descriptions map (must match frontend IDs)
     const styleDescriptions: Record<string, string> = {
@@ -137,18 +83,6 @@ serve(async (req) => {
     };
 
     const styleDescriptor = styleDescriptions[primaryStyle.toLowerCase()] || styleDescriptions.modern;
-    
-    // Build idea context block
-    const contextBlock = ideaAware ? `
-Business focus: ${ideaText || '—'}
-Relevant families: ${productCategories.join(', ') || '—'}
-Audience & vibe cues: ${vibes.join(', ') || 'General'}
-`.trim() : '';
-
-    // Palette hint (lock colors if provided)
-    const colorHint = (palette && palette.length > 0)
-      ? `Use ONLY this palette (tints/shades allowed): ${palette.join(', ')}`
-      : `Use a restrained, professional palette suitable to the vibe.`;
     
     // Use vibes as tone hints only (do not override style)
     const toneHint = vibes.length
@@ -179,37 +113,21 @@ Audience & vibe cues: ${vibes.join(', ') || 'General'}
         nameInstruction = `The logo may use the brand name "${businessName}" in some variants, but should also support a standalone mark.`;
     }
 
-    // Anti-pattern / negative prompts (single source of truth)
-    const negativePrompts = `
-AVOID: photorealism; complex scenes; emoji; clip-art; stock-icon lookalikes.
-AVOID: literal objects or pictograms derived from the business *name* (${businessName}).
-AVOID: ${nameLiteralBans.length ? nameLiteralBans.join(', ') : 'literal object mashups'}.
-AVOID: 3D gradients, drop shadows, bevels, glows, lens flares.
-Bias toward: simple geometric/abstract symbols, monograms/initials when names are long.
-Must be legible at 32×32 and on light/dark backgrounds; keep forms minimal.
-${rejectedNotes.length ? `Avoid repeating traits users rejected: ${rejectedNotes.join('; ')}` : ''}
-`.trim();
-
-    // Generate exactly 4 concept-aware style-consistent variations
+    // Generate exactly 4 style-consistent variations
     const variationPlans = [
-      `Icon above wordmark • Motif: ${motif} • Colors: primary subset • Complexity: minimal`,
-      `Icon left of wordmark • Motif: ${motif} (alternate construction) • Colors: secondary subset • Complexity: minimal`,
-      `Standalone icon (no wordmark) • Motif: ${motif} • Colors: monochrome • Must pass 32px legibility`,
-      `Integrated wordmark • Motif: ${motif} via negative space • Colors: accent allowed • Complexity: minimal`
+      "Lockup: icon above wordmark; Color: primary palette; Motif: abstract symbol",
+      "Lockup: icon left of wordmark; Color: secondary palette; Motif: abstract symbol",
+      "Lockup: standalone icon (no wordmark); Color: monochrome; Motif: monogram/initial",
+      "Lockup: integrated wordmark (typography-first emphasis); Color: accent highlight; Motif: negative space trick"
     ];
 
     const basePrompt = `
-Design 4 logo *concepts* for "${businessName}" that reflect the business *idea*, not the name.
-${contextBlock ? contextBlock + '\n' : ''}Style directive: ${styleDescriptor}.
-${colorHint}
+Design a logo concept for the business "${businessName}".
+Style: ${styleDescriptor}.
+${ideaText ? `Business focus (consider this more than the name): ${ideaText}` : ''}
 ${toneHint}
 ${nameInstruction}
-
-Constraints:
-- Provide clean, vector-friendly marks with crisp edges and minimal detail.
-- Focus on *metaphor and geometry* related to the idea; do NOT literalize the business name.
-- Each concept should plausibly stand alone as a primary brand symbol.
-${negativePrompts}
+Constraints: Keep all 4 variants within the same ${primaryStyle} style. Logos must be vector-friendly, scalable, and professional.
 `.trim();
 
     const prompts = variationPlans.map((plan, i) => `${basePrompt}
