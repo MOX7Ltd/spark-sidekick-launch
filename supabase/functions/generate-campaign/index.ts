@@ -145,6 +145,10 @@ serve(async (req) => {
 
     const requestBody = await req.json();
     
+    // Extract context if provided (new unified format)
+    const context = requestBody?.context || {};
+    const contextProducts = requestBody?.products || [];
+    
     // Validate input
     const validationResult = requestSchema.safeParse(requestBody);
     if (!validationResult.success) {
@@ -197,6 +201,21 @@ serve(async (req) => {
       primaryTone,
       products: products.length,
     });
+    
+    // Create Brand Summary card from context for consistent voice/tone
+    const brandCard = `
+Brand Summary
+============
+Idea: ${context.idea_text ?? ""}
+Family: ${context.dominant_family ?? ""}
+Business name: ${context.business_name ?? businessName ?? "(TBD)"}
+Bio: ${context.bio ?? aboutYou?.motivation ?? ""}
+Tone: ${(context.tone_adjectives ?? vibes).join(", ")}
+Audience: ${(context.audience ?? audiences).join(", ")}
+Palette: ${(context.palette ?? []).join(", ")}
+`.trim();
+    
+    console.log('[generate-campaign] Brand card:', brandCard);
 
     // For anonymous users, we need to use the provided business data in the request
     // For authenticated users, we can fetch from the database
@@ -246,7 +265,9 @@ serve(async (req) => {
     let userPrompt: string;
 
     if (type === 'intro') {
-      systemPrompt = `You are writing introductory social media posts for a new business launch. The entrepreneur wants authentic, human content that reflects their personal journey.
+      systemPrompt = `${brandCard}
+
+You are writing introductory social media posts for a new business launch. The entrepreneur wants authentic, human content that reflects their personal journey.
 
 CRITICAL RULES:
 - Write in the first person ("I" / "my")
@@ -341,7 +362,9 @@ CRITICAL REMINDER: You are transforming raw user inputs into polished narrative 
 
 Generate authentic, human posts that sound like they were written by a real person, not an AI.`;
     } else {
-      systemPrompt = `You are a social media copywriter. Return strict JSON with this schema:
+      systemPrompt = `${brandCard}
+
+You are a social media copywriter. Return strict JSON with this schema:
 {
   "campaigns": [
     {
