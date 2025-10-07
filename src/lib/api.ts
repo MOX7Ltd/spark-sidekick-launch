@@ -126,40 +126,59 @@ export async function generateLogos(
   ideaText?: string,
   context?: Partial<BrandContext>
 ): Promise<string[]> {
-  const traceId = generateTraceId();
-  bumpVersion('logos');
-  
-  const flags = await getAllFeatureFlags();
-  
-  const headers: Record<string, string> = {
-    ...getTelemetryHeaders(),
-    'X-Idempotency-Key': traceId,
-    'X-Feature-Flags': getFeatureFlagsHeader(flags),
-  };
-  
-  // Add context hash if context is provided
-  if (context) {
-    const hash = contextHash(context as BrandContext);
-    headers['X-Context-Hash'] = hash;
-  }
-  
-  const { data, error } = await supabase.functions.invoke('generate-logos', {
-    body: {
-      businessName,
-      style,
-      vibes,
-      ideaText,
-      context
+  const minimalContext: Partial<BrandContext> = context ? {
+    idea_text: context.idea_text,
+    tone_adjectives: context.tone_adjectives,
+    audience: context.audience,
+    palette: context.palette,
+    bio: context.bio ? context.bio.substring(0, 200) : undefined
+  } : undefined;
+
+  return callWithRetry(
+    async (signal) => {
+      const traceId = generateTraceId();
+      bumpVersion('logos');
+      
+      const flags = await getAllFeatureFlags();
+      
+      const headers: Record<string, string> = {
+        ...getTelemetryHeaders(),
+        'X-Idempotency-Key': traceId,
+        'X-Feature-Flags': getFeatureFlagsHeader(flags),
+      };
+      
+      if (minimalContext) {
+        const hash = contextHash(minimalContext as BrandContext);
+        headers['X-Context-Hash'] = hash;
+      }
+      
+      const { data, error } = await supabase.functions.invoke('generate-logos', {
+        body: {
+          businessName,
+          style,
+          vibes,
+          ideaText,
+          context: minimalContext
+        },
+        headers,
+      });
+
+      if (error) {
+        console.error('Error generating logos:', error);
+        throw new Error(error.message || 'Failed to generate logos');
+      }
+
+      return data.logos;
     },
-    headers,
-  });
-
-  if (error) {
-    console.error('Error generating logos:', error);
-    throw new Error(error.message || 'Failed to generate logos');
-  }
-
-  return data.logos;
+    {
+      step: 'logo-generation',
+      action: 'generate',
+      payloadKeys: ['businessName', 'style', 'vibes'],
+      provider: 'lovable-ai',
+      timeoutMs: 30000,
+      maxRetries: 2
+    }
+  ).then(response => response.data);
 }
 
 export interface GenerateProductIdeasRequest {

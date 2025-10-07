@@ -106,6 +106,21 @@ export const StepBusinessIdentity = ({
   onGenerateIdentity,
   onGenerateLogos
 }: StepBusinessIdentityProps) => {
+  // Pre-warm logo generation function
+  React.useEffect(() => {
+    const prewarm = async () => {
+      try {
+        const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+        await fetch(`${SUPABASE_URL}/functions/v1/generate-logos`, {
+          method: 'OPTIONS'
+        });
+      } catch (e) {
+        // Silently fail - this is just pre-warming
+      }
+    };
+    prewarm();
+  }, []);
+
   // Name states
   const [nameSection, setNameSection] = useState<'choice' | 'existing' | 'generate' | 'select'>('choice');
   const [hasExistingName, setHasExistingName] = useState<boolean | null>(null);
@@ -405,6 +420,8 @@ export const StepBusinessIdentity = ({
 
   // Logo: Generate logos with selected style using unified context
   const handleLogoStyleSelect = async (styleId: string) => {
+    if (isGeneratingLogos) return; // Prevent duplicate requests
+    
     handleStyleSelect(styleId);
     setIsGeneratingLogos(true);
     

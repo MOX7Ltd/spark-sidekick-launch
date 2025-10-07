@@ -348,7 +348,7 @@ Output ONLY the bio text, no labels or formatting.
     // AI Generation
     const aiGatewayUrl = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 
-    async function generateText(prompt: string, useHighTemp = false) {
+    async function generateText(prompt: string, useHighTemp = false, useModel?: string) {
       const response = await fetch(aiGatewayUrl, {
         method: 'POST',
         headers: {
@@ -356,7 +356,7 @@ Output ONLY the bio text, no labels or formatting.
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: NAMING_MODEL,
+          model: useModel || NAMING_MODEL,
           messages: [{ role: 'user', content: prompt }],
           temperature: useHighTemp ? NAMING_TEMP : undefined,
           response_format: useHighTemp ? { type: "json_object" } : undefined,
@@ -389,9 +389,9 @@ Output ONLY the bio text, no labels or formatting.
     // Generate initial names
     const [nameResponse, tagline, bio, colors] = await Promise.all([
       generateText(namingPrompt, true),
-      generateText(taglinePrompt),
-      generateText(bioPrompt),
-      generateText(colorsPrompt),
+      generateText(taglinePrompt, false, 'google/gemini-2.5-flash'),
+      generateText(bioPrompt, false, 'google/gemini-2.5-flash'),
+      generateText(colorsPrompt, false, 'google/gemini-2.5-flash'),
     ]);
 
     // Parse and filter names with rerank
@@ -399,9 +399,9 @@ Output ONLY the bio text, no labels or formatting.
     const initialParse = safeParseJSON(nameResponse, { names: [] });
     collected = filterRank(initialParse.names || [], namingMode);
 
-    // Refill loop if too many got filtered (max 1 refill attempt, accept 4+ names)
+    // Refill loop if too many got filtered (max 1 refill attempt, accept 3+ names)
     let tries = 0;
-    while (collected.length < Math.max(4, wantCount - 2) && tries < 1) {
+    while (collected.length < 3 && tries < 1) {
       tries++;
       console.log(`[generate-identity] Refilling names (try ${tries}), have ${collected.length}/${wantCount}`);
       const topUpResponse = await generateText(namingPrompt, true);
@@ -411,11 +411,11 @@ Output ONLY the bio text, no labels or formatting.
 
     let parsedNames = collected.slice(0, wantCount);
     
-    // AI Quality Re-Scoring Pass (2nd stage)
+    // AI Quality Re-Scoring Pass (2nd stage) - only run if we need more names
     type ScoredName = {name: string; tagline: string; aiScore?: number; combinedScore?: number};
     let scoredNames: ScoredName[] = parsedNames;
     
-    if (parsedNames.length > 0) {
+    if (parsedNames.length > 0 && collected.length < wantCount) {
       const scoringPrompt = `Rate each business name 1–10 for memorability, clarity, and uniqueness.
 Business idea: ${idea}
 Audience: ${audienceStr}
