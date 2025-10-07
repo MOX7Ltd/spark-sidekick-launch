@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StepOne } from './StepOne';
 import { StepAboutYouMobile } from './StepAboutYouMobile';
 import { StepAboutBusiness } from './StepAboutBusiness';
@@ -12,6 +12,7 @@ import { logFrontendEvent } from '@/lib/frontendEventLogger';
 import { DebugPanel } from '@/components/debug/DebugPanel';
 import type { OnboardingData } from '@/types/onboarding';
 import type { BrandContext } from '@/types/brand';
+import { generateBusinessIdentity, generateLogos, generateCampaign } from '@/lib/api';
 
 interface OnboardingFlowProps {
   onComplete?: (data: OnboardingData) => void;
@@ -20,14 +21,112 @@ interface OnboardingFlowProps {
 export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<Partial<OnboardingData>>({});
-  const [brandContext, setBrandContext] = useState<BrandContext>({ idea_text: '' });
+  const [context, setContext] = useState<BrandContext>({
+    idea_text: '',
+    families_ranked: [],
+    dominant_family: 'Digital',
+    tone_adjectives: [],
+    audience: [],
+    personal_brand: false,
+    palette: [],
+    business_name: undefined,
+    logo_style: undefined,
+  });
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
   
-  // Log context updates for debugging
-  useEffect(() => {
-    console.log('BrandContext updated:', brandContext);
-  }, [brandContext]);
+  // Context updater callback
+  const onUpdateContext = useCallback(
+    (updater: (ctx: BrandContext) => BrandContext) => {
+      setContext((prev) => {
+        const updated = updater(prev);
+        console.log('BrandContext updated:', updated);
+        return updated;
+      });
+    },
+    []
+  );
+  
+  // Wrapped generate functions that use unified context
+  const handleGenerateIdentity = useCallback(async () => {
+    try {
+      // Build request from context
+      const request = {
+        idea: context.idea_text,
+        audiences: context.audience || context.audiences || [],
+        vibes: context.tone_adjectives || context.vibes || [],
+        aboutYou: {
+          firstName: context.user_first_name || '',
+          lastName: context.user_last_name || '',
+          expertise: context.expertise || '',
+          motivation: context.motivation || '',
+          includeFirstName: context.personal_brand || false,
+          includeLastName: context.personal_brand || false,
+        },
+      };
+      
+      const res = await generateBusinessIdentity(request);
+      
+      // Merge response into context
+      onUpdateContext((ctx) => ({
+        ...ctx,
+        bio: res.bio,
+        palette: res.colors,
+        tone_adjectives: ctx.tone_adjectives || [],
+        audience: ctx.audience || [],
+      }));
+      
+      return res;
+    } catch (error) {
+      console.error('Failed to generate identity:', error);
+      throw error;
+    }
+  }, [context, onUpdateContext]);
+  
+  const handleGenerateLogos = useCallback(async (businessName: string, style: string) => {
+    try {
+      const logos = await generateLogos(
+        businessName,
+        style,
+        context.vibes || context.tone_adjectives || [],
+        context.idea_text,
+        context
+      );
+      return logos;
+    } catch (error) {
+      console.error('Failed to generate logos:', error);
+      throw error;
+    }
+  }, [context]);
+  
+  const handleGenerateCampaign = useCallback(async (products: any[]) => {
+    try {
+      const request = {
+        businessName: context.business_name || '',
+        tagline: '',
+        bio: context.bio || '',
+        products,
+        audiences: context.audience || context.audiences || [],
+        vibes: context.tone_adjectives || context.vibes || [],
+        type: 'intro' as const,
+        platforms: ['instagram', 'linkedin'],
+        aboutYou: {
+          firstName: context.user_first_name || '',
+          lastName: context.user_last_name || '',
+          expertise: context.expertise || '',
+          motivation: context.motivation || '',
+          includeFirstName: context.personal_brand || false,
+          includeLastName: context.personal_brand || false,
+        },
+      };
+      
+      const res = await generateCampaign(request);
+      return res;
+    } catch (error) {
+      console.error('Failed to generate campaign:', error);
+      throw error;
+    }
+  }, [context]);
 
   // Scroll to top and log step transitions
   useEffect(() => {
@@ -75,6 +174,17 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
         hasProfilePicture: !!aboutYou.profilePicture
       }
     });
+    
+    // Update context with user information
+    onUpdateContext((ctx) => ({
+      ...ctx,
+      user_first_name: aboutYou.firstName,
+      user_last_name: aboutYou.lastName,
+      expertise: aboutYou.expertise,
+      motivation: aboutYou.motivation,
+      personal_brand: aboutYou.includeFirstName || aboutYou.includeLastName,
+    }));
+    
     setFormData(prev => ({ ...prev, aboutYou }));
     setCurrentStep(3); // Go to business info (vibes + audiences)
   };
@@ -91,6 +201,15 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
         hasBio: !!data.businessIdentity?.bio
       }
     });
+    
+    // Update context with vibes and audiences
+    onUpdateContext((ctx) => ({
+      ...ctx,
+      vibes: data.vibes,
+      audiences: data.audiences,
+      tone_adjectives: data.vibes,
+      audience: data.audiences,
+    }));
     
     // Save vibes, audiences, and potentially the bio if already generated
     const updates: any = { vibes: data.vibes, audiences: data.audiences };
@@ -116,6 +235,15 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
         logoSource: businessIdentity.logoSource
       }
     });
+    
+    // Update context with business name and logo style
+    onUpdateContext((ctx) => ({
+      ...ctx,
+      business_name: businessIdentity.name,
+      logo_style: businessIdentity.logoSource === 'generated' ? 'modern' : undefined,
+      palette: businessIdentity.colors || ctx.palette,
+    }));
+    
     setFormData(prev => ({ ...prev, businessIdentity }));
     setCurrentStep(5); // Go to shopfront preview
   };
@@ -195,7 +323,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
           {currentStep === 1 && (
             <StepOne 
               onNext={handleStepOne}
-              onUpdateContext={setBrandContext}
+              onUpdateContext={onUpdateContext}
               initialValue={formData.idea}
             />
           )}
@@ -241,6 +369,10 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
               }}
               audiences={formData.audiences || []}
               vibes={formData.vibes || []}
+              context={context}
+              onUpdateContext={onUpdateContext}
+              onGenerateIdentity={handleGenerateIdentity}
+              onGenerateLogos={handleGenerateLogos}
             />
           )}
           
@@ -278,7 +410,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
       
       <DebugPanel info={{ 
         step: ['', 'StepOne', 'StepAboutYou', 'StepAboutBusiness', 'StepBusinessIdentity', 'StarterPackReveal', 'SocialPostPreview', 'StarterPackCheckout'][currentStep],
-        brandContext
+        brandContext: context
       }} />
     </div>
   );

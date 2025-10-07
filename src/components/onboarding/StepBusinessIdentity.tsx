@@ -17,6 +17,7 @@ import {
 import { regenerateBusinessNames, regenerateSingleName, generateLogos, generateBusinessIdentity } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import type { BusinessIdentity, AboutYou } from '@/types/onboarding';
+import type { BrandContext } from '@/types/brand';
 
 interface StepBusinessIdentityProps {
   onNext: (businessIdentity: BusinessIdentity) => void;
@@ -26,6 +27,10 @@ interface StepBusinessIdentityProps {
   aboutYou: AboutYou;
   audiences: string[];
   vibes: string[];
+  context?: BrandContext;
+  onUpdateContext?: (updater: (ctx: BrandContext) => BrandContext) => void;
+  onGenerateIdentity?: () => Promise<any>;
+  onGenerateLogos?: (businessName: string, style: string) => Promise<string[]>;
 }
 
 // Expanded logo styles for more variety
