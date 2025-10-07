@@ -55,6 +55,37 @@ const requestSchema = z.object({
     firstName: z.string().optional(),
     products: z.array(z.string()).optional(),
   }).passthrough()
+).or(
+  // NEW: Unified format from onboarding flow
+  z.object({
+    context: z.object({
+      idea_text: z.string().optional(),
+      business_name: z.string().min(1),
+      bio: z.string().optional(),
+      palette: z.array(z.string()).optional(),
+      tone_adjectives: z.array(z.string()).optional(),
+      audience: z.array(z.string()).optional(),
+      vibes: z.array(z.string()).optional(),
+      audiences: z.array(z.string()).optional(),
+      user_first_name: z.string().optional(),
+      user_last_name: z.string().optional(),
+      expertise: z.string().optional(),
+      motivation: z.string().optional(),
+      personal_brand: z.boolean().optional(),
+      dominant_family: z.string().optional(),
+      logo_style: z.string().optional(),
+      naming_mode: z.string().optional(),
+      session_id: z.string().optional(),
+      feature_flags: z.array(z.string()).optional(),
+    }),
+    products: z.array(z.object({
+      id: z.string().optional(),
+      category: z.string().optional(),
+      format: z.string().optional(),
+      title: z.string(),
+      description: z.string().optional(),
+    })).optional(),
+  })
 );
 
 // Rate limiting function
@@ -146,6 +177,7 @@ serve(async (req) => {
     }
 
     const requestBody = await req.json();
+    console.log('[generate-campaign] Request body keys:', Object.keys(requestBody));
     
     // Extract context if provided (new unified format)
     const context = requestBody?.context || {};
@@ -155,8 +187,9 @@ serve(async (req) => {
     const validationResult = requestSchema.safeParse(requestBody);
     if (!validationResult.success) {
       const durationMs = Math.round(performance.now() - startTime);
+      console.error('[generate-campaign] Validation failed:', validationResult.error.flatten().fieldErrors);
       return new Response(JSON.stringify({
-        error: 'Invalid input',
+        error: 'Invalid input - expected either {type, platforms, ...} or {context, products}',
         field_errors: validationResult.error.flatten().fieldErrors,
         trace_id: traceId,
         session_id: sessionId,
@@ -170,32 +203,59 @@ serve(async (req) => {
     
     const rawData = validationResult.data as any; // Use any for union type handling
     
-    // Normalize inputs with backwards compat
-    const audiences = Array.isArray(rawData.audiences) 
-      ? rawData.audiences 
-      : (rawData.audience ? [rawData.audience] : ['General']);
+    // Transform unified format to flat structure if needed
+    let transformedData: any;
     
-    const vibes = Array.isArray(rawData.vibes)
-      ? rawData.vibes
-      : (rawData.tone ? [rawData.tone] : ['friendly']);
+    if ('context' in rawData && rawData.context) {
+      // New unified format - transform to expected flat structure
+      const ctx = rawData.context;
+      transformedData = {
+        type: 'intro', // Default for onboarding flow
+        platforms: ['Instagram'], // Default platform
+        businessName: ctx.business_name,
+        tagline: ctx.bio, // Use bio as tagline fallback
+        audiences: ctx.audiences || ctx.audience || ['everyone'],
+        vibes: ctx.vibes || ctx.tone_adjectives || ['friendly'],
+        aboutYou: {
+          firstName: ctx.user_first_name || '',
+          lastName: ctx.user_last_name || '',
+          motivation: ctx.motivation || ctx.expertise || ctx.bio || '',
+        },
+        products: rawData.products || [],
+      };
+      console.log('[generate-campaign] Transformed unified format to flat structure');
+    } else {
+      // Existing flat format - use as-is
+      transformedData = rawData;
+      console.log('[generate-campaign] Using existing flat format');
+    }
+    
+    // Normalize inputs with backwards compat - now using transformedData
+    const audiences = Array.isArray(transformedData.audiences) 
+      ? transformedData.audiences 
+      : (transformedData.audience ? [transformedData.audience] : ['General']);
+    
+    const vibes = Array.isArray(transformedData.vibes)
+      ? transformedData.vibes
+      : (transformedData.tone ? [transformedData.tone] : ['friendly']);
     
     const primaryTone = vibes[0];
     const toneHints = vibes.slice(1);
     const audienceStr = audiences.join(', ');
     
     // Handle products - can be array of strings (old) or objects (new)
-    const products = Array.isArray(rawData.products)
-      ? rawData.products.map((p: any) => typeof p === 'string' ? p : p.title)
+    const products = Array.isArray(transformedData.products)
+      ? transformedData.products.map((p: any) => typeof p === 'string' ? p : p.title)
       : [];
     
     // Handle aboutYou
-    const aboutYou = rawData.aboutYou ?? {
-      firstName: rawData.firstName ?? '',
+    const aboutYou = transformedData.aboutYou ?? {
+      firstName: transformedData.firstName ?? '',
       lastName: '',
-      motivation: rawData.motivation ?? rawData.background ?? '',
+      motivation: transformedData.motivation ?? transformedData.background ?? '',
     };
     
-    const { businessId, type, platforms, businessName, tagline } = rawData;
+    const { businessId, type, platforms, businessName, tagline } = transformedData;
     
     console.log('[generate-campaign] Normalized:', {
       audiences,
