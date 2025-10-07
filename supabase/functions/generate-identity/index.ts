@@ -168,63 +168,101 @@ serve(async (req) => {
     // Determine if this is a personal brand
     const nameInfo = shouldIncludeName(aboutYou);
     const isPersonalBrand = nameInfo.includeFirst || nameInfo.includeLast;
+    const personalName = isPersonalBrand 
+      ? `${nameInfo.firstName || ''} ${nameInfo.lastName || ''}`.trim()
+      : '';
     
     // Build name prompt with constraints
-    const nameCount = regenerateSingleName ? 2 : 6; // Generate fewer for single regeneration
+    const wantCount = regenerateSingleName ? 2 : 6;
     
-    // Build constraint clauses
-    let constraintText = '';
-    
-    if (nameInfo.includeFirst || nameInfo.includeLast) {
-      const nameParts = [];
-      if (nameInfo.includeFirst) nameParts.push(nameInfo.firstName);
-      if (nameInfo.includeLast) nameParts.push(nameInfo.lastName);
-      constraintText += `\n- MUST include the name: ${nameParts.join(' ')}`;
+    // Tightened naming prompt
+    const namingPrompt = `
+You are a senior brand namer. Create ${wantCount} strong brand names for:
+Idea: "${idea}"
+Audience: ${audienceStr}
+Tone: ${vibes.join(", ")}
+Family: ${audiences[0] || "General"}
+
+Rules (must follow):
+- 1–2 words max. Prefer a single coined or compound word.
+- No alliteration (no repeated first letters: "Power Play", "Future Footwork").
+- No corporate filler or status words: academy, institute, solutions, systems, studio, labs, global, world, ventures, vision, pathway, program, project, collective, group, HQ.
+- No vague adjectives: apex, echelon, ascend(ant), elevate, ignite, stratagem, prime, alpha, omni, ultra, nova, synergy, quantum.
+- No suffix cliché: -ly, -ify, -verse, -scape, -matic.
+- Avoid on-the-nose sport clichés (goal, score, win, pro, elite, champs) unless tastefully embedded into a coined word.
+- Easy to say and spell. 4–10 letters preferred (not a hard limit).
+${bannedWords.length > 0 ? `- NEVER use these words: ${bannedWords.join(', ')}` : ''}
+${rejectedNames.length > 0 ? `- NEVER use names similar to: ${rejectedNames.join(', ')}` : ''}
+${isPersonalBrand ? `\n- Generate 2 options that gracefully include "${personalName}" without sounding corporate (e.g., "Morris Coaching", "Paul Morris Training"). Keep them within rules.` : ''}
+
+Return JSON:
+{
+  "names": [
+    { "name": "Name", "tagline": "Short promise (max 12 words)" }
+  ]
+}
+`.trim();
+
+    // Filter and scoring functions
+    const BAN_WORDS = [
+      "academy","institute","solutions","systems","studio","labs","global","world","ventures",
+      "vision","pathway","program","project","collective","group","house","hq","school","league"
+    ];
+    const BAN_VAGUE = [
+      "apex","echelon","ascend","ascendant","elevate","ignite","stratagem","prime","alpha",
+      "omni","ultra","nova","synergy","quantum","veridian","emerald","velocity"
+    ];
+    const BAN_SUFFIX = [/ly$/i, /ify$/i, /verse$/i, /scape$/i, /matic$/i];
+
+    function isAlliteration(name: string): boolean {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length < 2) return false;
+      const firsts = parts.map(w => w[0]?.toLowerCase()).filter(Boolean);
+      return new Set(firsts).size === 1;
     }
 
-    if (bannedWords.length > 0) {
-      constraintText += `\n- NEVER use these words: ${bannedWords.join(', ')}`;
+    function looksCorporate(name: string): boolean {
+      const low = name.toLowerCase();
+      if (BAN_WORDS.some(w => low.includes(w))) return true;
+      if (BAN_VAGUE.some(w => low.includes(w))) return true;
+      if (BAN_SUFFIX.some(rx => rx.test(name))) return true;
+      return false;
     }
 
-    if (rejectedNames.length > 0) {
-      constraintText += `\n- NEVER use names similar to: ${rejectedNames.join(', ')}`;
+    function wordCount(name: string): number { 
+      return name.trim().split(/\s+/).length; 
     }
-    
-    const namePrompt = `
-Act as a senior brand strategist creating names for new ventures.
 
-Context:
-- Business idea: ${idea}
-- Audience: ${audienceStr}
-- Tone / Vibe: ${vibes.join(", ")}
-${isPersonalBrand ? `- Personal brand: Yes (should include founder's name naturally)` : ''}
+    function charCount(name: string): number { 
+      return name.replace(/\s+/g,'').length; 
+    }
 
-Your task:
-Generate ${nameCount} concise, *brandable* business names and matching taglines that sound human and market-ready.
-Follow these rules strictly:
+    function scoreName(n: string): number {
+      let score = 100;
+      if (isAlliteration(n)) score -= 40;
+      if (looksCorporate(n)) score -= 35;
+      if (wordCount(n) > 2) score -= 30;
+      const len = charCount(n);
+      if (len < 4 || len > 12) score -= 15;
+      if (/[^a-zA-Z\s]/.test(n)) score -= 10;
+      return score;
+    }
 
-✅ MUST:
-- 1–2 words max (3 only if it sounds natural and brandable)
-- Evoke meaning, confidence, or creativity
-- Sound like a real brand you'd see on BrandBucket, ProductHunt, or IndieMaker
-- Use metaphors, blends, or subtle abstractions (e.g. SideHive, Fretwell, Strumverse)
-- Include a short tagline (max 10 words) that feels natural and aspirational
-- Each name must have a "style" property matching the tone: ${primaryTone}
-
-❌ NEVER:
-- No rhyme or cutesy alliteration (no "Guitar Gigglers", "Chord Commanders")
-- No filler suffixes (no HQ, House, World, Co., Studio, Funhouse, Academy, Institute)
-- No literal repetition of the ideaText words
-- No generic corporate words (no "Solutions", "Vision", "Enterprises", "Systems")
-- No random mashups or unrelated adjectives
-${constraintText}
-
-Output format (JSON array only):
-[
-  { "name": "ExampleName", "tagline": "Short positioning line here.", "style": "${primaryTone}" },
-  { "name": "AnotherName", "tagline": "A second short line.", "style": "${primaryTone}" }
-]
-    `.trim();
+    function filterRank(names: {name:string, tagline:string}[]) {
+      const dedup = new Map<string, {name:string, tagline:string}>();
+      for (const x of names) {
+        const key = x.name.trim().toLowerCase();
+        if (!dedup.has(key)) dedup.set(key, x);
+      }
+      const arr = [...dedup.values()]
+        .filter(x => !isAlliteration(x.name))
+        .filter(x => !looksCorporate(x.name))
+        .filter(x => wordCount(x.name) <= 2);
+      return arr
+        .map(x => ({ ...x, __s: scoreName(x.name) }))
+        .sort((a,b) => b.__s - a.__s)
+        .map(({__s, ...r}) => r);
+    }
 
     // Tagline prompt
     const taglinePrompt = `Generate a short, memorable tagline for a business about: ${idea}.\nTarget audience: ${audienceStr}.\nTone: ${primaryTone}.\nMax 8 words.`;
@@ -268,7 +306,7 @@ Output ONLY the bio text, no labels or formatting.
         body: JSON.stringify({
           model: 'google/gemini-2.5-flash',
           messages: [{ role: 'user', content: prompt }],
-          temperature: useHighTemp ? 0.8 : undefined,
+          temperature: useHighTemp ? 0.55 : undefined,
           response_format: useHighTemp ? { type: "json_object" } : undefined,
         }),
       });
@@ -296,30 +334,35 @@ Output ONLY the bio text, no labels or formatting.
       }
     }
 
-    const [nameOptions, tagline, bio, colors] = await Promise.all([
-      generateText(namePrompt, true), // Use high temperature for creative names
+    // Generate initial names
+    const [nameResponse, tagline, bio, colors] = await Promise.all([
+      generateText(namingPrompt, true),
       generateText(taglinePrompt),
       generateText(bioPrompt),
       generateText(colorsPrompt),
     ]);
 
-    // Filter out banned names
-    let parsedNames = safeParseJSON(nameOptions, [
-      { name: "BusinessName", tagline: "A great business", style: primaryTone },
-    ]);
+    // Parse and filter names with rerank
+    let collected: {name:string, tagline:string}[] = [];
+    const initialParse = safeParseJSON(nameResponse, { names: [] });
+    collected = filterRank(initialParse.names || []);
 
-    // Apply bannedWords filter
-    if (bannedWords.length > 0) {
-      parsedNames = parsedNames.filter((opt: any) => {
-        const nameLower = opt.name.toLowerCase();
-        return !bannedWords.some(word => nameLower.includes(word.toLowerCase()));
-      });
+    // Refill loop if too many got filtered (max 2 tries)
+    let tries = 0;
+    while (collected.length < wantCount && tries < 2) {
+      tries++;
+      console.log(`[generate-identity] Refilling names (try ${tries}), have ${collected.length}/${wantCount}`);
+      const topUpResponse = await generateText(namingPrompt, true);
+      const topUpParse = safeParseJSON(topUpResponse, { names: [] });
+      collected = filterRank([...collected, ...(topUpParse.names || [])]);
     }
 
-    // Safety check: ensure we have at least one name after filtering
-    if (!parsedNames || parsedNames.length === 0) {
-      console.warn('[generate-identity] All names filtered out, using fallback name');
-      parsedNames = [{ name: "BusinessName", tagline: "A great business", style: primaryTone }];
+    let parsedNames = collected.slice(0, wantCount);
+
+    // Safety check: ensure we have at least one name
+    if (parsedNames.length === 0) {
+      console.warn('[generate-identity] All names filtered out, using fallback');
+      parsedNames = [{ name: "BusinessName", tagline: "A great business" }];
     }
 
     const parsedColors = safeParseJSON(colors, ['#2563eb', '#1d4ed8', '#1e40af']);
