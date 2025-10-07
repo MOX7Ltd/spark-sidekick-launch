@@ -1,128 +1,129 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkIdempotency, storeIdempotentResponse, hashRequest, parseFeatureFlags } from '../_shared/idempotency.ts';
 
-const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-session-id, x-trace-id, x-env, x-retry, x-idempotency-key, x-feature-flags",
 };
 
-console.log('[generate-names] Function started and deployed successfully');
-
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  const startTime = performance.now();
+  const sessionId = req.headers.get("X-Session-Id") || "unknown";
+  const traceId = req.headers.get("X-Trace-Id") || "unknown";
+  const idempotencyKey = req.headers.get("X-Idempotency-Key") || traceId;
+
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { ideaText, audience = 'general', tone = 'neutral', max_names = 12 } = await req.json();
+    const requestBody = await req.json();
+    const { ideaText = "", audience = "general", tone = "neutral", vibes = [] } = requestBody;
+
+    const cachedResponse = await checkIdempotency(sessionId, idempotencyKey, "names");
+    if (cachedResponse) {
+      return new Response(JSON.stringify({ ...cachedResponse, deduped: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const namingPrompt = `
-You are a brand strategist. Create ${Math.min(max_names, 12)} memorable brand NAMES for a business.
+Act as a senior brand strategist creating names for new ventures.
 
 Context:
-- What we do / core idea: ${ideaText || '—'}
+- Business idea: ${ideaText || "—"}
 - Audience: ${audience}
-- Tone: ${tone}
+- Tone / Vibe: ${vibes.length ? vibes.join(", ") : tone}
 
-Hard rules:
-- 1–2 words only (3 only if truly strong; avoid long phrases)
-- No cheesy alliteration or rhyme (no "Guitar Gigglers", "Chord Commanders")
-- No filler words: HQ, House, Palace, Funhouse, Studio, Co., Corp., LLC
-- No literal category descriptors unless essential (e.g., "Guitar", "Course")
-- Prefer coined blends, abstractions, or metaphorical roots (e.g., Fretwell, Tuneform, Strumverse)
-- Must sound like a real brand that could appear on BrandBucket or IndieMaker
-- No punctuation, no emojis
+Your task:
+Generate 8 concise, *brandable* business names and matching taglines that sound human and market-ready.
+Follow these rules strictly:
 
-Return JSON ONLY:
+✅ MUST:
+- 1–2 words max (3 only if it sounds natural and brandable)
+- Evoke meaning, confidence, or creativity
+- Sound like a real brand you'd see on BrandBucket, ProductHunt, or IndieMaker
+- Use metaphors, blends, or subtle abstractions (e.g. SideHive, Fretwell, Strumverse)
+- Include a short tagline (max 10 words) that feels natural and aspirational
+
+❌ NEVER:
+- No rhyme or cutesy alliteration (no "Guitar Gigglers", "Chord Commanders")
+- No filler suffixes (no HQ, House, World, Co., Studio, Funhouse, Academy, Institute)
+- No literal repetition of the ideaText words
+- No generic corporate words (no "Solutions", "Vision", "Enterprises", "Systems")
+- No random mashups or unrelated adjectives
+
+Output format (JSON only):
 {
-  "names": ["NameOne", "NameTwo", "..."]
+  "ideas": [
+    { "name": "ExampleName", "tagline": "Short positioning line here." },
+    { "name": "AnotherName", "tagline": "A second short line." }
+  ]
 }
-`.trim();
+    `.trim();
 
-    console.log('Generating brand names for:', ideaText);
-
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
+        "Authorization": `Bearer ${lovableApiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: "google/gemini-2.5-flash",
         messages: [
-          {
-            role: 'user',
-            content: namingPrompt
-          }
+          { role: "user", content: namingPrompt }
         ],
-        response_format: { type: "json_object" }
+        temperature: 0.8,
+        max_output_tokens: 800,
+        response_format: { type: "json_object" },
       }),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('Lovable AI API error:', error);
-      throw new Error(`Lovable AI API error: ${error}`);
+      throw new Error(`Lovable AI error: ${error}`);
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-    
-    if (!content) {
-      throw new Error('No content in response');
-    }
+    const ideas = data?.choices?.[0]?.message?.content ? JSON.parse(data.choices[0].message.content).ideas : [];
 
-    const parsed = JSON.parse(content);
-    const names = parsed.names || [];
+    const durationMs = Math.round(performance.now() - startTime);
+    const responseData = {
+      ok: true,
+      ideas,
+      ideaText,
+      tone,
+      audience,
+      vibes,
+      trace_id: traceId,
+      session_id: sessionId,
+      idempotency_key: idempotencyKey,
+      duration_ms: durationMs,
+    };
 
-    // Lightweight scoring
-    const scores: Record<string, {brevity: number, distinctiveness: number, relevance: number, total: number}> = {};
-    
-    names.forEach((name: string) => {
-      const wordCount = name.trim().split(/\s+/).length;
-      const brevity = wordCount === 1 ? 5 : wordCount === 2 ? 4 : 3;
-      
-      // Simple distinctiveness check (no common words)
-      const commonWords = ['the', 'and', 'for', 'with', 'your', 'our', 'my'];
-      const lowerName = name.toLowerCase();
-      const hasCommonWord = commonWords.some(w => lowerName.includes(w));
-      const distinctiveness = hasCommonWord ? 2 : 5;
-      
-      // Relevance - check if it's too generic
-      const genericWords = ['company', 'business', 'service', 'shop', 'store'];
-      const isGeneric = genericWords.some(w => lowerName.includes(w));
-      const relevance = isGeneric ? 2 : 5;
-      
-      const total = brevity + distinctiveness + relevance;
-      
-      scores[name] = { brevity, distinctiveness, relevance, total };
+    const requestHash = await hashRequest(requestBody);
+    await storeIdempotentResponse(sessionId, idempotencyKey, "names", requestHash, responseData);
+
+    return new Response(JSON.stringify(responseData), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
-    // Sort names by score
-    const sortedNames = names.sort((a: string, b: string) => 
-      scores[b].total - scores[a].total
-    );
-
-    console.log('Generated', sortedNames.length, 'brand names');
-
-    return new Response(JSON.stringify({ 
-      names: sortedNames,
-      scores 
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
   } catch (error) {
-    console.error('Error in generate-names function:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to generate names';
-    
-    return new Response(JSON.stringify({ 
-      error: errorMessage,
-      names: []
+    const durationMs = Math.round(performance.now() - startTime);
+    const errMsg = error instanceof Error ? error.message : String(error);
+
+    return new Response(JSON.stringify({
+      ok: false,
+      error: errMsg,
+      trace_id: traceId,
+      session_id: sessionId,
+      duration_ms: durationMs,
     }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
