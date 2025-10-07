@@ -27,7 +27,9 @@ export async function checkIdempotency(
   idempotencyKey: string,
   fnName: string
 ): Promise<any | null> {
-  const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+  // Use 5-minute cache for generate-identity during tuning, 15 minutes for others
+  const cacheTTL = fnName === 'business-identity' ? 5 : 15;
+  const cacheExpiry = new Date(Date.now() - cacheTTL * 60 * 1000).toISOString();
   
   const { data, error } = await supabase
     .from('idempotent_responses')
@@ -35,7 +37,7 @@ export async function checkIdempotency(
     .eq('session_id', sessionId)
     .eq('idempotency_key', idempotencyKey)
     .eq('fn', fnName)
-    .gte('created_at', fifteenMinutesAgo)
+    .gte('created_at', cacheExpiry)
     .maybeSingle();
   
   if (error) {

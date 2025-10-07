@@ -37,6 +37,17 @@ serve(async (req) => {
     const dominantFamily = brandContext.dominant_family;
     const palette = brandContext.palette || [];
     
+    // Build brand context card
+    const brandCard = `
+Brand Context
+=============
+Business: ${businessName}
+Idea: ${ideaText || '(not provided)'}
+Audience: ${brandContext.audience?.join(', ') || 'General'}
+Tone: ${brandContext.tone_adjectives?.join(', ') || vibes.join(', ') || 'Neutral'}
+Values: ${brandContext.bio ? brandContext.bio.substring(0, 150) : 'Professional, trustworthy'}
+`.trim();
+    
     console.log('[generate-logos] Feature flags:', featureFlags);
     
     // Check for cached response
@@ -115,66 +126,71 @@ serve(async (req) => {
       ? `Consider these metaphorical forms: ${familyMotifs[dominantFamily]}.`
       : '';
     
-    const paletteHint = palette.length > 0
-      ? `Use these brand colors: ${palette.join(', ')}.`
-      : '';
+    // Derive palette & tone guidance
+    let paletteGuidance = '';
+    if (palette.length > 0) {
+      paletteGuidance = `Use these brand colors: ${palette.join(', ')}.`;
+    } else {
+      // Derive from tone
+      const toneColors: Record<string, string> = {
+        'visionary': 'modern blues or gradients',
+        'educational': 'teal/yellow warmth',
+        'friendly': 'warm neutrals',
+        'bold': 'strong contrasts (black, orange, red)',
+      };
+      
+      for (const vibe of vibes) {
+        const vibeLower = vibe.toLowerCase();
+        if (toneColors[vibeLower]) {
+          paletteGuidance = `Palette & Tone: Suggest ${toneColors[vibeLower]}. Designers may tint/shade but stay within these tones.`;
+          break;
+        }
+      }
+      
+      if (!paletteGuidance) {
+        paletteGuidance = 'Palette & Tone: Use versatile, professional colors.';
+      }
+    }
     
     const designTarget = includeNameText
       ? `Design a logo for the business "${businessName}" focusing on the wordmark and lettering.`
       : `Design a single logo symbol that represents the essence of "${businessName}" without necessarily showing the name text.`;
 
-    // Style-specific variation plans
-    let variationPlans: string[] = [];
-    switch (primaryStyle) {
-      case "typography-first":
-      case "typography":
-      case "bold":
-      case "retro":
-        variationPlans = [
-          "Wordmark-first layout; explore strong letterforms and spacing",
-          "Wordmark with subtle monogram/initial accent (small symbol)",
-          "Stacked wordmark (two-line) exploring weight/contrast",
-          "Integrated wordmark with a minimal geometric or negative-space device"
-        ];
-        break;
+    // Simplified variation plans based on style with symbol-first enforcement
+    let variationPlans: string[];
 
-      case "icon-based":
-      case "icon":
-      case "playful":
-      case "minimalist":
-      case "modern-gradient":
-      case "gradient":
-      case "handdrawn":
-      case "modern":
-        variationPlans = [
-          "Standalone symbol (no text) using abstract geometric motif",
-          "Symbol above small wordmark lockup (balanced proportions)",
-          "Symbol left of wordmark (horizontal lockup)",
-          "Standalone symbol as monogram/negative-space exploration"
-        ];
-        break;
-
-      default:
-        variationPlans = [
-          "Icon above wordmark (primary composition)",
-          "Icon left of wordmark (secondary composition)",
-          "Standalone icon (no wordmark)",
-          "Integrated icon + wordmark with minimal overlap"
-        ];
+    if (includeNameText) {
+      // Typography-focused styles - MUST include business name
+      variationPlans = [
+        "Primary wordmark with strong letterforms",
+        "Wordmark with minimal symbol accent",
+        "Alternative weight/spacing exploration",
+        "Integrated wordmark + icon device"
+      ];
+    } else {
+      // Symbol-focused styles - at least 2 symbol-only variants
+      variationPlans = [
+        "Primary standalone symbol (no text)",
+        "Symbol with minimal wordmark lockup",
+        "Alternative symbol interpretation (no text)",
+        "Symbol in badge or contained form"
+      ];
     }
 
-    // Create the primary prompt for all 4 variations
-    const primaryPrompt = `${designTarget}
+    // Create the primary prompt for all 4 variations with brand context
+    const primaryPrompt = `${brandCard}
+
+${designTarget}
 
 Style: ${styleDescriptor}
 ${toneHint}
 ${nameInstruction}
 ${motifHint}
-${paletteHint}
+${paletteGuidance}
 ${ideaText ? `Business context: ${ideaText}` : ''}
 
 Design Goals:
-- Each logo must be a **single, distinct mark** (no multiple logos in one image)
+- Each image should depict a single logo concept (no collages or multiple marks)
 - Vector-friendly, scalable, clean composition
 - ${includeNameText ? 'Focus on lettering and wordmark' : 'Focus on symbolic mark first'}
 - Avoid: photorealism, 3D effects, clip-art, busy compositions
@@ -242,11 +258,24 @@ Variation ${i + 1}: ${plan}`);
 
     const logos = await Promise.all(logoPromises);
 
-    console.log('Generated', logos.length, 'logos');
+    // Optional: Basic quality check
+    const validLogos = logos.filter(logo => {
+      // Check that base64 is reasonable size (not broken)
+      return logo && logo.length > 1000 && logo.startsWith('data:image');
+    });
+
+    if (validLogos.length < 3) {
+      console.warn(`[generate-logos] Only ${validLogos.length}/4 logos valid, may need retry`);
+    }
+
+    // Return valid logos (or all if most are valid)
+    const finalLogos = validLogos.length >= 3 ? validLogos : logos;
+
+    console.log('Generated', finalLogos.length, 'logos');
 
     const durationMs = Math.round(performance.now() - startTime);
     const responseData = {
-      logos,
+      logos: finalLogos,
       styleUsed: primaryStyle,
       trace_id: traceId,
       session_id: sessionId,

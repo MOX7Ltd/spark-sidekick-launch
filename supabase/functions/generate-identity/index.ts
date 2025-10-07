@@ -9,6 +9,10 @@ const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+// Model configuration (centralized for easy updates)
+const NAMING_MODEL = Deno.env.get('NAMING_MODEL') || 'google/gemini-2.5-pro';
+const NAMING_TEMP = parseFloat(Deno.env.get('NAMING_TEMP') || '0.7');
+
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const corsHeaders = {
@@ -187,41 +191,48 @@ serve(async (req) => {
     const namingMode = normalized.naming_mode || 'descriptive';
     const s = servicePhrase(idea);
     
-    // Mode-aware naming prompt
+    // Side-hustle focused naming prompt
     const namingPrompt = `
-You are a practical brand namer for solo/side-hustle businesses.
-Mode: ${namingMode}
+You are a senior brand namer helping ${isPersonalBrand ? 'a solo entrepreneur' : 'a small business owner'}.
 
-Business idea: "${idea}"
-Audience: ${audienceStr}
-Tone: ${vibes.join(', ')}
-Service phrase: ${s}
-Personal brand: ${isPersonalBrand ? 'on' : 'off'}${isPersonalBrand ? ` (name: ${personalName})` : ''}
+Business context:
+- Idea: "${idea}"
+- Service: ${s}
+- Audience: ${audienceStr}
+- Tone: ${vibes.join(', ')}
+${isPersonalBrand ? `- Founder: ${personalName} (MUST incorporate name tastefully in at least 2 options)` : ''}
 
-Generate ${wantCount} business names with short taglines (<= 12 words).
+Task: Generate ${wantCount} distinct business names with taglines (<= 12 words each).
 
-If Mode = "descriptive" (default):
-- Favour clear, human, service-first names (2–3 words).
-- At least:
-  • 2 personal-brand options when personal_brand=on (e.g., "Paul Morris Soccer Coaching").
-  • 2 descriptive options that include the service phrase (e.g., "Pitch Skills Coaching", "Youth Soccer Coaching").
-  • 1 outcome-based option (e.g., "First Touch Coaching", "Better Ball Skills").
-  • 1 localizable pattern using "{City}" placeholder (e.g., "{City} Youth Soccer Coaching").
-- Absolutely avoid coined/app-y/portmanteau names and single fake words (no "Kickflow", "Playforge", "Pitchwise", "Footwiz").
-- Avoid corporate/stuffy terms (academy, institute, solutions, systems, labs, global, ventures, group, collective, HQ).
-- Avoid vague status words (apex, echelon, ascend/ascendant, elevate, prime, alpha, omni, ultra, nova, synergy, quantum).
-- No alliteration ("Power Play", "Future Footwork"), no weird suffixes (-ly, -ify, -verse, -matic, -scape).
-- Keep it easy to say and spell. Prefer space-separated words. No hyphens.
-${bannedWords.length > 0 ? `- NEVER use these words: ${bannedWords.join(', ')}` : ''}
-${rejectedNames.length > 0 ? `- NEVER use names similar to: ${rejectedNames.join(', ')}` : ''}
+Mode: Side-Hustle Descriptive (default)
+- Generate 2–3 word names that sound natural and clear, as if this were a real person's side business.
+- Prioritize clarity over cleverness.
+- Examples:
+  • "First Touch Coaching" (youth soccer training)
+  • "Morris Guitar Lessons" (personal brand)
+  • "Meal Prep Made Easy" (home cooking support)
+  • "Pitch Skills Training" (public speaking coaching)
+- Use plain, familiar words. Avoid coined terms unless they're short, obvious, and human-sounding.
 
-If Mode = "invented":
-- Allow 1–2 coined names but still avoid clichés (no -ly/-ify/-verse etc.). Balance with 3–4 descriptive options.
+${isPersonalBrand ? `CRITICAL: At least 2 of the ${wantCount} names MUST include "${personalName}" (e.g., "${personalName.split(' ')[0]} ${s}", "${s} with ${personalName.split(' ')[0]}")` : ''}
+
+Quality guidelines:
+✓ Easy to say and spell
+✓ Service-forward and audience-appropriate
+✓ Distinct from each other
+✓ At least 1 option with "{City}" placeholder for localization
+✗ No alliteration (matching first letters)
+✗ No corporate jargon (academy, solutions, systems, ventures, collective, HQ, institute, labs)
+✗ No vague buzzwords (apex, synergy, quantum, elevate, alpha, echelon, ascend, prime, omni)
+✗ No trendy suffixes (-ly, -ify, -verse, -matic, -scape)
+✗ No coined/app-y/portmanteau names (Kickflow, Playforge, Pitchwise, Footwiz)
+${bannedWords.length > 0 ? `✗ Never use: ${bannedWords.join(', ')}` : ''}
+${rejectedNames.length > 0 ? `✗ Avoid similarity to: ${rejectedNames.join(', ')}` : ''}
 
 Return JSON:
 {
   "names": [
-    { "name": "Name", "tagline": "clear benefit promise" }
+    { "name": "Name", "tagline": "benefit-driven promise" }
   ]
 }
 `.trim();
@@ -271,12 +282,20 @@ Return JSON:
 
     function scoreName(n: string, mode: 'descriptive' | 'invented'): number {
       let score = 100;
-      if (isAlliteration(n)) score -= 40;
-      if (looksCorporate(n)) score -= 35;
-      if (mode !== 'invented' && looksCoined(n)) score -= 40;
+      
+      // Relaxed penalties
+      if (isAlliteration(n)) score -= 30;  // was -40
+      if (looksCorporate(n)) score -= 25;  // was -35
+      if (mode !== 'invented' && looksCoined(n)) score -= 18;  // was -40, now soft penalty
+      
       const wc = wordCount(n);
-      if (mode === 'descriptive' && (wc < 2 || wc > 3)) score -= 20;
+      // More flexible word count (1-4 acceptable)
+      if (mode === 'descriptive' && (wc < 1 || wc > 4)) score -= 15;  // was strict 2-3
+      if (mode === 'invented' && (wc < 1 || wc > 3)) score -= 15;
+      
+      // Keep punctuation penalty
       if (/[^a-zA-Z\s]/.test(n)) score -= 10;
+      
       return score;
     }
 
@@ -286,12 +305,13 @@ Return JSON:
         const key = x.name.trim().toLowerCase();
         if (!dedup.has(key)) dedup.set(key, x);
       }
+      // Less aggressive filtering - let scoring handle it
       const arr = [...dedup.values()]
-        .filter(x => !isAlliteration(x.name))
-        .filter(x => !looksCorporate(x.name))
-        .filter(x => mode === 'descriptive' ? wordCount(x.name) <= 3 : wordCount(x.name) <= 2);
+        .filter(x => !looksCorporate(x.name))  // Keep corporate filter as hard filter
+        .filter(x => wordCount(x.name) <= (mode === 'descriptive' ? 4 : 3));  // Relaxed word count
       return arr
         .map(x => ({ ...x, __s: scoreName(x.name, mode) }))
+        .filter(x => x.__s >= 55)  // Accept scores ≥ 55
         .sort((a,b) => b.__s - a.__s)
         .map(({__s, ...r}) => r);
     }
@@ -336,9 +356,9 @@ Output ONLY the bio text, no labels or formatting.
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
+          model: NAMING_MODEL,
           messages: [{ role: 'user', content: prompt }],
-          temperature: useHighTemp ? 0.4 : undefined,
+          temperature: useHighTemp ? NAMING_TEMP : undefined,
           response_format: useHighTemp ? { type: "json_object" } : undefined,
         }),
       });
@@ -379,9 +399,9 @@ Output ONLY the bio text, no labels or formatting.
     const initialParse = safeParseJSON(nameResponse, { names: [] });
     collected = filterRank(initialParse.names || [], namingMode);
 
-    // Refill loop if too many got filtered (max 2 tries)
+    // Refill loop if too many got filtered (max 1 refill attempt, accept 4+ names)
     let tries = 0;
-    while (collected.length < wantCount && tries < 2) {
+    while (collected.length < Math.max(4, wantCount - 2) && tries < 1) {
       tries++;
       console.log(`[generate-identity] Refilling names (try ${tries}), have ${collected.length}/${wantCount}`);
       const topUpResponse = await generateText(namingPrompt, true);
@@ -390,6 +410,67 @@ Output ONLY the bio text, no labels or formatting.
     }
 
     let parsedNames = collected.slice(0, wantCount);
+    
+    // AI Quality Re-Scoring Pass (2nd stage)
+    type ScoredName = {name: string; tagline: string; aiScore?: number; combinedScore?: number};
+    let scoredNames: ScoredName[] = parsedNames;
+    
+    if (parsedNames.length > 0) {
+      const scoringPrompt = `Rate each business name 1–10 for memorability, clarity, and uniqueness.
+Business idea: ${idea}
+Audience: ${audienceStr}
+Tone: ${vibes.join(', ')}
+
+Names to rate:
+${parsedNames.map(n => n.name).join('\n')}
+
+Return JSON:
+{"scores":[{"name":"Example","memorability":8,"clarity":9,"uniqueness":7}]}`;
+
+      try {
+        const scoringResponse = await fetch(aiGatewayUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${lovableApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-pro',
+            messages: [{ role: 'user', content: scoringPrompt }],
+            temperature: 0.2,
+            response_format: { type: "json_object" },
+          }),
+        });
+        
+        if (scoringResponse.ok) {
+          const scoringData = await scoringResponse.json();
+          const aiScores = safeParseJSON(scoringData.choices[0].message.content, { scores: [] });
+          
+          // Merge AI scores back into results
+          type AIScore = {name: string; memorability: number; clarity: number; uniqueness: number};
+          const scoreMap = new Map<string, AIScore>(aiScores.scores?.map((s: AIScore) => [s.name.toLowerCase(), s]) || []);
+          scoredNames = parsedNames.map(name => {
+            const aiScore: AIScore | undefined = scoreMap.get(name.name.toLowerCase());
+            if (aiScore) {
+              const avgAiScore = ((aiScore.memorability || 5) + (aiScore.clarity || 5) + (aiScore.uniqueness || 5)) / 3;
+              const localScore = scoreName(name.name, namingMode);
+              const combinedScore = (localScore * 0.6) + (avgAiScore * 4);
+              return { ...name, aiScore: avgAiScore, combinedScore };
+            }
+            return { ...name, aiScore: 5, combinedScore: scoreName(name.name, namingMode) };
+          });
+          
+          // Re-rank by combined score
+          scoredNames.sort((a, b) => (b.combinedScore || 0) - (a.combinedScore || 0));
+          console.log('[generate-identity] AI re-scoring complete');
+        }
+      } catch (error) {
+        console.warn('[generate-identity] AI re-scoring failed, continuing with local scores:', error);
+      }
+    }
+    
+    // Remove scoring metadata before returning
+    parsedNames = scoredNames.map(({aiScore, combinedScore, ...rest}) => rest);
 
     // Safety check: ensure we have at least one name
     if (parsedNames.length === 0) {
