@@ -14,6 +14,7 @@ export interface NormalizedInput {
   bannedWords: string[];
   rejectedNames: string[];
   regenerateNamesOnly: boolean;
+  naming_mode?: 'descriptive' | 'invented';
   appliedDefaults: string[];
 }
 
@@ -81,6 +82,7 @@ export function normalizeOnboardingInput(input: any): NormalizedInput {
     bannedWords,
     rejectedNames,
     regenerateNamesOnly: input.regenerateNamesOnly ?? false,
+    naming_mode: input.naming_mode ?? 'descriptive',
     appliedDefaults
   };
 }

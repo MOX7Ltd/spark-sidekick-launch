@@ -155,6 +155,16 @@ serve(async (req) => {
     const primaryTone = vibes[0] ?? 'friendly';
     const toneHints = vibes.slice(1);
     const audienceStr = audiences.join(', ');
+    
+    // Extract service phrase for naming
+    function servicePhrase(idea: string): string {
+      const t = (idea || '').toLowerCase();
+      if (/soccer|football/.test(t)) return 'soccer coaching';
+      if (/guitar|music/.test(t)) return 'guitar lessons';
+      if (/tutor|math|algebra|study/.test(t)) return 'math tutoring';
+      if (/fitness|yoga|training/.test(t)) return 'fitness coaching';
+      return 'coaching';
+    }
 
     console.log('[generate-identity] Normalized input:', { 
       audiences, 
@@ -174,31 +184,44 @@ serve(async (req) => {
     
     // Build name prompt with constraints
     const wantCount = regenerateSingleName ? 2 : 6;
+    const namingMode = normalized.naming_mode || 'descriptive';
+    const s = servicePhrase(idea);
     
-    // Tightened naming prompt
+    // Mode-aware naming prompt
     const namingPrompt = `
-You are a senior brand namer. Create ${wantCount} strong brand names for:
-Idea: "${idea}"
-Audience: ${audienceStr}
-Tone: ${vibes.join(", ")}
-Family: ${audiences[0] || "General"}
+You are a practical brand namer for solo/side-hustle businesses.
+Mode: ${namingMode}
 
-Rules (must follow):
-- 1–2 words max. Prefer a single coined or compound word.
-- No alliteration (no repeated first letters: "Power Play", "Future Footwork").
-- No corporate filler or status words: academy, institute, solutions, systems, studio, labs, global, world, ventures, vision, pathway, program, project, collective, group, HQ.
-- No vague adjectives: apex, echelon, ascend(ant), elevate, ignite, stratagem, prime, alpha, omni, ultra, nova, synergy, quantum.
-- No suffix cliché: -ly, -ify, -verse, -scape, -matic.
-- Avoid on-the-nose sport clichés (goal, score, win, pro, elite, champs) unless tastefully embedded into a coined word.
-- Easy to say and spell. 4–10 letters preferred (not a hard limit).
+Business idea: "${idea}"
+Audience: ${audienceStr}
+Tone: ${vibes.join(', ')}
+Service phrase: ${s}
+Personal brand: ${isPersonalBrand ? 'on' : 'off'}${isPersonalBrand ? ` (name: ${personalName})` : ''}
+
+Generate ${wantCount} business names with short taglines (<= 12 words).
+
+If Mode = "descriptive" (default):
+- Favour clear, human, service-first names (2–3 words).
+- At least:
+  • 2 personal-brand options when personal_brand=on (e.g., "Paul Morris Soccer Coaching").
+  • 2 descriptive options that include the service phrase (e.g., "Pitch Skills Coaching", "Youth Soccer Coaching").
+  • 1 outcome-based option (e.g., "First Touch Coaching", "Better Ball Skills").
+  • 1 localizable pattern using "{City}" placeholder (e.g., "{City} Youth Soccer Coaching").
+- Absolutely avoid coined/app-y/portmanteau names and single fake words (no "Kickflow", "Playforge", "Pitchwise", "Footwiz").
+- Avoid corporate/stuffy terms (academy, institute, solutions, systems, labs, global, ventures, group, collective, HQ).
+- Avoid vague status words (apex, echelon, ascend/ascendant, elevate, prime, alpha, omni, ultra, nova, synergy, quantum).
+- No alliteration ("Power Play", "Future Footwork"), no weird suffixes (-ly, -ify, -verse, -matic, -scape).
+- Keep it easy to say and spell. Prefer space-separated words. No hyphens.
 ${bannedWords.length > 0 ? `- NEVER use these words: ${bannedWords.join(', ')}` : ''}
 ${rejectedNames.length > 0 ? `- NEVER use names similar to: ${rejectedNames.join(', ')}` : ''}
-${isPersonalBrand ? `\n- Generate 2 options that gracefully include "${personalName}" without sounding corporate (e.g., "Morris Coaching", "Paul Morris Training"). Keep them within rules.` : ''}
+
+If Mode = "invented":
+- Allow 1–2 coined names but still avoid clichés (no -ly/-ify/-verse etc.). Balance with 3–4 descriptive options.
 
 Return JSON:
 {
   "names": [
-    { "name": "Name", "tagline": "Short promise (max 12 words)" }
+    { "name": "Name", "tagline": "clear benefit promise" }
   ]
 }
 `.trim();
@@ -236,19 +259,28 @@ Return JSON:
     function charCount(name: string): number { 
       return name.replace(/\s+/g,'').length; 
     }
+    
+    function isSingleWord(n: string): boolean { 
+      return n.trim().split(/\s+/).length === 1; 
+    }
+    
+    function looksCoined(n: string): boolean {
+      const low = n.toLowerCase();
+      return isSingleWord(n) && !/coach|coaching|tutor|lessons|training|studio|club|team|works|workshop|services/.test(low);
+    }
 
-    function scoreName(n: string): number {
+    function scoreName(n: string, mode: 'descriptive' | 'invented'): number {
       let score = 100;
       if (isAlliteration(n)) score -= 40;
       if (looksCorporate(n)) score -= 35;
-      if (wordCount(n) > 2) score -= 30;
-      const len = charCount(n);
-      if (len < 4 || len > 12) score -= 15;
+      if (mode !== 'invented' && looksCoined(n)) score -= 40;
+      const wc = wordCount(n);
+      if (mode === 'descriptive' && (wc < 2 || wc > 3)) score -= 20;
       if (/[^a-zA-Z\s]/.test(n)) score -= 10;
       return score;
     }
 
-    function filterRank(names: {name:string, tagline:string}[]) {
+    function filterRank(names: {name:string, tagline:string}[], mode: 'descriptive' | 'invented') {
       const dedup = new Map<string, {name:string, tagline:string}>();
       for (const x of names) {
         const key = x.name.trim().toLowerCase();
@@ -257,9 +289,9 @@ Return JSON:
       const arr = [...dedup.values()]
         .filter(x => !isAlliteration(x.name))
         .filter(x => !looksCorporate(x.name))
-        .filter(x => wordCount(x.name) <= 2);
+        .filter(x => mode === 'descriptive' ? wordCount(x.name) <= 3 : wordCount(x.name) <= 2);
       return arr
-        .map(x => ({ ...x, __s: scoreName(x.name) }))
+        .map(x => ({ ...x, __s: scoreName(x.name, mode) }))
         .sort((a,b) => b.__s - a.__s)
         .map(({__s, ...r}) => r);
     }
@@ -306,7 +338,7 @@ Output ONLY the bio text, no labels or formatting.
         body: JSON.stringify({
           model: 'google/gemini-2.5-flash',
           messages: [{ role: 'user', content: prompt }],
-          temperature: useHighTemp ? 0.55 : undefined,
+          temperature: useHighTemp ? 0.4 : undefined,
           response_format: useHighTemp ? { type: "json_object" } : undefined,
         }),
       });
@@ -345,7 +377,7 @@ Output ONLY the bio text, no labels or formatting.
     // Parse and filter names with rerank
     let collected: {name:string, tagline:string}[] = [];
     const initialParse = safeParseJSON(nameResponse, { names: [] });
-    collected = filterRank(initialParse.names || []);
+    collected = filterRank(initialParse.names || [], namingMode);
 
     // Refill loop if too many got filtered (max 2 tries)
     let tries = 0;
@@ -354,7 +386,7 @@ Output ONLY the bio text, no labels or formatting.
       console.log(`[generate-identity] Refilling names (try ${tries}), have ${collected.length}/${wantCount}`);
       const topUpResponse = await generateText(namingPrompt, true);
       const topUpParse = safeParseJSON(topUpResponse, { names: [] });
-      collected = filterRank([...collected, ...(topUpParse.names || [])]);
+      collected = filterRank([...collected, ...(topUpParse.names || [])], namingMode);
     }
 
     let parsedNames = collected.slice(0, wantCount);

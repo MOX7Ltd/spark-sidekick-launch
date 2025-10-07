@@ -5,6 +5,8 @@
 
 export type ProductFamily = 'Digital' | 'Teach' | 'Services' | 'Physical';
 
+export type NamingMode = 'descriptive' | 'invented';
+
 export interface BrandContext {
   // Step 1: Product Idea
   idea_text: string;
@@ -25,6 +27,7 @@ export interface BrandContext {
   business_name?: string;
   palette?: string[];
   logo_style?: string;
+  naming_mode?: NamingMode; // default 'descriptive'
 
   // Metadata
   session_id?: string;
