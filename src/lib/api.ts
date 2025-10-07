@@ -65,24 +65,36 @@ export async function generateCampaign(context: BrandContext, products: any[]): 
   
   const flags = await getAllFeatureFlags();
   
-  const headers: Record<string, string> = {
-    ...getTelemetryHeaders(),
-    'X-Idempotency-Key': traceId,
-    'X-Feature-Flags': getFeatureFlagsHeader(flags),
-    'X-Context-Hash': contextHash(context),
-  };
-  
-  const { data, error } = await supabase.functions.invoke('generate-campaign', {
-    body: { context, products },
-    headers,
-  });
+  return callWithRetry(
+    async (signal) => {
+      const headers: Record<string, string> = {
+        ...getTelemetryHeaders(),
+        'X-Idempotency-Key': traceId,
+        'X-Feature-Flags': getFeatureFlagsHeader(flags),
+        'X-Context-Hash': contextHash(context),
+      };
+      
+      const { data, error } = await supabase.functions.invoke('generate-campaign', {
+        body: { context, products },
+        headers,
+      });
 
-  if (error) {
-    console.error('Error generating campaign:', error);
-    throw new Error(error.message || 'Failed to generate campaign');
-  }
+      if (error) {
+        console.error('Error generating campaign:', error);
+        throw new Error(error.message || 'Failed to generate campaign');
+      }
 
-  return data;
+      return data;
+    },
+    {
+      step: 'campaign-generation',
+      action: 'generate',
+      payloadKeys: ['context', 'products'],
+      provider: 'lovable-ai',
+      timeoutMs: 30000,
+      maxRetries: 2
+    }
+  ).then(response => response.data);
 }
 
 export async function regenerateBusinessNames(request: GenerateIdentityRequest): Promise<NameOption[]> {
