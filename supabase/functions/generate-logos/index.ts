@@ -113,16 +113,55 @@ serve(async (req) => {
         nameInstruction = `The logo may use the brand name "${businessName}" in some variants, but should also support a standalone mark.`;
     }
 
-    // Generate exactly 4 style-consistent variations
-    const variationPlans = [
-      "Lockup: icon above wordmark; Color: primary palette; Motif: abstract symbol",
-      "Lockup: icon left of wordmark; Color: secondary palette; Motif: abstract symbol",
-      "Lockup: standalone icon (no wordmark); Color: monochrome; Motif: monogram/initial",
-      "Lockup: integrated wordmark (typography-first emphasis); Color: accent highlight; Motif: negative space trick"
-    ];
+    // Generate style-specific variation plans
+    let variationPlans: string[] = [];
+    const normalizedStyleForPlans = primaryStyle.toLowerCase();
+    
+    switch (normalizedStyleForPlans) {
+      case "typography":
+      case "typography-first":
+      case "bold":
+      case "retro":
+        variationPlans = [
+          "Wordmark-first layout; explore strong letterforms, ligatures, and typographic flair",
+          "Wordmark with subtle icon accent or monogram treatment",
+          "Stacked wordmark (two-line variation) with weight/contrast exploration",
+          "Wordmark integrated with a geometric or negative-space device"
+        ];
+        break;
+
+      case "icon-based":
+      case "icon":
+      case "playful":
+      case "minimalist":
+      case "modern-gradient":
+      case "gradient":
+      case "handdrawn":
+        variationPlans = [
+          "Standalone symbol (no text) exploring abstract geometric motifs",
+          "Symbol above small wordmark lockup (balanced proportions)",
+          "Symbol left of wordmark (horizontal lockup)",
+          "Symbol-only monogram or negative-space exploration"
+        ];
+        break;
+
+      default:
+        variationPlans = [
+          "Icon above wordmark (primary composition)",
+          "Icon left of wordmark (secondary composition)",
+          "Standalone icon (no wordmark)",
+          "Integrated icon + wordmark with minimal overlap"
+        ];
+    }
+
+    // Determine if business name should be visually rendered
+    const includeNameInPrompt = ["typography","typography-first","bold","retro"].includes(primaryStyle.toLowerCase());
+    const designTarget = includeNameInPrompt
+      ? `Design a logo concept for the business "${businessName}".`
+      : `Design a logo concept for "${businessName}" that visually represents its essence without necessarily including the name text.`;
 
     const basePrompt = `
-Design a logo concept for the business "${businessName}".
+${designTarget}
 Style: ${styleDescriptor}.
 ${ideaText ? `Business focus (consider this more than the name): ${ideaText}` : ''}
 ${toneHint}
