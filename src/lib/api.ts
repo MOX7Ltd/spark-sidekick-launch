@@ -117,9 +117,7 @@ export async function generateLogos(
   businessName: string,
   style: string,
   vibes: string[] = [],
-  ideaText?: string,
-  productCategories?: string[],
-  palette?: string[]
+  ideaText?: string
 ): Promise<string[]> {
   const traceId = generateTraceId();
   bumpVersion('logos');
@@ -131,10 +129,7 @@ export async function generateLogos(
       businessName,
       style,
       vibes,
-      ideaText,
-      productCategories,
-      palette,
-      featureFlags: ['idea_aware_logo_gen']
+      ideaText
     },
     headers: {
       ...getTelemetryHeaders(),

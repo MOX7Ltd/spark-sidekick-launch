@@ -27,11 +27,9 @@ serve(async (req) => {
   try {
     const requestBody = await req.json();
     
-    // Use style from client as primary source of truth
-    const styleFromClient = requestBody.style; // e.g., "playful"
+    const styleFromClient = requestBody.style;
     const vibes: string[] = Array.isArray(requestBody.vibes) ? requestBody.vibes : [];
     const primaryStyle = styleFromClient || 'modern';
-    
     const { businessName, ideaText } = requestBody;
     
     console.log('[generate-logos] Feature flags:', featureFlags);
@@ -66,70 +64,62 @@ serve(async (req) => {
 
     console.log('Generating logos for:', businessName, 'with style:', primaryStyle, 'vibes:', vibes);
 
-    // Expanded style descriptions map (must match frontend IDs)
+    // Explicit style descriptions map
     const styleDescriptions: Record<string, string> = {
       minimalist: "minimalist, lots of negative space, clean geometric forms, simple iconography, limited color palette",
-      playful: "playful, rounded forms, bubbly shapes, friendly iconography, lively motion cues, vibrant color accents",
-      bold: "bold, heavy weight shapes, strong contrast, assertive composition, high legibility, punchy silhouettes",
-      "icon-based": "icon-led, memorable symbol first, scalable mark, simplified contours, balanced with subtle wordmark",
-      icon: "icon-led, memorable symbol first, scalable mark, simplified contours, balanced with subtle wordmark",
-      handdrawn: "hand-drawn, sketch texture, organic lines, human warmth, imperfect strokes, approachable feel",
-      retro: "retro, vintage motifs, classic typography, nostalgic colorways, subtle grain",
-      "modern-gradient": "modern with gradient accents, soft blends, contemporary color transitions, smooth shapes",
-      gradient: "modern with gradient accents, soft blends, contemporary color transitions, smooth shapes",
-      "typography-first": "wordmark-first, custom letterforms, kerning care, smart ligatures, subtle typographic flair",
-      typography: "wordmark-first, custom letterforms, kerning care, smart ligatures, subtle typographic flair",
+      playful: "playful, rounded forms, friendly shapes, lively motion cues, vibrant accents",
+      bold: "bold, heavy weight shapes, strong contrast, assertive composition, punchy silhouettes",
+      "icon-based": "icon-led, memorable symbol first, scalable mark, simplified contours, subtle wordmark",
+      icon: "icon-led, memorable symbol first, scalable mark, simplified contours, subtle wordmark",
+      handdrawn: "hand-drawn, organic lines, human warmth, imperfect strokes",
+      retro: "retro, vintage motifs, classic forms, nostalgic colorways",
+      "modern-gradient": "modern with soft gradient accents, smooth shapes",
+      gradient: "modern with soft gradient accents, smooth shapes",
+      "typography-first": "wordmark-first, custom letterforms, good kerning, subtle typographic flair",
+      typography: "wordmark-first, custom letterforms, good kerning, subtle typographic flair",
       modern: "modern, clean, versatile"
     };
-
-    const styleDescriptor = styleDescriptions[primaryStyle.toLowerCase()] || styleDescriptions.modern;
     
-    // Use vibes as tone hints only (do not override style)
+    const styleKey = (primaryStyle || 'modern').toLowerCase();
+    const styleDescriptor = styleDescriptions[styleKey] || styleDescriptions.modern;
+    
+    // Tone hint (vibes influence color/emotion only)
     const toneHint = vibes.length
       ? `Tone hint: ${vibes.join(", ")} (influence color/emotion only; do not change the ${primaryStyle} style).`
       : "Tone hint: neutral, versatile.";
     
-    // Conditional business name handling based on style
+    // Business-name usage rules (only render name for typography-led styles)
+    const nameStyles = new Set(["typography-first", "typography", "bold", "retro"]);
+    const includeNameText = nameStyles.has(styleKey);
+    
     let nameInstruction = "";
-    const normalizedStyle = primaryStyle.toLowerCase();
-    
-    switch (normalizedStyle) {
-      case "typography-first":
-      case "typography":
-      case "bold":
-      case "retro":
-        nameInstruction = `The logo must prominently feature the brand name "${businessName}" as a wordmark.`;
-        break;
-      case "icon-based":
-      case "icon":
-      case "playful":
-      case "minimalist":
-      case "modern-gradient":
-      case "gradient":
-      case "handdrawn":
-        nameInstruction = `The logo should include at least one variant as a standalone icon (no text), and one variant where the icon is paired with the brand name "${businessName}" in a balanced lockup.`;
-        break;
-      default:
-        nameInstruction = `The logo may use the brand name "${businessName}" in some variants, but should also support a standalone mark.`;
+    if (includeNameText) {
+      nameInstruction = `The logo must prominently feature the brand name "${businessName}" as a wordmark.`;
+    } else {
+      nameInstruction = `The logo can be symbol-first; include standalone icon options. If a lockup is shown, use "${businessName}" minimally.`;
     }
-
-    // Generate style-specific variation plans
-    let variationPlans: string[] = [];
-    const normalizedStyleForPlans = primaryStyle.toLowerCase();
     
-    switch (normalizedStyleForPlans) {
-      case "typography":
+    const designTarget = includeNameText
+      ? `Design a logo concept for the business "${businessName}".`
+      : `Design a logo concept for "${businessName}" that visually represents its essence without necessarily rendering the name text.`;
+
+    // Style-specific variation plans
+    let variationPlans: string[] = [];
+    switch (styleKey) {
+      // WORDMARK-LED families → all show the name in various treatments
       case "typography-first":
+      case "typography":
       case "bold":
       case "retro":
         variationPlans = [
-          "Wordmark-first layout; explore strong letterforms, ligatures, and typographic flair",
-          "Wordmark with subtle icon accent or monogram treatment",
-          "Stacked wordmark (two-line variation) with weight/contrast exploration",
-          "Wordmark integrated with a geometric or negative-space device"
+          "Wordmark-first layout; explore strong letterforms and spacing",
+          "Wordmark with subtle monogram/initial accent (small symbol)",
+          "Stacked wordmark (two-line) exploring weight contrast",
+          "Integrated wordmark with a minimal geometric/negative-space device"
         ];
         break;
 
+      // SYMBOL-LED families → mix of symbol-only and simple lockups
       case "icon-based":
       case "icon":
       case "playful":
@@ -138,13 +128,14 @@ serve(async (req) => {
       case "gradient":
       case "handdrawn":
         variationPlans = [
-          "Standalone symbol (no text) exploring abstract geometric motifs",
+          "Standalone symbol (no text) using abstract geometric motifs",
           "Symbol above small wordmark lockup (balanced proportions)",
           "Symbol left of wordmark (horizontal lockup)",
           "Symbol-only monogram or negative-space exploration"
         ];
         break;
 
+      // Fallback (modern)
       default:
         variationPlans = [
           "Icon above wordmark (primary composition)",
@@ -153,12 +144,6 @@ serve(async (req) => {
           "Integrated icon + wordmark with minimal overlap"
         ];
     }
-
-    // Determine if business name should be visually rendered
-    const includeNameInPrompt = ["typography","typography-first","bold","retro"].includes(primaryStyle.toLowerCase());
-    const designTarget = includeNameInPrompt
-      ? `Design a logo concept for the business "${businessName}".`
-      : `Design a logo concept for "${businessName}" that visually represents its essence without necessarily including the name text.`;
 
     const basePrompt = `
 ${designTarget}

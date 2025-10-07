@@ -366,9 +366,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
         selectedName, 
         styleId, 
         vibes,
-        idea,
-        undefined, // productCategories - could be inferred from products if available
-        generatedColors.length > 0 ? generatedColors : undefined
+        idea
       );
       setGeneratedLogos(logos);
       setSelectedLogoIndex(null);
@@ -400,9 +398,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
         selectedName, 
         selectedLogoStyle, 
         vibes,
-        idea,
-        undefined,
-        generatedColors.length > 0 ? generatedColors : undefined
+        idea
       );
       // Limit to 4 options for mobile-friendliness
       setGeneratedLogos(logos.slice(0, 4));
@@ -433,9 +429,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
         selectedName, 
         selectedLogoStyle, 
         vibes,
-        idea,
-        undefined,
-        generatedColors.length > 0 ? generatedColors : undefined
+        idea
       );
       
       setGeneratedLogos(prev => {
