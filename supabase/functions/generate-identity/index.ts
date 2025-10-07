@@ -168,33 +168,59 @@ serve(async (req) => {
     // Build name prompt with constraints
     const nameInfo = shouldIncludeName(aboutYou);
     const nameCount = regenerateSingleName ? 2 : 6; // Generate fewer for single regeneration
-    let namePrompt = `Generate ${nameCount} business names for: ${idea}.\nTarget audience: ${audienceStr}.\nTone: ${primaryTone}`;
     
-    if (toneHints.length > 0) {
-      namePrompt += ` with hints of ${toneHints.join(', ')}`;
-    }
-
+    // Build constraint clauses
+    let constraintText = '';
+    
     if (nameInfo.includeFirst || nameInfo.includeLast) {
       const nameParts = [];
       if (nameInfo.includeFirst) nameParts.push(nameInfo.firstName);
       if (nameInfo.includeLast) nameParts.push(nameInfo.lastName);
-      namePrompt += `\nInclude the name: ${nameParts.join(' ')}`;
+      constraintText += `\n- MUST include the name: ${nameParts.join(' ')}`;
     }
 
     if (bannedWords.length > 0) {
-      namePrompt += `\nAvoid these words: ${bannedWords.join(', ')}`;
+      constraintText += `\n- NEVER use these words: ${bannedWords.join(', ')}`;
     }
 
     if (rejectedNames.length > 0) {
-      namePrompt += `\nDo NOT use names similar to: ${rejectedNames.join(', ')}`;
+      constraintText += `\n- NEVER use names similar to: ${rejectedNames.join(', ')}`;
     }
-
-    const useNewPrompt = featureFlags.includes('new_name_prompt');
-    const nameGuidance = useNewPrompt
-      ? 'Generate memorable, unique names that are easy to spell and pronounce. Avoid generic terms. Focus on emotional resonance and brand differentiation.'
-      : 'Generate business names based on user inputs.';
     
-    namePrompt += `\n${nameGuidance}\nReturn ONLY a JSON array with exactly ${nameCount} objects, each with "name", "tagline", and "style" properties. Example: [{"name":"CompanyName","tagline":"A tagline","style":"modern"}]`;
+    const namePrompt = `
+Act as a senior brand strategist creating names for new ventures.
+
+Context:
+- Business idea: ${idea}
+- Audience: ${audienceStr}
+- Tone / Vibe: ${vibes.join(", ")}
+
+Your task:
+Generate ${nameCount} concise, *brandable* business names and matching taglines that sound human and market-ready.
+Follow these rules strictly:
+
+✅ MUST:
+- 1–2 words max (3 only if it sounds natural and brandable)
+- Evoke meaning, confidence, or creativity
+- Sound like a real brand you'd see on BrandBucket, ProductHunt, or IndieMaker
+- Use metaphors, blends, or subtle abstractions (e.g. SideHive, Fretwell, Strumverse)
+- Include a short tagline (max 10 words) that feels natural and aspirational
+- Each name must have a "style" property matching the tone: ${primaryTone}
+
+❌ NEVER:
+- No rhyme or cutesy alliteration (no "Guitar Gigglers", "Chord Commanders")
+- No filler suffixes (no HQ, House, World, Co., Studio, Funhouse, Academy, Institute)
+- No literal repetition of the ideaText words
+- No generic corporate words (no "Solutions", "Vision", "Enterprises", "Systems")
+- No random mashups or unrelated adjectives
+${constraintText}
+
+Output format (JSON array only):
+[
+  { "name": "ExampleName", "tagline": "Short positioning line here.", "style": "${primaryTone}" },
+  { "name": "AnotherName", "tagline": "A second short line.", "style": "${primaryTone}" }
+]
+    `.trim();
 
     // Tagline prompt
     const taglinePrompt = `Generate a short, memorable tagline for a business about: ${idea}.\nTarget audience: ${audienceStr}.\nTone: ${primaryTone}.\nMax 8 words.`;
@@ -208,7 +234,7 @@ serve(async (req) => {
     // AI Generation
     const aiGatewayUrl = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 
-    async function generateText(prompt: string) {
+    async function generateText(prompt: string, useHighTemp = false) {
       const response = await fetch(aiGatewayUrl, {
         method: 'POST',
         headers: {
@@ -218,6 +244,8 @@ serve(async (req) => {
         body: JSON.stringify({
           model: 'google/gemini-2.5-flash',
           messages: [{ role: 'user', content: prompt }],
+          temperature: useHighTemp ? 0.8 : undefined,
+          response_format: useHighTemp ? { type: "json_object" } : undefined,
         }),
       });
 
@@ -245,7 +273,7 @@ serve(async (req) => {
     }
 
     const [nameOptions, tagline, bio, colors] = await Promise.all([
-      generateText(namePrompt),
+      generateText(namePrompt, true), // Use high temperature for creative names
       generateText(taglinePrompt),
       generateText(bioPrompt),
       generateText(colorsPrompt),
