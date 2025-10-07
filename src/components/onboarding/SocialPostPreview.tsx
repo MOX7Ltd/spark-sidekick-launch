@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Sparkles, Instagram, Linkedin, ArrowRight, Copy, RefreshCw, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateCampaign } from '@/lib/api';
-
+import type { BrandContext } from '@/types/brand';
 import type { ProductIdea, AboutYou } from '@/types/onboarding';
 
 interface SocialPostPreviewProps {
@@ -54,24 +54,24 @@ export const SocialPostPreview = ({
         displayName = aboutYou.lastName;
       }
       
-      const response = await generateCampaign({
-        type: 'intro',
-        platforms: ['instagram', 'linkedin'],
-        businessName: businessIdentity.name,
-        tagline: businessIdentity.tagline || '',
+      // Build BrandContext from props
+      const context: BrandContext = {
+        idea_text: '',
+        business_name: businessIdentity.name,
         bio: aboutYou.expertise,
-        aboutYou: {
-          firstName: aboutYou.firstName,
-          lastName: aboutYou.lastName,
-          expertise: aboutYou.expertise,
-          motivation: aboutYou.motivation || aboutYou.expertise,
-          includeFirstName: aboutYou.includeFirstName,
-          includeLastName: aboutYou.includeLastName
-        },
-        audiences,
+        palette: [],
+        tone_adjectives: vibes,
+        audience: audiences,
         vibes,
-        products: products.slice(0, 3)
-      });
+        audiences,
+        user_first_name: aboutYou.firstName,
+        user_last_name: aboutYou.lastName,
+        expertise: aboutYou.expertise,
+        motivation: aboutYou.motivation || aboutYou.expertise,
+        personal_brand: aboutYou.includeFirstName || aboutYou.includeLastName,
+      };
+      
+      const response = await generateCampaign(context, products.slice(0, 3));
 
       console.log('Campaign response:', response);
       

@@ -59,19 +59,22 @@ export interface GenerateCampaignResponseInternal {
   items: any[];
 }
 
-export async function generateCampaign(request: GenerateCampaignRequest): Promise<GenerateCampaignResponseInternal> {
+export async function generateCampaign(context: BrandContext, products: any[]): Promise<GenerateCampaignResponseInternal> {
   const traceId = generateTraceId();
   bumpVersion('campaign');
   
   const flags = await getAllFeatureFlags();
   
+  const headers: Record<string, string> = {
+    ...getTelemetryHeaders(),
+    'X-Idempotency-Key': traceId,
+    'X-Feature-Flags': getFeatureFlagsHeader(flags),
+    'X-Context-Hash': contextHash(context),
+  };
+  
   const { data, error } = await supabase.functions.invoke('generate-campaign', {
-    body: request,
-    headers: {
-      ...getTelemetryHeaders(),
-      'X-Idempotency-Key': traceId,
-      'X-Feature-Flags': getFeatureFlagsHeader(flags),
-    },
+    body: { context, products },
+    headers,
   });
 
   if (error) {

@@ -101,26 +101,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   
   const handleGenerateCampaign = useCallback(async (products: any[]) => {
     try {
-      const request = {
-        businessName: context.business_name || '',
-        tagline: '',
-        bio: context.bio || '',
-        products,
-        audiences: context.audience || context.audiences || [],
-        vibes: context.tone_adjectives || context.vibes || [],
-        type: 'intro' as const,
-        platforms: ['instagram', 'linkedin'],
-        aboutYou: {
-          firstName: context.user_first_name || '',
-          lastName: context.user_last_name || '',
-          expertise: context.expertise || '',
-          motivation: context.motivation || '',
-          includeFirstName: context.personal_brand || false,
-          includeLastName: context.personal_brand || false,
-        },
-      };
-      
-      const res = await generateCampaign(request);
+      const res = await generateCampaign(context, products);
       return res;
     } catch (error) {
       console.error('Failed to generate campaign:', error);
