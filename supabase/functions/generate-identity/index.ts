@@ -165,8 +165,11 @@ serve(async (req) => {
       rejectedNames: rejectedNames.length,
     });
 
-    // Build name prompt with constraints
+    // Determine if this is a personal brand
     const nameInfo = shouldIncludeName(aboutYou);
+    const isPersonalBrand = nameInfo.includeFirst || nameInfo.includeLast;
+    
+    // Build name prompt with constraints
     const nameCount = regenerateSingleName ? 2 : 6; // Generate fewer for single regeneration
     
     // Build constraint clauses
@@ -194,6 +197,7 @@ Context:
 - Business idea: ${idea}
 - Audience: ${audienceStr}
 - Tone / Vibe: ${vibes.join(", ")}
+${isPersonalBrand ? `- Personal brand: Yes (should include founder's name naturally)` : ''}
 
 Your task:
 Generate ${nameCount} concise, *brandable* business names and matching taglines that sound human and market-ready.
@@ -225,11 +229,31 @@ Output format (JSON array only):
     // Tagline prompt
     const taglinePrompt = `Generate a short, memorable tagline for a business about: ${idea}.\nTarget audience: ${audienceStr}.\nTone: ${primaryTone}.\nMax 8 words.`;
 
-    // Bio prompt - transform expertise into customer-facing text
-    const bioPrompt = `Transform this expertise into a concise, customer-facing bio (3-4 sentences, first-person only if name is included):\n"${aboutYou.expertise}"${aboutYou.motivation ? `\nMotivation: "${aboutYou.motivation}"` : ''}\nTarget audience: ${audienceStr}\nTone: ${primaryTone}\n\nIMPORTANT: Rewrite into natural, flowing prose. Do NOT copy the input verbatim.`;
+    // Bio prompt: Improved human-quality generation
+    const bioPrompt = `
+You are a senior brand strategist writing a business bio.
+
+Context:
+- Business idea: ${idea}
+- Founder expertise: ${aboutYou.expertise}
+- Motivation: ${aboutYou.motivation || 'help people succeed'}
+- Audience: ${audienceStr}
+- Tone: ${primaryTone}
+${isPersonalBrand ? `- Personal brand: Yes (founder: ${nameInfo.firstName || ''} ${nameInfo.lastName || ''})` : ''}
+
+Your task:
+Write a concise 2-3 sentence bio for an "About" page that:
+- Introduces what the business does in clear, natural language
+- Shows the founder's unique perspective or approach
+- Connects with the target audience emotionally
+- Feels authentic and human, not corporate jargon
+${isPersonalBrand ? '- Naturally incorporates the founder\'s name and story' : ''}
+
+Output ONLY the bio text, no labels or formatting.
+    `.trim();
 
     // Colors prompt
-    const colorsPrompt = `Generate 4-5 accessible brand colors (hex codes) for a business with tone: ${primaryTone}${toneHints.length ? ` and hints of ${toneHints.join(', ')}` : ''}. Return ONLY a JSON array of hex codes: ["#hex1","#hex2",...]`;
+    const colorsPrompt = `Generate 4 brand colors (hex codes) for a ${primaryTone} business about: ${idea}. Return ONLY an array like: ["#4C5973", "#F5E0C2", "#A3C7D4", "#D4E0A3"]`;
 
     // AI Generation
     const aiGatewayUrl = 'https://ai.gateway.lovable.dev/v1/chat/completions';

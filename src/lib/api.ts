@@ -12,11 +12,14 @@ import type {
   NameOption,
   ProductIdea
 } from '@/types/onboarding';
+import type { BrandContext } from '@/types/brand';
+import { contextHash } from '@/types/brand';
 
 // For backwards compatibility during migration
 export type NameSuggestion = NameOption;
 export type Product = ProductIdea;
 export type { ProductIdea } from '@/types/onboarding';
+export type { BrandContext } from '@/types/brand';
 
 interface GenerateIdentityResponseInternal {
   business: any;
@@ -117,25 +120,35 @@ export async function generateLogos(
   businessName: string,
   style: string,
   vibes: string[] = [],
-  ideaText?: string
+  ideaText?: string,
+  context?: Partial<BrandContext>
 ): Promise<string[]> {
   const traceId = generateTraceId();
   bumpVersion('logos');
   
   const flags = await getAllFeatureFlags();
   
+  const headers: Record<string, string> = {
+    ...getTelemetryHeaders(),
+    'X-Idempotency-Key': traceId,
+    'X-Feature-Flags': getFeatureFlagsHeader(flags),
+  };
+  
+  // Add context hash if context is provided
+  if (context) {
+    const hash = contextHash(context as BrandContext);
+    headers['X-Context-Hash'] = hash;
+  }
+  
   const { data, error } = await supabase.functions.invoke('generate-logos', {
     body: {
       businessName,
       style,
       vibes,
-      ideaText
+      ideaText,
+      context
     },
-    headers: {
-      ...getTelemetryHeaders(),
-      'X-Idempotency-Key': traceId,
-      'X-Feature-Flags': getFeatureFlagsHeader(flags),
-    },
+    headers,
   });
 
   if (error) {
@@ -154,6 +167,7 @@ export interface GenerateProductIdeasRequest {
   max_ideas?: number;
   exclude_ids?: string[];
   smart_family_gen?: boolean;
+  context?: Partial<BrandContext>;
 }
 
 export async function generateProductIdeas(request: GenerateProductIdeasRequest): Promise<ProductIdea[]> {
@@ -162,13 +176,21 @@ export async function generateProductIdeas(request: GenerateProductIdeasRequest)
   
   const flags = await getAllFeatureFlags();
   
+  const headers: Record<string, string> = {
+    ...getTelemetryHeaders(),
+    'X-Idempotency-Key': traceId,
+    'X-Feature-Flags': getFeatureFlagsHeader(flags),
+  };
+  
+  // Add context hash if context is provided
+  if (request.context) {
+    const hash = contextHash(request.context as BrandContext);
+    headers['X-Context-Hash'] = hash;
+  }
+  
   const { data, error } = await supabase.functions.invoke('generate-product-ideas', {
     body: request,
-    headers: {
-      ...getTelemetryHeaders(),
-      'X-Idempotency-Key': traceId,
-      'X-Feature-Flags': getFeatureFlagsHeader(flags),
-    },
+    headers,
   });
 
   if (error) {

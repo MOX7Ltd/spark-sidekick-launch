@@ -18,6 +18,13 @@ const requestSchema = z.object({
   max_ideas: z.number().min(1).max(10).default(5),
   exclude_ids: z.array(z.string()).optional(),
   smart_family_gen: z.boolean().optional().default(true),
+  context: z.object({
+    idea_text: z.string().optional(),
+    dominant_family: z.string().optional(),
+    personal_brand: z.boolean().optional(),
+    user_first_name: z.string().optional(),
+    user_last_name: z.string().optional(),
+  }).optional(),
 });
 
 console.log('[generate-product-ideas] Function started and deployed successfully');
@@ -223,10 +230,35 @@ Return a JSON object with this exact structure:
     }
 
     console.log('Generated product ideas:', productIdeas);
+    
+    // Compute dominant family from generated products
+    let dominantFamily: string | undefined;
+    let familiesRanked: string[] = [];
+    
+    if (productIdeas.products && Array.isArray(productIdeas.products)) {
+      const familyCounts: Record<string, number> = {};
+      
+      productIdeas.products.forEach((product: any) => {
+        const family = product.category || 'Unknown';
+        familyCounts[family] = (familyCounts[family] || 0) + 1;
+      });
+      
+      // Sort families by count
+      familiesRanked = Object.entries(familyCounts)
+        .sort(([, a], [, b]) => b - a)
+        .map(([family]) => family);
+      
+      dominantFamily = familiesRanked[0];
+      
+      console.log('Computed family distribution:', familyCounts);
+      console.log('Dominant family:', dominantFamily);
+    }
 
     const durationMs = Math.round(performance.now() - startTime);
     const responseData = {
       ...productIdeas,
+      dominant_family: dominantFamily,
+      families_ranked: familiesRanked,
       trace_id: traceId,
       session_id: sessionId,
       idempotency_key: idempotencyKey,

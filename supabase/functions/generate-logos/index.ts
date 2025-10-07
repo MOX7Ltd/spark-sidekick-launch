@@ -30,7 +30,12 @@ serve(async (req) => {
     const styleFromClient = requestBody.style;
     const vibes: string[] = Array.isArray(requestBody.vibes) ? requestBody.vibes : [];
     const primaryStyle = (styleFromClient || 'modern').toLowerCase();
-    const { businessName, ideaText } = requestBody;
+    const { businessName, ideaText, context } = requestBody;
+    
+    // Extract context information if provided
+    const brandContext = context || {};
+    const dominantFamily = brandContext.dominant_family;
+    const palette = brandContext.palette || [];
     
     console.log('[generate-logos] Feature flags:', featureFlags);
     
@@ -98,6 +103,22 @@ serve(async (req) => {
       nameInstruction = `The logo should be symbol-first; include at least two symbol-only options. If a lockup is shown, use "${businessName}" minimally.`;
     }
     
+    // Family-based motif bias
+    const familyMotifs: Record<string, string> = {
+      'Teach': 'progress indicators, learning paths, growth arcs, upward motion',
+      'Digital': 'modular nodes, tech geometry, abstract connectivity, clean pixels',
+      'Services': 'balanced forms, professional clarity, trust symbols, precision',
+      'Physical': 'solid geometry, tangible shapes, material forms, crafted minimalism'
+    };
+    
+    const motifHint = dominantFamily && familyMotifs[dominantFamily]
+      ? `Consider these metaphorical forms: ${familyMotifs[dominantFamily]}.`
+      : '';
+    
+    const paletteHint = palette.length > 0
+      ? `Use these brand colors: ${palette.join(', ')}.`
+      : '';
+    
     const designTarget = includeNameText
       ? `Design a logo for the business "${businessName}" focusing on the wordmark and lettering.`
       : `Design a single logo symbol that represents the essence of "${businessName}" without necessarily showing the name text.`;
@@ -142,11 +163,36 @@ serve(async (req) => {
         ];
     }
 
-    const basePrompt = `
-${designTarget}
-Style: ${styleDescriptor}.
-${ideaText ? `Core idea: ${ideaText}` : ''}
+    // Create the primary prompt for all 4 variations
+    const primaryPrompt = `${designTarget}
+
+Style: ${styleDescriptor}
 ${toneHint}
+${nameInstruction}
+${motifHint}
+${paletteHint}
+${ideaText ? `Business context: ${ideaText}` : ''}
+
+Design Goals:
+- Each logo must be a **single, distinct mark** (no multiple logos in one image)
+- Vector-friendly, scalable, clean composition
+- ${includeNameText ? 'Focus on lettering and wordmark' : 'Focus on symbolic mark first'}
+- Avoid: photorealism, 3D effects, clip-art, busy compositions
+- Ensure contrast and clarity at any size
+
+Generate ONE logo concept per image (4 variations total).
+
+Variation instructions:
+${variationPlans.map((v, i) => `${i + 1}. ${v}`).join('\n')}
+
+Remember: Generate 4 separate logo concepts, one per image. Each should be production-ready.`;
+
+    console.log('Generating logos for:', businessName, 'with style:', primaryStyle, 'vibes:', vibes);
+    if (dominantFamily) console.log('Dominant family:', dominantFamily);
+    if (palette.length > 0) console.log('Brand palette:', palette);
+
+    const basePrompt = `
+${primaryPrompt}
 Constraints:
 - Clean vector-friendly form with flat color or simple gradient
 - No photorealism, no 3D, no stock-icon look
