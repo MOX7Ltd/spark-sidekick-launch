@@ -29,7 +29,7 @@ serve(async (req) => {
     
     const styleFromClient = requestBody.style;
     const vibes: string[] = Array.isArray(requestBody.vibes) ? requestBody.vibes : [];
-    const primaryStyle = styleFromClient || 'modern';
+    const primaryStyle = (styleFromClient || 'modern').toLowerCase();
     const { businessName, ideaText } = requestBody;
     
     console.log('[generate-logos] Feature flags:', featureFlags);
@@ -80,33 +80,31 @@ serve(async (req) => {
       modern: "modern, clean, versatile"
     };
     
-    const styleKey = (primaryStyle || 'modern').toLowerCase();
-    const styleDescriptor = styleDescriptions[styleKey] || styleDescriptions.modern;
+    const styleDescriptor = styleDescriptions[primaryStyle] || styleDescriptions.modern;
     
     // Tone hint (vibes influence color/emotion only)
     const toneHint = vibes.length
       ? `Tone hint: ${vibes.join(", ")} (influence color/emotion only; do not change the ${primaryStyle} style).`
       : "Tone hint: neutral, versatile.";
     
-    // Business-name usage rules (only render name for typography-led styles)
+    // When to show the business name
     const nameStyles = new Set(["typography-first", "typography", "bold", "retro"]);
-    const includeNameText = nameStyles.has(styleKey);
+    const includeNameText = nameStyles.has(primaryStyle);
     
     let nameInstruction = "";
     if (includeNameText) {
       nameInstruction = `The logo must prominently feature the brand name "${businessName}" as a wordmark.`;
     } else {
-      nameInstruction = `The logo can be symbol-first; include standalone icon options. If a lockup is shown, use "${businessName}" minimally.`;
+      nameInstruction = `The logo should be symbol-first; include at least two symbol-only options. If a lockup is shown, use "${businessName}" minimally.`;
     }
     
     const designTarget = includeNameText
-      ? `Design a logo concept for the business "${businessName}".`
-      : `Design a logo concept for "${businessName}" that visually represents its essence without necessarily rendering the name text.`;
+      ? `Design a logo for the business "${businessName}" focusing on the wordmark and lettering.`
+      : `Design a single logo symbol that represents the essence of "${businessName}" without necessarily showing the name text.`;
 
     // Style-specific variation plans
     let variationPlans: string[] = [];
-    switch (styleKey) {
-      // WORDMARK-LED families → all show the name in various treatments
+    switch (primaryStyle) {
       case "typography-first":
       case "typography":
       case "bold":
@@ -114,12 +112,11 @@ serve(async (req) => {
         variationPlans = [
           "Wordmark-first layout; explore strong letterforms and spacing",
           "Wordmark with subtle monogram/initial accent (small symbol)",
-          "Stacked wordmark (two-line) exploring weight contrast",
-          "Integrated wordmark with a minimal geometric/negative-space device"
+          "Stacked wordmark (two-line) exploring weight/contrast",
+          "Integrated wordmark with a minimal geometric or negative-space device"
         ];
         break;
 
-      // SYMBOL-LED families → mix of symbol-only and simple lockups
       case "icon-based":
       case "icon":
       case "playful":
@@ -127,15 +124,15 @@ serve(async (req) => {
       case "modern-gradient":
       case "gradient":
       case "handdrawn":
+      case "modern":
         variationPlans = [
-          "Standalone symbol (no text) using abstract geometric motifs",
+          "Standalone symbol (no text) using abstract geometric motif",
           "Symbol above small wordmark lockup (balanced proportions)",
           "Symbol left of wordmark (horizontal lockup)",
-          "Symbol-only monogram or negative-space exploration"
+          "Standalone symbol as monogram/negative-space exploration"
         ];
         break;
 
-      // Fallback (modern)
       default:
         variationPlans = [
           "Icon above wordmark (primary composition)",
@@ -148,14 +145,17 @@ serve(async (req) => {
     const basePrompt = `
 ${designTarget}
 Style: ${styleDescriptor}.
-${ideaText ? `Business focus (consider this more than the name): ${ideaText}` : ''}
+${ideaText ? `Core idea: ${ideaText}` : ''}
 ${toneHint}
-${nameInstruction}
-Constraints: Keep all 4 variants within the same ${primaryStyle} style. Logos must be vector-friendly, scalable, and professional.
+Constraints:
+- Clean vector-friendly form with flat color or simple gradient
+- No photorealism, no 3D, no stock-icon look
+- Only ONE logo per image (no multiple thumbnails, no collage)
+- Each variation must be a single standalone logo, not multiple mock-ups or a grid in one image
 `.trim();
 
     const prompts = variationPlans.map((plan, i) => `${basePrompt}
-Variation plan ${i + 1}: ${plan}`);
+Variation ${i + 1}: ${plan}`);
 
     // Generate 4 logos only
     const logoPromises = prompts.map(async (prompt) => {
