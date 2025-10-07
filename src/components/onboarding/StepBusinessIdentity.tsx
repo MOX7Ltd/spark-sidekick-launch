@@ -93,7 +93,19 @@ const logoStyles = [
   },
 ];
 
-export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, aboutYou, audiences, vibes = [] }: StepBusinessIdentityProps) => {
+export const StepBusinessIdentity = ({ 
+  onNext, 
+  onBack, 
+  initialValue, 
+  idea, 
+  aboutYou, 
+  audiences, 
+  vibes = [],
+  context,
+  onUpdateContext,
+  onGenerateIdentity,
+  onGenerateLogos
+}: StepBusinessIdentityProps) => {
   // Name states
   const [nameSection, setNameSection] = useState<'choice' | 'existing' | 'generate' | 'select'>('choice');
   const [hasExistingName, setHasExistingName] = useState<boolean | null>(null);
@@ -133,6 +145,28 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
   const [generatedBio, setGeneratedBio] = useState<string>('');
   const [generatedColors, setGeneratedColors] = useState<string[]>([]);
   const { toast } = useToast();
+  
+  // Context update handlers
+  const handleNameSelection = (name: string) => {
+    setSelectedName(name);
+    if (onUpdateContext) {
+      onUpdateContext((ctx) => ({ ...ctx, business_name: name }));
+    }
+  };
+  
+  const handleStyleSelect = (styleId: string) => {
+    setSelectedLogoStyle(styleId);
+    if (onUpdateContext) {
+      onUpdateContext((ctx) => ({ ...ctx, logo_style: styleId }));
+    }
+  };
+  
+  const handlePalettePick = (palette: string[]) => {
+    setGeneratedColors(palette);
+    if (onUpdateContext) {
+      onUpdateContext((ctx) => ({ ...ctx, palette }));
+    }
+  };
 
   // Name: Handle "Do you have a name?" choice
   const handleHasNameChoice = async (hasName: boolean) => {
@@ -146,25 +180,33 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     }
   };
 
-  // Name: Generate names using vibes from Step 3 (no duplicate vibe screen)
+  // Name: Generate names using unified context
   const generateNames = async () => {
     setIsGeneratingNames(true);
     try {
-      const fullIdentity = await generateBusinessIdentity({
-        idea,
-        audiences,
-        vibes, // Use vibes from Step 3
-        aboutYou,
-        bannedWords,
-        rejectedNames: []
-      });
-      
-      setGeneratedBio(fullIdentity.bio || '');
-      setGeneratedColors(fullIdentity.colors || []);
-      // Limit to 4 options for mobile-friendliness
-      setNameOptions((fullIdentity.nameOptions || []).slice(0, 4));
+      // Use the unified generate function if provided, otherwise fall back to direct API
+      if (onGenerateIdentity) {
+        const fullIdentity = await onGenerateIdentity();
+        setGeneratedBio(fullIdentity.bio || '');
+        setGeneratedColors(fullIdentity.colors || []);
+        handlePalettePick(fullIdentity.colors || []);
+        setNameOptions((fullIdentity.nameOptions || []).slice(0, 4));
+      } else {
+        const fullIdentity = await generateBusinessIdentity({
+          idea,
+          audiences,
+          vibes,
+          aboutYou,
+          bannedWords,
+          rejectedNames: []
+        });
+        setGeneratedBio(fullIdentity.bio || '');
+        setGeneratedColors(fullIdentity.colors || []);
+        handlePalettePick(fullIdentity.colors || []);
+        setNameOptions((fullIdentity.nameOptions || []).slice(0, 4));
+      }
       setNameSection('select');
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Failed to generate names",
         description: error.message,
@@ -194,7 +236,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
       setGeneratedColors(fullIdentity.colors || []);
       // Limit to 4 options for mobile-friendliness
       setNameOptions((fullIdentity.nameOptions || []).slice(0, 4));
-      setSelectedName(existingName);
+      handleNameSelection(existingName);
       setNameSection('select');
       
       toast({
@@ -361,18 +403,27 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     });
   };
 
-  // Logo: Generate logos with selected style
+  // Logo: Generate logos with selected style using unified context
   const handleLogoStyleSelect = async (styleId: string) => {
-    setSelectedLogoStyle(styleId);
+    handleStyleSelect(styleId);
     setIsGeneratingLogos(true);
     
     try {
-      const logos = await generateLogos(
-        selectedName, 
-        styleId, 
-        vibes,
-        idea
-      );
+      let logos: string[];
+      
+      // Use the unified generate function if provided
+      if (onGenerateLogos) {
+        logos = await onGenerateLogos(selectedName, styleId);
+      } else {
+        logos = await generateLogos(
+          selectedName, 
+          styleId, 
+          vibes,
+          idea,
+          context
+        );
+      }
+      
       setGeneratedLogos(logos);
       setSelectedLogoIndex(null);
       setLikedLogos(new Set());
@@ -382,7 +433,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
         title: "🎨 Logos generated!",
         description: "Pick your favorite"
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Failed to generate logos",
         description: error.message,
@@ -393,19 +444,27 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     }
   };
 
-  // Logo: Regenerate all logos
+  // Logo: Regenerate all logos using unified context
   const handleRegenerateLogos = async () => {
     if (!selectedLogoStyle) return;
     
     setIsGeneratingLogos(true);
     try {
-      const logos = await generateLogos(
-        selectedName, 
-        selectedLogoStyle, 
-        vibes,
-        idea
-      );
-      // Limit to 4 options for mobile-friendliness
+      let logos: string[];
+      
+      // Use the unified generate function if provided
+      if (onGenerateLogos) {
+        logos = await onGenerateLogos(selectedName, selectedLogoStyle);
+      } else {
+        logos = await generateLogos(
+          selectedName, 
+          selectedLogoStyle, 
+          vibes,
+          idea,
+          context
+        );
+      }
+      
       setGeneratedLogos(logos.slice(0, 4));
       setSelectedLogoIndex(null);
       setLikedLogos(new Set());
@@ -414,7 +473,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
         title: "✨ Fresh logos just for you!",
         description: "New logo options generated"
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Failed to regenerate logos",
         description: error.message,
@@ -425,17 +484,25 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
     }
   };
 
-  // Logo: Reject and replace single logo
+  // Logo: Reject and replace single logo using unified context
   const handleRejectLogo = async (index: number) => {
     setRegeneratingLogoIndex(index);
     
     try {
-      const newLogos = await generateLogos(
-        selectedName, 
-        selectedLogoStyle, 
-        vibes,
-        idea
-      );
+      let newLogos: string[];
+      
+      // Use the unified generate function if provided
+      if (onGenerateLogos) {
+        newLogos = await onGenerateLogos(selectedName, selectedLogoStyle);
+      } else {
+        newLogos = await generateLogos(
+          selectedName, 
+          selectedLogoStyle, 
+          vibes,
+          idea,
+          context
+        );
+      }
       
       setGeneratedLogos(prev => {
         const updated = [...prev];
@@ -457,7 +524,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
         title: "✨ Fresh logo generated!",
         description: "Let us know if you like this one better"
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Failed to generate replacement",
         description: error.message,
@@ -659,7 +726,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                     className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                       selectedName === existingName ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'
                     }`}
-                    onClick={() => setSelectedName(existingName)}
+                    onClick={() => handleNameSelection(existingName)}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1">
@@ -691,7 +758,7 @@ export const StepBusinessIdentity = ({ onNext, onBack, initialValue, idea, about
                     )}
                     <div 
                       className="cursor-pointer"
-                      onClick={() => setSelectedName(option.name)}
+                      onClick={() => handleNameSelection(option.name)}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
