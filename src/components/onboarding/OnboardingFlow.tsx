@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
 import { DebugPanel } from '@/components/debug/DebugPanel';
 import type { OnboardingData } from '@/types/onboarding';
+import type { BrandContext } from '@/types/brand';
 
 interface OnboardingFlowProps {
   onComplete?: (data: OnboardingData) => void;
@@ -19,8 +20,14 @@ interface OnboardingFlowProps {
 export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<Partial<OnboardingData>>({});
+  const [brandContext, setBrandContext] = useState<BrandContext>({ idea_text: '' });
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
+  
+  // Log context updates for debugging
+  useEffect(() => {
+    console.log('BrandContext updated:', brandContext);
+  }, [brandContext]);
 
   // Scroll to top and log step transitions
   useEffect(() => {
@@ -188,6 +195,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
           {currentStep === 1 && (
             <StepOne 
               onNext={handleStepOne}
+              onUpdateContext={setBrandContext}
               initialValue={formData.idea}
             />
           )}
@@ -269,7 +277,8 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
       </div>
       
       <DebugPanel info={{ 
-        step: ['', 'StepOne', 'StepAboutYou', 'StepAboutBusiness', 'StepBusinessIdentity', 'StarterPackReveal', 'SocialPostPreview', 'StarterPackCheckout'][currentStep] 
+        step: ['', 'StepOne', 'StepAboutYou', 'StepAboutBusiness', 'StepBusinessIdentity', 'StarterPackReveal', 'SocialPostPreview', 'StarterPackCheckout'][currentStep],
+        brandContext
       }} />
     </div>
   );

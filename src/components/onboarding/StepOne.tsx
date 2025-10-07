@@ -8,13 +8,27 @@ import { Sparkles, ThumbsUp, ThumbsDown, RefreshCw, CheckCircle, Lightbulb, Mic,
 import { generateProductIdeas, type ProductIdea } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
+import { ProductFamily, BrandContext } from '@/types/brand';
+
+// Helper: Rank product families by frequency
+function rankFamilies(ideas: { category?: string }[]): ProductFamily[] {
+  const counts: Record<string, number> = {};
+  for (const i of ideas) {
+    const family = i.category as ProductFamily;
+    if (family) counts[family] = (counts[family] || 0) + 1;
+  }
+  return (Object.keys(counts) as ProductFamily[]).sort(
+    (a, b) => (counts[b] ?? 0) - (counts[a] ?? 0)
+  );
+}
 
 interface StepOneProps {
   onNext: (idea: string, products: ProductIdea[]) => void;
+  onUpdateContext?: (updater: (ctx: BrandContext) => BrandContext) => void;
   initialValue?: string;
 }
 
-export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
+export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneProps) => {
   const [idea, setIdea] = useState(initialValue);
   const [products, setProducts] = useState<ProductIdea[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -138,6 +152,26 @@ export const StepOne = ({ onNext, initialValue = '' }: StepOneProps) => {
       });
       
       setProducts(productIdeas);
+      
+      // Compute family rankings and push to BrandContext
+      const families_ranked = rankFamilies(productIdeas);
+      const dominant_family = families_ranked[0] ?? 'Digital';
+      
+      console.log('Step 1 context update:', {
+        idea_text: idea.trim(),
+        families_ranked,
+        dominant_family
+      });
+      
+      // Push Step 1 outputs into BrandContext at the flow level
+      if (typeof onUpdateContext === 'function') {
+        onUpdateContext((ctx) => ({
+          ...ctx,
+          idea_text: idea.trim(),
+          families_ranked,
+          dominant_family,
+        }));
+      }
     } catch (error) {
       console.error('Failed to generate product ideas:', error);
       toast({

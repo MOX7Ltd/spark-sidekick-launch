@@ -13,6 +13,7 @@ interface DebugInfo {
   lastPayloadKeys?: string[];
   lastDurationMs?: number;
   lastOk?: boolean;
+  brandContext?: any;
 }
 
 interface DebugPanelProps {
@@ -107,6 +108,15 @@ export function DebugPanel({ info }: DebugPanelProps) {
                 <div className="font-bold text-muted-foreground mb-1">Last Result</div>
                 <div className={info.lastOk ? 'text-green-600' : 'text-red-600'}>
                   {info.lastOk ? '✓ Success' : '✗ Failed'}
+                </div>
+              </div>
+            )}
+            
+            {info.brandContext && (
+              <div>
+                <div className="font-bold text-muted-foreground mb-1">Brand Context</div>
+                <div className="p-2 bg-muted/50 rounded text-[10px] max-h-32 overflow-auto">
+                  <pre>{JSON.stringify(info.brandContext, null, 2)}</pre>
                 </div>
               </div>
             )}
