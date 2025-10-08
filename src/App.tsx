@@ -10,9 +10,21 @@ import AuthSignup from "./pages/AuthSignup";
 import AuthSignin from "./pages/AuthSignin";
 import HubHome from "./pages/HubHome";
 import Products from "./pages/hub/Products";
+import ProductsLab from "./pages/hub/ProductsLab";
+import ProductsManage from "./pages/hub/ProductsManage";
+import ProductsPerformance from "./pages/hub/ProductsPerformance";
 import Social from "./pages/hub/Social";
+import SocialLab from "./pages/hub/SocialLab";
+import SocialManage from "./pages/hub/SocialManage";
+import SocialPerformance from "./pages/hub/SocialPerformance";
 import Customers from "./pages/hub/Customers";
+import CustomersMessages from "./pages/hub/CustomersMessages";
+import CustomersReviews from "./pages/hub/CustomersReviews";
+import CustomersCalendar from "./pages/hub/CustomersCalendar";
 import Profile from "./pages/hub/Profile";
+import ProfileUser from "./pages/hub/ProfileUser";
+import ProfileBusiness from "./pages/hub/ProfileBusiness";
+import ProfileShopfront from "./pages/hub/ProfileShopfront";
 import Settings from "./pages/hub/Settings";
 
 const queryClient = new QueryClient();
@@ -30,9 +42,21 @@ const App = () => (
           <Route path="/auth/signin" element={<AuthSignin />} />
           <Route path="/hub" element={<HubHome />} />
           <Route path="/hub/products" element={<Products />} />
+          <Route path="/hub/products/lab" element={<ProductsLab />} />
+          <Route path="/hub/products/manage" element={<ProductsManage />} />
+          <Route path="/hub/products/performance" element={<ProductsPerformance />} />
           <Route path="/hub/social" element={<Social />} />
+          <Route path="/hub/social/lab" element={<SocialLab />} />
+          <Route path="/hub/social/manage" element={<SocialManage />} />
+          <Route path="/hub/social/performance" element={<SocialPerformance />} />
           <Route path="/hub/customers" element={<Customers />} />
+          <Route path="/hub/customers/messages" element={<CustomersMessages />} />
+          <Route path="/hub/customers/reviews" element={<CustomersReviews />} />
+          <Route path="/hub/customers/calendar" element={<CustomersCalendar />} />
           <Route path="/hub/profile" element={<Profile />} />
+          <Route path="/hub/profile/user" element={<ProfileUser />} />
+          <Route path="/hub/profile/business" element={<ProfileBusiness />} />
+          <Route path="/hub/profile/shopfront" element={<ProfileShopfront />} />
           <Route path="/hub/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

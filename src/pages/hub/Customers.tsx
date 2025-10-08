@@ -1,31 +1,70 @@
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { useEffect } from 'react';
+import { MessageSquare, Star, Calendar } from 'lucide-react';
+import { AppSurface } from '@/components/layout/AppSurface';
+import { BackBar } from '@/components/hub/BackBar';
+import { SubHeader } from '@/components/hub/SubHeader';
+import { SubTile } from '@/components/hub/SubTile';
+import { logFrontendEvent } from '@/lib/frontendEventLogger';
 
 export default function Customers() {
-  const navigate = useNavigate();
+  useEffect(() => {
+    logFrontendEvent({
+      eventType: 'user_action',
+      step: 'view_hub_section',
+      payload: { section: 'customers' }
+    });
+  }, []);
+
+  const handleTileClick = (action: string) => {
+    logFrontendEvent({
+      eventType: 'user_action',
+      step: 'open_hub_action',
+      payload: { section: 'customers', action }
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
-      <header className="border-b bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/hub')}
-            aria-label="Back to hub"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold">Customers</h1>
+    <AppSurface>
+      <BackBar to="/hub" label="Back to Hub" />
+      <SubHeader
+        icon={<MessageSquare className="h-5 w-5" />}
+        title="Customers"
+        subtitle="Connect with your audience."
+      />
+      <div className="mt-3 space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <SubTile
+            variant="mini"
+            to="/hub/customers/messages"
+            icon={<MessageSquare className="h-5 w-5" />}
+            title="Messages"
+            desc="Inbox & replies"
+            onClick={() => handleTileClick('messages')}
+          />
+          <SubTile
+            variant="mini"
+            to="/hub/customers/reviews"
+            icon={<Star className="h-5 w-5" />}
+            title="Reviews"
+            desc="Collect & share"
+            onClick={() => handleTileClick('reviews')}
+            delay={0.03}
+          />
         </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto text-center">
-          <p className="text-muted-foreground">Coming soon</p>
-        </div>
-      </main>
-    </div>
+        <SubTile
+          variant="card"
+          to="/hub/customers/calendar"
+          icon={<Calendar className="h-6 w-6" />}
+          title="Calendar"
+          desc="Bookings & events"
+          onClick={() => handleTileClick('calendar')}
+          delay={0.06}
+          accentBorder
+        />
+      </div>
+      <p className="mt-4 px-1 text-sm text-muted-foreground">
+        <span className="font-medium text-[hsl(var(--sh-teal-600))]">Tip:</span> Reply fast—speed builds trust.
+      </p>
+    </AppSurface>
   );
 }
