@@ -6,6 +6,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import AuthSignup from "./pages/AuthSignup";
+import AuthSignin from "./pages/AuthSignin";
+import Hub from "./pages/Hub";
 
 const queryClient = new QueryClient();
 
@@ -18,6 +21,9 @@ const App = () => (
         <ScrollToTop />
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/auth/signup" element={<AuthSignup />} />
+          <Route path="/auth/signin" element={<AuthSignin />} />
+          <Route path="/hub" element={<Hub />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

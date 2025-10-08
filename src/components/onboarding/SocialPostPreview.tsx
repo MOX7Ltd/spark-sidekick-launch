@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Sparkles, Instagram, Linkedin, ArrowRight, Copy, RefreshCw, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateCampaign } from '@/lib/api';
+import { saveOnboardingSession } from '@/lib/onboardingSession';
 import type { BrandContext } from '@/types/brand';
 import type { ProductIdea, AboutYou } from '@/types/onboarding';
 
@@ -262,10 +263,38 @@ export const SocialPostPreview = ({
         <Button 
           size="lg"
           variant="hero"
-          onClick={onContinue}
+          onClick={async () => {
+            // Save onboarding session before continuing
+            const context: BrandContext = {
+              idea_text: '',
+              business_name: businessIdentity.name,
+              bio: aboutYou.expertise,
+              palette: [],
+              tone_adjectives: vibes,
+              audience: audiences,
+              vibes,
+              audiences,
+              user_first_name: aboutYou.firstName,
+              user_last_name: aboutYou.lastName,
+              expertise: aboutYou.expertise,
+              motivation: aboutYou.motivation || aboutYou.expertise,
+              personal_brand: aboutYou.includeFirstName || aboutYou.includeLastName,
+            };
+            
+            await saveOnboardingSession({
+              formData: { aboutYou, vibes, audiences, businessIdentity, products },
+              context,
+              generatedPosts: [
+                ...(shortPost ? [{ ...shortPost, platform: 'Instagram', hook: 'Short Version' }] : []),
+                ...(longPost ? [{ ...longPost, platform: 'LinkedIn', hook: 'Long Version' }] : [])
+              ],
+            });
+            
+            onContinue();
+          }}
           className="w-full md:w-auto h-12 md:h-14 px-6 md:px-8 text-base md:text-lg font-semibold group"
         >
-          🚀 Unlock My Starter Pack
+          Continue to Launch
           <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5 group-hover:translate-x-1 transition-transform" />
         </Button>
       </div>

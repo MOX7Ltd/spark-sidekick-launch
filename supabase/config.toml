@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.generate-names]
 verify_jwt = false
+
+[functions.migrate-onboarding-to-user]
+verify_jwt = false

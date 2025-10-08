@@ -46,10 +46,13 @@ export type Database = {
           id: string
           idea: string | null
           logo_svg: string | null
+          logo_url: string | null
           naming_preference: string | null
-          owner_id: string
+          owner_id: string | null
+          session_id: string | null
           status: string | null
           tagline: string | null
+          tone_tags: string[] | null
           updated_at: string | null
         }
         Insert: {
@@ -62,10 +65,13 @@ export type Database = {
           id?: string
           idea?: string | null
           logo_svg?: string | null
+          logo_url?: string | null
           naming_preference?: string | null
-          owner_id: string
+          owner_id?: string | null
+          session_id?: string | null
           status?: string | null
           tagline?: string | null
+          tone_tags?: string[] | null
           updated_at?: string | null
         }
         Update: {
@@ -78,10 +84,13 @@ export type Database = {
           id?: string
           idea?: string | null
           logo_svg?: string | null
+          logo_url?: string | null
           naming_preference?: string | null
-          owner_id?: string
+          owner_id?: string | null
+          session_id?: string | null
           status?: string | null
           tagline?: string | null
+          tone_tags?: string[] | null
           updated_at?: string | null
         }
         Relationships: [
@@ -93,6 +102,45 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      calendar_events: {
+        Row: {
+          created_at: string
+          end_at: string | null
+          id: string
+          location_url: string | null
+          price: number | null
+          product_id: string | null
+          start_at: string
+          title: string
+          type: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_at?: string | null
+          id?: string
+          location_url?: string | null
+          price?: number | null
+          product_id?: string | null
+          start_at: string
+          title: string
+          type?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_at?: string | null
+          id?: string
+          location_url?: string | null
+          price?: number | null
+          product_id?: string | null
+          start_at?: string
+          title?: string
+          type?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       campaign_items: {
         Row: {
@@ -145,6 +193,7 @@ export type Database = {
           id: string
           name: string | null
           objective: string | null
+          session_id: string | null
           status: string | null
           type: string | null
         }
@@ -154,6 +203,7 @@ export type Database = {
           id?: string
           name?: string | null
           objective?: string | null
+          session_id?: string | null
           status?: string | null
           type?: string | null
         }
@@ -163,6 +213,7 @@ export type Database = {
           id?: string
           name?: string | null
           objective?: string | null
+          session_id?: string | null
           status?: string | null
           type?: string | null
         }
@@ -245,6 +296,38 @@ export type Database = {
         }
         Relationships: []
       }
+      ideas: {
+        Row: {
+          created_at: string | null
+          id: string
+          ideas_json: Json
+          input_text: string
+          owner_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ideas_json: Json
+          input_text: string
+          owner_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ideas_json?: Json
+          input_text?: string
+          owner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ideas_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       idempotent_responses: {
         Row: {
           created_at: string
@@ -272,11 +355,267 @@ export type Database = {
         }
         Relationships: []
       }
+      marketing_posts: {
+        Row: {
+          created_at: string
+          hashtags: string[] | null
+          id: string
+          image_url: string | null
+          platform: string
+          post_text: string
+          prompt: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          hashtags?: string[] | null
+          id?: string
+          image_url?: string | null
+          platform: string
+          post_text: string
+          prompt?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          hashtags?: string[] | null
+          id?: string
+          image_url?: string | null
+          platform?: string
+          post_text?: string
+          prompt?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      message_threads: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string
+          subject: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          subject?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          subject?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          body: string
+          created_at: string
+          from_email: string | null
+          from_name: string | null
+          id: string
+          is_from_customer: boolean
+          product_id: string | null
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          from_email?: string | null
+          from_name?: string | null
+          id?: string
+          is_from_customer?: boolean
+          product_id?: string | null
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          from_email?: string | null
+          from_name?: string | null
+          id?: string
+          is_from_customer?: boolean
+          product_id?: string | null
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      onboarding_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          migrated_at: string | null
+          migrated_to_user_id: string | null
+          payload: Json
+          session_id: string
+          user_hint_email: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          migrated_at?: string | null
+          migrated_to_user_id?: string | null
+          payload: Json
+          session_id: string
+          user_hint_email?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          migrated_at?: string | null
+          migrated_to_user_id?: string | null
+          payload?: Json
+          session_id?: string
+          user_hint_email?: string | null
+        }
+        Relationships: []
+      }
+      product_assets: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          meta: Json | null
+          product_id: string
+          storage_path: string
+          type: string
+          version: number
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          meta?: Json | null
+          product_id: string
+          storage_path: string
+          type: string
+          version: number
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          meta?: Json | null
+          product_id?: string
+          storage_path?: string
+          type?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_assets_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          asset_status: string | null
+          asset_type: string | null
+          asset_url: string | null
+          asset_version: number | null
+          business_id: string | null
+          created_at: string | null
+          description: string | null
+          format: string | null
+          fulfillment: Json | null
+          generation_source: string | null
+          id: string
+          is_draft: boolean | null
+          legacy_pdf_url: string | null
+          price: number | null
+          session_id: string | null
+          status: string | null
+          title: string
+          type: string | null
+          updated_at: string | null
+          user_id: string | null
+          visible: boolean | null
+        }
+        Insert: {
+          asset_status?: string | null
+          asset_type?: string | null
+          asset_url?: string | null
+          asset_version?: number | null
+          business_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          format?: string | null
+          fulfillment?: Json | null
+          generation_source?: string | null
+          id?: string
+          is_draft?: boolean | null
+          legacy_pdf_url?: string | null
+          price?: number | null
+          session_id?: string | null
+          status?: string | null
+          title: string
+          type?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          visible?: boolean | null
+        }
+        Update: {
+          asset_status?: string | null
+          asset_type?: string | null
+          asset_url?: string | null
+          asset_version?: number | null
+          business_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          format?: string | null
+          fulfillment?: Json | null
+          generation_source?: string | null
+          id?: string
+          is_draft?: boolean | null
+          legacy_pdf_url?: string | null
+          price?: number | null
+          session_id?: string | null
+          status?: string | null
+          title?: string
+          type?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          visible?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
           display_name: string | null
           email: string | null
+          last_active_at: string | null
+          starter_pack_shared: boolean
           timezone: string | null
           user_id: string
         }
@@ -284,6 +623,8 @@ export type Database = {
           created_at?: string | null
           display_name?: string | null
           email?: string | null
+          last_active_at?: string | null
+          starter_pack_shared?: boolean
           timezone?: string | null
           user_id: string
         }
@@ -291,7 +632,45 @@ export type Database = {
           created_at?: string | null
           display_name?: string | null
           email?: string | null
+          last_active_at?: string | null
+          starter_pack_shared?: boolean
           timezone?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          is_hidden: boolean
+          product_id: string
+          rating: number | null
+          reply: string | null
+          reviewer_name: string | null
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          is_hidden?: boolean
+          product_id: string
+          rating?: number | null
+          reply?: string | null
+          reviewer_name?: string | null
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          is_hidden?: boolean
+          product_id?: string
+          rating?: number | null
+          reply?: string | null
+          reviewer_name?: string | null
           user_id?: string
         }
         Relationships: []

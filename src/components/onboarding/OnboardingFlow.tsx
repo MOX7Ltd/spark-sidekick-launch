@@ -6,6 +6,7 @@ import { SocialPostPreview } from './SocialPostPreview';
 import { StepBusinessIdentity } from './StepBusinessIdentity';
 import { StarterPackReveal } from './StarterPackReveal';
 import { StarterPackCheckout } from './StarterPackCheckout';
+import LaunchPricing from './LaunchPricing';
 import { ProgressBar } from './ProgressBar';
 import { useToast } from '@/hooks/use-toast';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
@@ -114,7 +115,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
     // Log step transition
-    const stepNames = ['', 'StepOne', 'StepAboutYou', 'StepAboutBusiness', 'StepBusinessIdentity', 'StarterPackReveal', 'SocialPostPreview', 'StarterPackCheckout'];
+    const stepNames = ['', 'StepOne', 'StepAboutYou', 'StepAboutBusiness', 'StepBusinessIdentity', 'StarterPackReveal', 'SocialPostPreview', 'LaunchPricing'];
     if (currentStep > 0 && currentStep < stepNames.length) {
       logFrontendEvent({
         eventType: 'step_transition',
@@ -258,7 +259,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
 
   const goBack = () => {
     if (currentStep > 1) {
-      const stepNames = ['', 'StepOne', 'StepAboutYou', 'StepAboutBusiness', 'StepBusinessIdentity', 'StarterPackReveal', 'SocialPostPreview', 'StarterPackCheckout'];
+      const stepNames = ['', 'StepOne', 'StepAboutYou', 'StepAboutBusiness', 'StepBusinessIdentity', 'StarterPackReveal', 'SocialPostPreview', 'LaunchPricing'];
       logFrontendEvent({
         eventType: 'user_action',
         step: stepNames[currentStep] || 'Unknown',
@@ -379,18 +380,15 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
             />
           )}
 
-          {/* Checkout: Starter Pack (Not counted in main onboarding steps) */}
-          {currentStep === 7 && formData.businessIdentity && (
-            <StarterPackCheckout
-              businessName={formData.businessIdentity.name}
-              onContinue={handleCheckoutComplete}
-            />
+          {/* Step 7: Launch Pricing (Replaces Checkout) */}
+          {currentStep === 7 && (
+            <LaunchPricing onBack={goBack} />
           )}
         </div>
       </div>
       
       <DebugPanel info={{ 
-        step: ['', 'StepOne', 'StepAboutYou', 'StepAboutBusiness', 'StepBusinessIdentity', 'StarterPackReveal', 'SocialPostPreview', 'StarterPackCheckout'][currentStep],
+        step: ['', 'StepOne', 'StepAboutYou', 'StepAboutBusiness', 'StepBusinessIdentity', 'StarterPackReveal', 'SocialPostPreview', 'LaunchPricing'][currentStep],
         brandContext: context
       }} />
     </div>
