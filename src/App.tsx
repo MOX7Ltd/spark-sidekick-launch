@@ -12,6 +12,7 @@ import HubHome from "./pages/HubHome";
 import Products from "./pages/hub/Products";
 import ProductsLab from "./pages/hub/ProductsLab";
 import ProductsManage from "./pages/hub/ProductsManage";
+import ProductEditor from "./pages/hub/ProductEditor";
 import ProductsPerformance from "./pages/hub/ProductsPerformance";
 import Social from "./pages/hub/Social";
 import SocialLab from "./pages/hub/SocialLab";
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/hub/products" element={<Products />} />
           <Route path="/hub/products/lab" element={<ProductsLab />} />
           <Route path="/hub/products/manage" element={<ProductsManage />} />
+          <Route path="/hub/products/edit/:id" element={<ProductEditor />} />
           <Route path="/hub/products/performance" element={<ProductsPerformance />} />
           <Route path="/hub/social" element={<Social />} />
           <Route path="/hub/social/lab" element={<SocialLab />} />
