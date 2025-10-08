@@ -29,9 +29,16 @@ serve(async (req) => {
   try {
     const requestBody = await req.json();
     
+    // Normalize and validate style
+    const normalize = (s: string) => s.toLowerCase().replace(/[\s_-]+/g, '').replace('iconbased', 'icon');
+    const safeStyle = (s: string) => {
+      const k = normalize(s);
+      return ['bold', 'retro', 'icon', 'playful', 'minimalist', 'handdrawn', 'gradient', 'typographyfirst', 'typography'].includes(k) ? k : 'minimalist';
+    };
+    
     const styleFromClient = requestBody.style;
     const vibes: string[] = Array.isArray(requestBody.vibes) ? requestBody.vibes : [];
-    const primaryStyle = (styleFromClient || 'modern').toLowerCase();
+    const primaryStyle = safeStyle(styleFromClient || 'modern');
     const { businessName, ideaText, context } = requestBody;
     
     // Extract context information if provided
@@ -105,15 +112,15 @@ Values: ${brandContext.bio ? brandContext.bio.substring(0, 150) : 'Professional,
       ? `Tone hint: ${vibes.join(", ")} (influence color/emotion only; do not change the ${primaryStyle} style).`
       : "Tone hint: neutral, versatile.";
     
-    // When to show the business name
-    const nameStyles = new Set(["typography-first", "typography", "bold", "retro"]);
+    // When to show the business name - only true typography styles
+    const nameStyles = new Set(["typography-first", "typography", "typographyfirst"]);
     const includeNameText = nameStyles.has(primaryStyle);
     
     let nameInstruction = "";
     if (includeNameText) {
       nameInstruction = `The logo must prominently feature the brand name "${businessName}" as a wordmark.`;
     } else {
-      nameInstruction = `The logo should be symbol-first; include at least two symbol-only options. If a lockup is shown, use "${businessName}" minimally.`;
+      nameInstruction = `CRITICAL: SYMBOL-FIRST. At least 3 of 4 variations must be pure symbols with NO business name text. One (max) may be a small lockup. Icon must work standalone.`;
     }
     
     // Family-based motif bias
@@ -158,7 +165,7 @@ Values: ${brandContext.bio ? brandContext.bio.substring(0, 150) : 'Professional,
       ? `Design a logo for the business "${businessName}" focusing on the wordmark and lettering.`
       : `Design a single logo symbol that represents the essence of "${businessName}" without necessarily showing the name text.`;
 
-    // Simplified variation plans based on style with symbol-first enforcement
+    // Style-specific variation plans
     let variationPlans: string[];
 
     if (includeNameText) {
@@ -170,12 +177,57 @@ Values: ${brandContext.bio ? brandContext.bio.substring(0, 150) : 'Professional,
         "Integrated wordmark + icon device"
       ];
     } else {
-      // Symbol-focused styles - at least 2 symbol-only variants
-      variationPlans = [
-        "Primary standalone symbol (no text)",
-        "Symbol with minimal wordmark lockup",
-        "Alternative symbol interpretation (no text)",
-        "Symbol in badge or contained form"
+      // Symbol-focused - specific plans per style
+      const symbolPlans: Record<string, string[]> = {
+        'bold': [
+          "Strong geometric symbol with heavy shapes (NO TEXT)",
+          "Bold abstract mark using negative space (NO TEXT)",
+          "Solid emblem or badge form (NO TEXT)",
+          "Optional: Symbol with tiny wordmark below"
+        ],
+        'retro': [
+          "Vintage emblem or badge with era-appropriate styling (NO TEXT)",
+          "Classic monogram or lettermark (single initial only)",
+          "Nostalgic symbol with retro color palette (NO TEXT)",
+          "Optional: Vintage lockup with small text"
+        ],
+        'icon': [
+          "Scalable icon mark (NO TEXT)",
+          "Simplified symbolic glyph (NO TEXT)",
+          "Geometric icon with brand personality (NO TEXT)",
+          "Optional: Icon + small wordmark lockup"
+        ],
+        'playful': [
+          "Friendly character or mascot symbol (NO TEXT)",
+          "Rounded playful shape with motion (NO TEXT)",
+          "Whimsical abstract mark (NO TEXT)",
+          "Optional: Playful lockup with minimal text"
+        ],
+        'minimalist': [
+          "Ultra-simple geometric symbol (NO TEXT)",
+          "Negative space mark (NO TEXT)",
+          "Single-line or minimal form icon (NO TEXT)",
+          "Optional: Minimal symbol + tiny wordmark"
+        ],
+        'handdrawn': [
+          "Organic hand-drawn symbol (NO TEXT)",
+          "Sketch-style mark with human touch (NO TEXT)",
+          "Illustrative symbol (NO TEXT)",
+          "Optional: Hand-lettered small text with symbol"
+        ],
+        'gradient': [
+          "Modern gradient symbol (NO TEXT)",
+          "Smooth flowing gradient mark (NO TEXT)",
+          "Contemporary gradient icon (NO TEXT)",
+          "Optional: Gradient symbol + clean sans wordmark"
+        ]
+      };
+      
+      variationPlans = symbolPlans[primaryStyle] || [
+        "Primary standalone symbol (NO TEXT)",
+        "Alternative symbol interpretation (NO TEXT)",
+        "Badge or contained symbol form (NO TEXT)",
+        "Optional: Minimal lockup with small wordmark"
       ];
     }
 
@@ -194,8 +246,11 @@ ${ideaText ? `Business context: ${ideaText}` : ''}
 Design Goals:
 - Each image should depict a single logo concept (no collages or multiple marks)
 - Vector-friendly, scalable, clean composition
-- ${includeNameText ? 'Focus on lettering and wordmark' : 'Focus on symbolic mark first'}
-- Avoid: photorealism, 3D effects, clip-art, busy compositions
+- ${includeNameText ? 'Focus on lettering and wordmark' : 'FOCUS ON SYMBOLIC MARK - minimize or eliminate text'}
+- Icon must be legible at 24×24 px; min stroke width ≥ 1.5px at 24px; avoid hairlines and tiny details
+- ${includeNameText 
+    ? 'Avoid: photorealism, 3D effects, clip-art.' 
+    : 'Avoid: photorealism, 3D, clip-art, busy compositions, excessive text, full business names, generic badges/crests, soccer-ball clichés.'}
 - Ensure contrast and clarity at any size
 
 Generate ONE logo concept per image (4 variations total).
@@ -260,9 +315,67 @@ Variation ${i + 1}: ${plan}`);
 
     const logos = await Promise.all(logoPromises);
 
-    // Optional: Basic quality check
-    const validLogos = logos.filter(logo => {
-      // Check that base64 is reasonable size (not broken)
+    // Helper: detect likely text in base64 image (simple heuristic)
+    const hasLikelyText = (dataUrl: string): boolean => {
+      try {
+        // Very basic check: if data URL is suspiciously large, might contain text
+        // Real OCR would be better, but this is a lightweight proxy
+        const base64Data = dataUrl.split(',')[1] || '';
+        // Decode and check for common text patterns (this is approximate)
+        return base64Data.length > 50000; // Text-heavy images tend to be larger
+      } catch {
+        return false;
+      }
+    };
+
+    // One-time auto-regenerate if symbol-first but appears text-heavy
+    let finalLogos = logos;
+    if (!includeNameText) {
+      const textHeavyCount = logos.filter(hasLikelyText).length;
+      if (textHeavyCount >= 3) {
+        console.log('[generate-logos] Symbol-first style appears text-heavy, attempting one regeneration');
+        
+        // Regenerate with even stronger instruction
+        const regeneratePrompt = `${basePrompt}
+
+CRITICAL OVERRIDE: Absolutely no letters or words. Icon-only. Pure symbol.`;
+        
+        try {
+          const regeneratedPromises = variationPlans.slice(0, 2).map(async (plan) => {
+            const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${lovableApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'google/gemini-2.5-flash-image-preview',
+                messages: [{ role: 'user', content: `${regeneratePrompt}\nVariation: ${plan}` }],
+                modalities: ['image', 'text']
+              }),
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              return data.choices?.[0]?.message?.images?.[0]?.image_url?.url || null;
+            }
+            return null;
+          });
+          
+          const regenerated = (await Promise.all(regeneratedPromises)).filter(Boolean);
+          if (regenerated.length > 0) {
+            // Replace first N logos with regenerated ones
+            finalLogos = [...regenerated, ...logos.slice(regenerated.length)];
+            console.log(`[generate-logos] Replaced ${regenerated.length} text-heavy logos`);
+          }
+        } catch (e) {
+          console.warn('[generate-logos] Regeneration failed, using original logos:', e);
+        }
+      }
+    }
+
+    // Basic quality check
+    const validLogos = finalLogos.filter(logo => {
       return logo && logo.length > 1000 && logo.startsWith('data:image');
     });
 
@@ -271,13 +384,13 @@ Variation ${i + 1}: ${plan}`);
     }
 
     // Return valid logos (or all if most are valid)
-    const finalLogos = validLogos.length >= 3 ? validLogos : logos;
+    const outputLogos = validLogos.length >= 3 ? validLogos : finalLogos;
 
-    console.log('Generated', finalLogos.length, 'logos');
+    console.log('Generated', outputLogos.length, 'logos');
 
     const durationMs = Math.round(performance.now() - startTime);
     const responseData = {
-      logos: finalLogos,
+      logos: outputLogos,
       styleUsed: primaryStyle,
       trace_id: traceId,
       session_id: sessionId,
