@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
+import { getOnboardingSessionId, clearOnboardingSession } from '@/lib/onboardingSession';
 
 export default function AuthSignup() {
   const navigate = useNavigate();
@@ -16,6 +17,26 @@ export default function AuthSignup() {
     password: '',
     name: '',
   });
+
+  const handleMigration = async (userId: string) => {
+    const sessionId = getOnboardingSessionId();
+    if (!sessionId) return;
+
+    try {
+      const { error } = await supabase.functions.invoke('migrate-onboarding-to-user', {
+        body: { user_id: userId, session_id: sessionId }
+      });
+
+      if (error) {
+        console.error('Migration failed:', error);
+      } else {
+        console.log('Onboarding data migrated successfully');
+        clearOnboardingSession();
+      }
+    } catch (error) {
+      console.error('Migration error:', error);
+    }
+  };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +59,7 @@ export default function AuthSignup() {
         payload: { action: 'start_signup' },
       });
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -56,6 +77,11 @@ export default function AuthSignup() {
         step: 'signup',
         payload: { action: 'complete_signup' },
       });
+
+      // Migrate onboarding data if session exists
+      if (data.user?.id) {
+        await handleMigration(data.user.id);
+      }
 
       toast({
         title: 'Account created!',
