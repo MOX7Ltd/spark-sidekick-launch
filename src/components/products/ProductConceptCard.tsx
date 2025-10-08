@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ChevronDown, ChevronUp, Plus, ThumbsDown, RefreshCw, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { revenueScenarios } from '@/lib/productLab';
+import { normalizeFamily } from '@/lib/productCatalog';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -45,6 +46,9 @@ export function ProductConceptCard({ concept, index, onRemove }: ProductConceptC
         return;
       }
 
+      // Normalize family before saving
+      const normalizedFamily = normalizeFamily(concept.format ?? concept.family ?? concept.category);
+
       const { data, error } = await supabase
         .from('products')
         .insert({
@@ -53,6 +57,7 @@ export function ProductConceptCard({ concept, index, onRemove }: ProductConceptC
           description: concept.summary,
           status: 'draft',
           is_draft: true,
+          type: normalizedFamily,  // canonical family
           format: concept.format,
           price: Math.round((concept.price_rec_low + concept.price_rec_high) / 2),
           fulfillment: {
@@ -64,7 +69,8 @@ export function ProductConceptCard({ concept, index, onRemove }: ProductConceptC
             price_rec_high: concept.price_rec_high,
             upsells: concept.upsells,
             cross_sells: concept.cross_sells,
-            risks: concept.risks
+            risks: concept.risks,
+            raw_lab_format: concept.format ?? concept.family
           }
         })
         .select()

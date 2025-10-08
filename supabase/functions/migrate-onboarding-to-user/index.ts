@@ -250,22 +250,37 @@ serve(async (req) => {
     );
 
     if (Array.isArray(productsRaw) && productsRaw.length > 0 && businessId) {
-      // Family normalization
+      // Canonical family normalization from productCatalog
+      const ALLOWED_FAMILIES = new Set([
+        'template', 'ebook', 'session', 'course', 'email-pack', 'video', 'bundle'
+      ]);
+
       const FAMILY_MAP: Record<string, string> = {
+        // generic onboarding buckets
+        'digital': 'ebook',
+        'services': 'session',
+        'teach': 'course',
+        'physical': 'bundle',
+        // specific synonyms
         'checklist': 'template',
         'checklist / template': 'template',
         'template': 'template',
+        'notion template': 'template',
+        'canva template': 'template',
         'digital guide': 'ebook',
+        'guide': 'ebook',
         'ebook': 'ebook',
         '1:1 session': 'session',
         'coaching': 'session',
+        'consulting': 'session',
+        'workshop': 'session',
         'cohort': 'course',
         'mini-course': 'course',
-        'notion template': 'template',
-        'canva template': 'template',
+        'course': 'course',
         'email sequence': 'email-pack',
         'email pack': 'email-pack',
         'video pack': 'video',
+        'video': 'video',
         'bundle': 'bundle',
         'starter kit': 'bundle',
       };
@@ -280,10 +295,11 @@ serve(async (req) => {
         'bundle': 'bundle',
       };
 
-      const normalizeFamily = (input?: string) => {
+      const normalizeFamily = (input?: string): string | null => {
         if (!input) return null;
         const k = input.toLowerCase().trim();
-        return FAMILY_MAP[k] ?? input.toLowerCase();
+        const mapped = FAMILY_MAP[k] ?? k;
+        return ALLOWED_FAMILIES.has(mapped) ? mapped : null;
       };
 
       const titleOf = (p: any) => p?.title ?? p?.name ?? '';
@@ -294,19 +310,20 @@ serve(async (req) => {
         const title = (titleOf(p) || '').trim();
         if (!title) continue;
 
-        const family = p.family ?? normalizeFamily(p.category) ?? null;
+        const rawFamily = p.family ?? p.category ?? p.type;
+        const family = normalizeFamily(rawFamily);
         const format = p.format ?? (family ? FORMAT_FALLBACK[family] : null) ?? 'download';
 
         const price_low = p.priceLow ?? null;
         const price_high = p.priceHigh ?? null;
-        const price_model = p.priceModel ?? (family === 'session' ? 'one-off' : 'one-off');
+        const price_model = p.priceModel ?? 'one-off';
 
         toInsert.push({
           user_id,
           business_id: businessId,
           title,
           description: descOf(p),
-          type: family,
+          type: family,  // null if normalization failed
           format,
           price: price_low,
           status: 'draft',
@@ -318,6 +335,7 @@ serve(async (req) => {
             price_low,
             price_high,
             price_model,
+            raw_onboarding_type: rawFamily,
             raw_onboarding: p,
           }
         });

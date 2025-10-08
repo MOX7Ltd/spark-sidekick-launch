@@ -63,3 +63,32 @@ export function getStatusLabel(status: ProductStatus): string {
       return 'Hidden';
   }
 }
+
+// Import catalog for normalization
+import { normalizeFamily, FAMILY_META, type Family } from './productCatalog';
+
+/**
+ * Normalize product row data from any source (onboarding, Lab, LLM)
+ * Returns null if title is missing, otherwise returns normalized product data
+ */
+export function normalizeProductRow(p: any) {
+  const title = (p?.title || p?.name || '').trim();
+  if (!title) return null;
+
+  const family = normalizeFamily(p?.family ?? p?.category ?? p?.type);
+  const format = p?.format ?? (family ? FAMILY_META[family].defaultFormat : null);
+
+  return {
+    title,
+    description: p?.description ?? p?.summary ?? p?.notes ?? '',
+    type: family,           // maps to products.type (canonical)
+    format,
+    price_low: p?.priceLow ?? p?.price_rec_low ?? null,
+    price_high: p?.priceHigh ?? p?.price_rec_high ?? null,
+    price_model: p?.priceModel ?? p?.price_model ?? 'one-off',
+    meta: {
+      ...(p?.meta ?? {}),
+      raw_onboarding_type: p?.family ?? p?.category ?? p?.type ?? null
+    }
+  };
+}

@@ -1,37 +1,25 @@
+// Re-export from canonical catalog
+import { FAMILIES, FAMILY_META, type Family } from './productCatalog';
+
 export interface ProductFamily {
-  key: string;
+  key: Family;
   label: string;
   priceRange: string;
   tooltip: string;
 }
 
-export const PRODUCT_FAMILIES: ProductFamily[] = [
-  { key: 'checklist', label: 'Checklist/Template', priceRange: '£5–£29', tooltip: 'Quick wins & actionable guides' },
-  { key: 'guide', label: 'Digital Guide/eBook', priceRange: '£9–£49', tooltip: 'In-depth knowledge products' },
-  { key: 'session', label: '1:1 Session', priceRange: '£40–£200', tooltip: 'Personal coaching & consulting' },
-  { key: 'course', label: 'Cohort/Mini-Course', priceRange: '£25–£149', tooltip: 'Group learning experiences' },
-  { key: 'template', label: 'Notion/Canva Template', priceRange: '£7–£39', tooltip: 'Ready-to-use digital templates' },
-  { key: 'email', label: 'Email Pack', priceRange: '£15–£99', tooltip: 'Email sequences & newsletters' },
-  { key: 'video', label: 'Video Pack', priceRange: '£9–£59', tooltip: 'Video tutorials & courses' },
-  { key: 'bundle', label: 'Bundle/Starter Kit', priceRange: '£19–£99', tooltip: 'Combined resources & tools' },
-];
+// Build PRODUCT_FAMILIES from canonical catalog
+export const PRODUCT_FAMILIES: ProductFamily[] = FAMILIES.map(family => ({
+  key: family,
+  label: FAMILY_META[family].label,
+  priceRange: `£${FAMILY_META[family].priceBand[0]}–£${FAMILY_META[family].priceBand[1]}`,
+  tooltip: FAMILY_META[family].tooltip
+}));
 
-export const PRICE_BANDS = {
-  checklist: { low: 5, high: 29 },
-  guide: { low: 9, high: 49 },
-  session: { low: 40, high: 200 },
-  course: { low: 25, high: 149 },
-  template: { low: 7, high: 39 },
-  email: { low: 15, high: 99 },
-  video: { low: 9, high: 59 },
-  bundle: { low: 19, high: 99 },
-};
-
-export function normalizeFamily(key: string): string {
-  const normalized = key.toLowerCase().replace(/[\s_-]+/g, '');
-  const validKeys = Object.keys(PRICE_BANDS);
-  return validKeys.includes(normalized) ? normalized : 'guide';
-}
+// Build PRICE_BANDS from canonical catalog
+export const PRICE_BANDS: Record<Family, { low: number; high: number }> = Object.fromEntries(
+  FAMILIES.map(family => [family, { low: FAMILY_META[family].priceBand[0], high: FAMILY_META[family].priceBand[1] }])
+) as Record<Family, { low: number; high: number }>;
 
 export function revenueScenarios(low: number, high: number) {
   const mid = Math.round((low + high) / 2);

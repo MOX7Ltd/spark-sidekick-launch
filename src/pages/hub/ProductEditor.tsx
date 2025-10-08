@@ -20,6 +20,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { type ProductStatus, type PriceModel, type DeliveryMode, type ProductFulfillment } from '@/lib/products';
+import { normalizeFamily, type Family } from '@/lib/productCatalog';
 
 export default function ProductEditor() {
   const { id } = useParams<{ id: string }>();
@@ -162,11 +163,15 @@ export default function ProductEditor() {
         post_purchase_note: postPurchaseNote,
       };
 
+      // Normalize family before saving
+      const normalizedFamily = normalizeFamily(family);
+
       const { error } = await supabase
         .from('products')
         .update({
           title,
           description,
+          type: normalizedFamily,  // canonical family
           format: family,
           status: finalStatus,
           price,

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { BeakerLoader } from '@/components/fx/BeakerLoader';
 import { PRODUCT_FAMILIES, PRICE_BANDS } from '@/lib/productLab';
+import { type Family } from '@/lib/productCatalog';
 import { Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -13,7 +14,7 @@ interface ProductIdeaFormProps {
 
 export function ProductIdeaForm({ onGenerate, isGenerating }: ProductIdeaFormProps) {
   const [idea, setIdea] = useState('');
-  const [selectedFamily, setSelectedFamily] = useState<string>('');
+  const [selectedFamily, setSelectedFamily] = useState<Family | ''>('');
   const [revenueEstimate, setRevenueEstimate] = useState<string>('');
 
   useEffect(() => {
@@ -24,8 +25,8 @@ export function ProductIdeaForm({ onGenerate, isGenerating }: ProductIdeaFormPro
   }, [idea, selectedFamily]);
 
   useEffect(() => {
-    if (selectedFamily && PRICE_BANDS[selectedFamily as keyof typeof PRICE_BANDS]) {
-      const { low, high } = PRICE_BANDS[selectedFamily as keyof typeof PRICE_BANDS];
+    if (selectedFamily && PRICE_BANDS[selectedFamily as Family]) {
+      const { low, high } = PRICE_BANDS[selectedFamily as Family];
       const mid = Math.round((low + high) / 2);
       const perWeek = 5; // Conservative estimate
       const monthly = mid * perWeek * 4;
