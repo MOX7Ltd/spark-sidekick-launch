@@ -269,26 +269,120 @@ serve(async (req) => {
     }
 
     // 5. Migrate products if any
-    if (payload.products && businessId) {
-      const products = payload.products.map((product: any) => ({
-        user_id,
-        business_id: businessId,
-        title: product.title,
-        description: product.description,
-        type: product.category || 'digital',
-        format: product.format,
-        status: 'draft',
-        session_id: session_id,
-      }));
+    const productsRaw = firstOf<any[]>(
+      dig(payload, 'formData.products'),
+      dig(payload, 'products')
+    );
 
-      const { error: productsError } = await supabase
-        .from('products')
-        .insert(products);
+    if (Array.isArray(productsRaw) && productsRaw.length > 0 && businessId) {
+      // Family normalization
+      const FAMILY_MAP: Record<string, string> = {
+        'checklist': 'template',
+        'checklist / template': 'template',
+        'template': 'template',
+        'digital guide': 'ebook',
+        'ebook': 'ebook',
+        '1:1 session': 'session',
+        'coaching': 'session',
+        'cohort': 'course',
+        'mini-course': 'course',
+        'notion template': 'template',
+        'canva template': 'template',
+        'email sequence': 'email-pack',
+        'email pack': 'email-pack',
+        'video pack': 'video',
+        'bundle': 'bundle',
+        'starter kit': 'bundle',
+      };
 
-      if (productsError) {
-        console.error('[migrate-onboarding] Products migration failed:', productsError);
-      } else {
-        console.log('[migrate-onboarding] Migrated products:', products.length);
+      const FORMAT_FALLBACK: Record<string, string> = {
+        'template': 'download',
+        'ebook': 'download',
+        'session': 'session',
+        'course': 'course',
+        'email-pack': 'download',
+        'video': 'video',
+        'bundle': 'bundle',
+      };
+
+      const normalizeFamily = (input?: string) => {
+        if (!input) return null;
+        const k = input.toLowerCase().trim();
+        return FAMILY_MAP[k] ?? input.toLowerCase();
+      };
+
+      const titleOf = (p: any) => p?.title ?? p?.name ?? '';
+      const descOf = (p: any) => p?.description ?? p?.summary ?? p?.notes ?? '';
+
+      const toInsert: any[] = [];
+      for (const p of productsRaw) {
+        const title = (titleOf(p) || '').trim();
+        if (!title) continue;
+
+        const family = p.family ?? normalizeFamily(p.category) ?? null;
+        const format = p.format ?? (family ? FORMAT_FALLBACK[family] : null) ?? 'download';
+
+        const price_low = p.priceLow ?? null;
+        const price_high = p.priceHigh ?? null;
+        const price_model = p.priceModel ?? (family === 'session' ? 'one-off' : 'one-off');
+
+        toInsert.push({
+          user_id,
+          business_id: businessId,
+          title,
+          description: descOf(p),
+          type: family,
+          format,
+          price: price_low,
+          status: 'draft',
+          session_id: session_id,
+          fulfillment: {
+            source: 'onboarding',
+            source_session_id: session_id,
+            imported_at: new Date().toISOString(),
+            price_low,
+            price_high,
+            price_model,
+            raw_onboarding: p,
+          }
+        });
+      }
+
+      // Idempotency: skip any title already imported for this session
+      if (toInsert.length) {
+        const titles = toInsert.map((r: any) => r.title);
+        const { data: existing } = await supabase
+          .from('products')
+          .select('id,title,fulfillment')
+          .eq('user_id', user_id)
+          .in('title', titles);
+
+        const existingSet = new Set(
+          (existing ?? [])
+            .filter((r: any) => r?.fulfillment?.source_session_id === session_id)
+            .map((r: any) => (r.title || '').toLowerCase())
+        );
+
+        const finalInsert = toInsert.filter((r: any) => !existingSet.has(r.title.toLowerCase()));
+        
+        if (finalInsert.length) {
+          const { error: productsError } = await supabase
+            .from('products')
+            .insert(finalInsert);
+
+          if (productsError) {
+            console.error('[migrate-onboarding] Products migration failed:', productsError);
+          } else {
+            console.log('[migrate-onboarding:products]', {
+              user_id,
+              session_id,
+              products_in_payload: productsRaw.length,
+              inserted_count: finalInsert.length
+            });
+          }
+        } else {
+          console.log('[migrate-onboarding:products] All products already migrated');
+        }
       }
     }
 
