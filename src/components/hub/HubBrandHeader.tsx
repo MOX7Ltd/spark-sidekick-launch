@@ -25,7 +25,7 @@ export function HubBrandHeader() {
             alt="SideHive" 
             className="h-8 w-8 rounded-full object-cover"
           />
-          <h1 className="text-lg font-semibold text-foreground">
+          <h1 className="text-lg font-semibold bg-gradient-to-r from-[hsl(var(--sh-brand-from))] to-[hsl(var(--sh-brand-to))] bg-clip-text text-transparent">
             SideHive
           </h1>
         </div>

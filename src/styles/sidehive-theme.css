@@ -1,15 +1,23 @@
 /* SideHive Hub Theme - matches homepage/onboarding palette */
 
 :root {
-  /* Brand colors from SideHive logo (already in index.css but centralized here) */
+  /* Brand gradient tokens - exact values from homepage & onboarding */
+  --sh-brand-from: 185 85% 45%;  /* brand-teal from index.css */
+  --sh-brand-to: 35 95% 55%;     /* brand-orange from index.css */
+
+  /* CTA gradient - matches onboarding primary button (hero variant) */
+  --sh-cta-from: 185 85% 45%;    /* same teal to orange gradient */
+  --sh-cta-to: 35 95% 55%;
+
+  /* Legacy teal/orange values (keep for compatibility) */
   --sh-teal-500: 185 85% 45%;
   --sh-teal-600: 185 85% 40%;
   --sh-orange-500: 35 95% 55%;
   --sh-orange-600: 35 95% 50%;
 
   /* Background gradient matching onboarding */
-  --sh-bg-gradient: radial-gradient(1200px 600px at 10% -10%, color-mix(in oklab, hsl(var(--sh-teal-500)) 14%, white) 0%, transparent 60%),
-                    radial-gradient(1200px 600px at 110% 10%, color-mix(in oklab, hsl(var(--sh-orange-500)) 12%, white) 0%, transparent 60%),
+  --sh-bg-gradient: radial-gradient(1200px 600px at 10% -10%, color-mix(in oklab, hsl(var(--sh-brand-from)) 14%, white) 0%, transparent 60%),
+                    radial-gradient(1200px 600px at 110% 10%, color-mix(in oklab, hsl(var(--sh-brand-to)) 12%, white) 0%, transparent 60%),
                     linear-gradient(to bottom, #f8fbfd, #f6f9fb);
 }
 
