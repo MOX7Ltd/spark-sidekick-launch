@@ -28,6 +28,27 @@ function firstOf<T = any>(...vals: (T | null | undefined)[]): T | null {
   return vals.find(v => v != null) ?? null;
 }
 
+// Platform normalization and validation
+const ALLOWED_PLATFORMS = new Set([
+  'instagram', 'twitter', 'facebook', 'linkedin', 'youtube', 'tiktok', 'pinterest'
+]);
+
+function normalizePlatform(p?: string): string | null {
+  const raw = (p || '').toString().trim().toLowerCase();
+  const map: Record<string, string> = {
+    instagram: 'instagram', ig: 'instagram',
+    twitter: 'twitter', x: 'twitter',
+    facebook: 'facebook', fb: 'facebook',
+    linkedin: 'linkedin',
+    youtube: 'youtube', yt: 'youtube',
+    tiktok: 'tiktok',
+    pinterest: 'pinterest',
+    threads: 'instagram'
+  };
+  const norm = map[raw] ?? raw;
+  return ALLOWED_PLATFORMS.has(norm) ? norm : null;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -222,53 +243,7 @@ serve(async (req) => {
       }
     }
 
-    // 4. Migrate campaigns and posts (only if generatedPosts exist)
-    const campaignIds: string[] = [];
-    const posts = firstOf(dig<any[]>(payload, 'generatedPosts'), []);
-    
-    if (Array.isArray(posts) && posts.length > 0 && businessId) {
-      const { data: campaign, error: campaignError } = await supabase
-        .from('campaigns')
-        .insert({
-          business_id: businessId,
-          name: 'Intro Campaign',
-          type: 'intro',
-          objective: 'Migrated from onboarding',
-          status: 'draft',
-          session_id: session_id,
-        })
-        .select('id')
-        .single();
-
-      if (campaignError) {
-        console.error('[migrate-onboarding] Campaign creation failed:', campaignError);
-        throw new Error(`Campaign creation failed: ${campaignError.message}`);
-      } else {
-        campaignIds.push(campaign.id);
-
-        // Create campaign items
-        const items = posts.map((post: any, i: number) => ({
-          campaign_id: campaign.id,
-          platform: post.platform ?? 'Generic',
-          hook: post.hook ?? `Post ${i + 1}`,
-          caption: post.caption ?? '',
-          hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
-        }));
-
-        const { error: itemsError } = await supabase
-          .from('campaign_items')
-          .insert(items);
-
-        if (itemsError) {
-          console.error('[migrate-onboarding] Campaign items creation failed:', itemsError);
-          throw new Error(`Campaign items creation failed: ${itemsError.message}`);
-        } else {
-          console.log('[migrate-onboarding] Created campaign items:', items.length);
-        }
-      }
-    }
-
-    // 5. Migrate products if any
+    // 4. Migrate products FIRST (before campaigns, so they always appear)
     const productsRaw = firstOf<any[]>(
       dig(payload, 'formData.products'),
       dig(payload, 'products')
@@ -383,6 +358,69 @@ serve(async (req) => {
         } else {
           console.log('[migrate-onboarding:products] All products already migrated');
         }
+      }
+    }
+
+    // 5. Migrate campaigns and posts (best-effort, non-blocking)
+    const campaignIds: string[] = [];
+    const posts = firstOf(dig<any[]>(payload, 'generatedPosts'), []);
+    
+    if (Array.isArray(posts) && posts.length > 0 && businessId) {
+      const { data: campaign, error: campaignError } = await supabase
+        .from('campaigns')
+        .insert({
+          business_id: businessId,
+          name: 'Intro Campaign',
+          type: 'intro',
+          objective: 'Migrated from onboarding',
+          status: 'draft',
+          session_id: session_id,
+        })
+        .select('id')
+        .single();
+
+      if (campaignError) {
+        console.error('[migrate-onboarding] Campaign creation failed (continuing):', campaignError);
+      } else {
+        campaignIds.push(campaign.id);
+
+        // Create campaign items with normalized platforms
+        const items = posts
+          .map((post: any, i: number) => {
+            const platform = normalizePlatform(post.platform);
+            if (!platform) {
+              console.log('[migrate-onboarding] Skipping invalid platform:', post.platform);
+              return null;
+            }
+            return {
+              campaign_id: campaign.id,
+              platform,
+              hook: post.hook ?? `Post ${i + 1}`,
+              caption: post.caption ?? '',
+              hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
+            };
+          })
+          .filter(Boolean);
+
+        if (items.length) {
+          const { error: itemsError } = await supabase
+            .from('campaign_items')
+            .insert(items as any[]);
+
+          if (itemsError) {
+            console.error('[migrate-onboarding] campaign_items insert failed (continuing):', itemsError);
+          } else {
+            console.log('[migrate-onboarding] campaign_items inserted:', items.length);
+          }
+        } else {
+          console.log('[migrate-onboarding] no valid campaign_items after normalization');
+        }
+
+        console.log('[migrate-onboarding:campaign]', { 
+          campaign_id: campaign.id, 
+          posts_count: posts?.length ?? 0,
+          valid_items: items.length 
+        });
       }
     }
 
