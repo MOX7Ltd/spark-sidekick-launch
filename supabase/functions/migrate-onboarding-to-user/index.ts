@@ -19,6 +19,15 @@ interface MigrationResponse {
   error?: string;
 }
 
+// Robust extraction helpers
+function dig<T = any>(obj: any, path: string): T | null {
+  return path.split('.').reduce<any>((o, k) => (o == null ? null : o?.[k]), obj) ?? null;
+}
+
+function firstOf<T = any>(...vals: (T | null | undefined)[]): T | null {
+  return vals.find(v => v != null) ?? null;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -41,19 +50,32 @@ serve(async (req) => {
 
     console.log(`[migrate-onboarding] Migrating session ${session_id} to user ${user_id}`);
 
-    // 1. Fetch the onboarding session
+    // 1. Fetch the onboarding session and check idempotency
     const { data: sessionData, error: sessionError } = await supabase
       .from('onboarding_sessions')
       .select('*')
       .eq('session_id', session_id)
-      .is('migrated_at', null)
       .single();
 
     if (sessionError || !sessionData) {
-      console.error('[migrate-onboarding] Session not found or already migrated');
+      console.error('[migrate-onboarding] Session not found:', sessionError);
       return new Response(
-        JSON.stringify({ success: false, error: 'Session not found or already migrated' }),
+        JSON.stringify({ success: false, error: 'Session not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Idempotency check: if already migrated, return success
+    if (sessionData.migrated_at) {
+      console.log('[migrate-onboarding] Session already migrated at:', sessionData.migrated_at);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          note: 'Already migrated',
+          migrated_at: sessionData.migrated_at,
+          migrated_to_user_id: sessionData.migrated_to_user_id
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -81,12 +103,94 @@ serve(async (req) => {
       }
     }
 
-    // 3. Create or update business
+    // 3. Extract business identity with robust multi-path extraction
     let businessId: string | null = null;
     
-    // Extract business identity from either context or formData
-    const businessIdentity = payload.formData?.businessIdentity || payload.context;
-    const businessName = businessIdentity?.name || businessIdentity?.business_name;
+    const bi = firstOf(
+      dig(payload, 'formData.businessIdentity'),
+      dig(payload, 'businessIdentity'),
+      dig(payload, 'context')
+    );
+
+    const businessName = firstOf(
+      dig<string>(bi, 'name'),
+      dig<string>(bi, 'business_name'),
+      dig<string>(payload, 'formData.businessIdentity.name')
+    );
+    
+    const tagline = firstOf(
+      dig<string>(bi, 'tagline'),
+      dig<string>(payload, 'formData.tagline'),
+      dig<string>(payload, 'context.tagline')
+    );
+
+    const bio = firstOf(
+      dig<string>(bi, 'bio'),
+      dig<string>(payload, 'formData.bio'),
+      dig<string>(payload, 'context.bio')
+    );
+
+    const brandColors = firstOf(
+      dig<string[]>(bi, 'colors'),
+      dig<string[]>(payload, 'formData.businessIdentity.colors')
+    );
+
+    const toneAdj = firstOf(
+      dig<string[]>(bi, 'tone_adjectives'),
+      dig<string[]>(payload, 'formData.vibes'),
+      dig<string[]>(payload, 'context.vibes')
+    );
+
+    const audience = firstOf(
+      dig(payload, 'formData.audiences'),
+      dig(payload, 'context.audiences'),
+      dig(payload, 'context.audience')
+    );
+
+    // Handle logo: data URL → upload to Storage
+    const rawLogoSvg = firstOf(dig<string>(bi, 'logoSVG'), dig<string>(bi, 'logo_svg'));
+    const rawLogoUrl = firstOf(dig<string>(bi, 'logoUrl'), dig<string>(bi, 'logo_url'));
+
+    let logo_url: string | null = rawLogoUrl ?? null;
+    let logo_svg: string | null = null;
+
+    if (rawLogoSvg?.startsWith('data:')) {
+      const m = rawLogoSvg.match(/^data:(.+);base64,(.*)$/);
+      if (m) {
+        const contentType = m[1] || 'image/png';
+        const ext = contentType.split('/')[1] || 'png';
+        const base64 = m[2];
+        const decoder = new TextDecoder();
+        const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+        const path = `logos/${user_id}/${crypto.randomUUID()}.${ext}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('brand-assets')
+          .upload(path, bytes, { contentType, upsert: true });
+        
+        if (uploadError) {
+          console.error('[migrate-onboarding] Logo upload failed:', uploadError);
+        } else {
+          const { data: publicData } = supabase.storage.from('brand-assets').getPublicUrl(path);
+          logo_url = publicData.publicUrl;
+          // Only keep SVG markup if content type is SVG
+          logo_svg = contentType.includes('svg') ? rawLogoSvg : null;
+        }
+      }
+    } else if (rawLogoSvg?.trim()?.startsWith('<svg')) {
+      logo_svg = rawLogoSvg;
+    }
+
+    console.log('[migrate-onboarding] Extracted data:', {
+      user_id,
+      session_id,
+      businessName,
+      tagline_present: !!tagline,
+      logo_url_present: !!logo_url,
+      logo_svg_is_inline: !!logo_svg,
+      colors_count: brandColors?.length ?? 0,
+      posts_count: dig<any[]>(payload, 'generatedPosts')?.length ?? 0
+    });
     
     if (businessName) {
       const { data: business, error: businessError } = await supabase
@@ -94,13 +198,15 @@ serve(async (req) => {
         .insert({
           owner_id: user_id,
           business_name: businessName,
-          bio: businessIdentity?.bio,
-          tagline: businessIdentity?.tagline,
-          logo_url: businessIdentity?.logoUrl,
-          logo_svg: businessIdentity?.logoSVG,
-          tone_tags: businessIdentity?.tone_adjectives || payload.formData?.vibes || payload.context?.vibes,
-          audience: payload.formData?.audiences || payload.context?.audiences || payload.context?.audience,
-          brand_colors: businessIdentity?.colors ? { colors: businessIdentity.colors } : null,
+          bio: bio,
+          tagline: tagline,
+          logo_url: logo_url,
+          logo_svg: logo_svg,
+          tone_tags: toneAdj,
+          audience: audience,
+          brand_colors: (Array.isArray(brandColors) && brandColors.length > 0) 
+            ? { colors: brandColors } 
+            : null,
           status: 'draft',
           session_id: session_id,
         })
@@ -109,16 +215,18 @@ serve(async (req) => {
 
       if (businessError) {
         console.error('[migrate-onboarding] Business creation failed:', businessError);
+        throw new Error(`Business creation failed: ${businessError.message}`);
       } else {
         businessId = business.id;
         console.log('[migrate-onboarding] Business created:', businessId);
       }
     }
 
-    // 4. Migrate campaigns and posts
+    // 4. Migrate campaigns and posts (only if generatedPosts exist)
     const campaignIds: string[] = [];
+    const posts = firstOf(dig<any[]>(payload, 'generatedPosts'), []);
     
-    if (payload.generatedPosts && businessId) {
+    if (Array.isArray(posts) && posts.length > 0 && businessId) {
       const { data: campaign, error: campaignError } = await supabase
         .from('campaigns')
         .insert({
@@ -134,16 +242,17 @@ serve(async (req) => {
 
       if (campaignError) {
         console.error('[migrate-onboarding] Campaign creation failed:', campaignError);
+        throw new Error(`Campaign creation failed: ${campaignError.message}`);
       } else {
         campaignIds.push(campaign.id);
 
         // Create campaign items
-        const items = payload.generatedPosts.map((post: any) => ({
+        const items = posts.map((post: any, i: number) => ({
           campaign_id: campaign.id,
-          platform: post.platform || 'Instagram',
-          hook: post.hook,
-          caption: post.caption,
-          hashtags: post.hashtags,
+          platform: post.platform ?? 'Generic',
+          hook: post.hook ?? `Post ${i + 1}`,
+          caption: post.caption ?? '',
+          hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
         }));
 
         const { error: itemsError } = await supabase
@@ -152,6 +261,7 @@ serve(async (req) => {
 
         if (itemsError) {
           console.error('[migrate-onboarding] Campaign items creation failed:', itemsError);
+          throw new Error(`Campaign items creation failed: ${itemsError.message}`);
         } else {
           console.log('[migrate-onboarding] Created campaign items:', items.length);
         }
