@@ -11,11 +11,13 @@ interface AppSurfaceProps {
  */
 export function AppSurface({ children, className }: AppSurfaceProps) {
   return (
-    <div className={cn(
-      "min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5",
-      className
-    )}>
-      {children}
+    <div 
+      className={cn("min-h-screen", className)}
+      style={{ background: "var(--sh-bg-gradient)" }}
+    >
+      <div className="mx-auto w-full max-w-screen-sm px-4 pb-[calc(72px+env(safe-area-inset-bottom))] pt-3">
+        {children}
+      </div>
     </div>
   );
 }

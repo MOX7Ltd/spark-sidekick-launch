@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { HubTile } from '@/components/hub/HubTile';
 import { AppSurface } from '@/components/layout/AppSurface';
 import { HubBrandHeader } from '@/components/hub/HubBrandHeader';
+import HubBrandStrip from '@/components/hub/HubBrandStrip';
 import { Package, Megaphone, Users, UserCircle2, LogOut } from 'lucide-react';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
 
@@ -53,10 +54,12 @@ export default function HubHome() {
   return (
     <AppSurface>
       <HubBrandHeader />
+      
+      <HubBrandStrip />
 
       {/* Main content - 2x2 grid */}
-      <main className="pb-24">
-        <div className="grid grid-cols-2 gap-3 px-4 pt-4 max-w-2xl mx-auto">
+      <main className="pb-6">
+        <div className="grid grid-cols-2 gap-3">
           <HubTile
             to="/hub/products"
             icon={Package}
@@ -86,21 +89,28 @@ export default function HubHome() {
             onClick={() => handleTileClick('profile')}
           />
         </div>
+
+        {/* Momentum tip */}
+        <p className="mt-4 px-1 text-sm leading-relaxed">
+          <span className="font-medium" style={{ color: `hsl(var(--sh-teal-600))` }}>Tip:</span>{' '}
+          Publish one post today—small steps compound into real revenue.
+        </p>
       </main>
 
       {/* Sticky bottom logout */}
-      <div className="sticky bottom-0 left-0 w-full -mx-4 mt-6 bg-gradient-to-t from-white/70 to-transparent dark:from-background/70 backdrop-blur-md p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-        <div className="max-w-2xl mx-auto">
-          <Button
-            variant="ghost"
-            className="w-full"
-            onClick={handleLogout}
-            aria-label="Log out"
-          >
-            <LogOut className="mr-2 h-5 w-5" />
-            Log out
-          </Button>
-        </div>
+      <div 
+        className="sticky bottom-0 left-0 right-0 -mx-4 mt-6 backdrop-blur-md p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+        style={{ background: "linear-gradient(to top, rgba(255,255,255,0.85), rgba(255,255,255,0))" }}
+      >
+        <Button
+          variant="ghost"
+          className="w-full"
+          onClick={handleLogout}
+          aria-label="Log out"
+        >
+          <LogOut className="mr-2 h-5 w-5" />
+          Log out
+        </Button>
       </div>
     </AppSurface>
   );

@@ -1,0 +1,20 @@
+/* SideHive Hub Theme - matches homepage/onboarding palette */
+
+:root {
+  /* Brand colors from SideHive logo (already in index.css but centralized here) */
+  --sh-teal-500: 185 85% 45%;
+  --sh-teal-600: 185 85% 40%;
+  --sh-orange-500: 35 95% 55%;
+  --sh-orange-600: 35 95% 50%;
+
+  /* Background gradient matching onboarding */
+  --sh-bg-gradient: radial-gradient(1200px 600px at 10% -10%, color-mix(in oklab, hsl(var(--sh-teal-500)) 14%, white) 0%, transparent 60%),
+                    radial-gradient(1200px 600px at 110% 10%, color-mix(in oklab, hsl(var(--sh-orange-500)) 12%, white) 0%, transparent 60%),
+                    linear-gradient(to bottom, #f8fbfd, #f6f9fb);
+}
+
+.dark {
+  --sh-bg-gradient: radial-gradient(1200px 600px at 10% -10%, color-mix(in oklab, hsl(var(--sh-teal-500)) 8%, black) 0%, transparent 60%),
+                    radial-gradient(1200px 600px at 110% 10%, color-mix(in oklab, hsl(var(--sh-orange-500)) 6%, black) 0%, transparent 60%),
+                    linear-gradient(to bottom, hsl(210 85% 8%), hsl(210 75% 10%));
+}

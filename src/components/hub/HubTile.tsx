@@ -22,8 +22,8 @@ export function HubTile({ to, icon: Icon, title, desc, onClick }: HubTileProps) 
       <Card
         className={cn(
           "p-4 h-full min-h-[140px] flex flex-col items-center justify-center text-center",
-          "rounded-2xl backdrop-blur-md bg-white/70 dark:bg-card/70",
-          "border border-white/20 shadow-lg",
+          "rounded-2xl backdrop-blur-md bg-white/75 dark:bg-card/75",
+          "border border-white/30 dark:border-white/10 shadow-lg",
           "transition-all duration-200",
           "hover:shadow-xl hover:scale-[1.02]",
           "active:scale-[0.99]",
@@ -33,7 +33,7 @@ export function HubTile({ to, icon: Icon, title, desc, onClick }: HubTileProps) 
         <div 
           className="h-8 w-8 mb-3"
           style={{
-            background: `linear-gradient(135deg, hsl(var(--brand-teal)), hsl(var(--brand-orange)))`,
+            background: `linear-gradient(135deg, hsl(var(--sh-teal-600)), hsl(var(--sh-orange-600)))`,
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text'

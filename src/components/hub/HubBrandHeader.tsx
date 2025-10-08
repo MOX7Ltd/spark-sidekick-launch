@@ -1,15 +1,11 @@
 import { Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useNavigate } from 'react-router-dom';
-import { useHubBranding, getInitials, getDeterministicGradient } from '@/hooks/useHubBranding';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
+import sidehiveLogo from '@/assets/sidehive-logo.jpg';
 
 export function HubBrandHeader() {
   const navigate = useNavigate();
-  const { name, tagline, logoUrl, isLoading } = useHubBranding();
-  const initials = getInitials(name);
-  const gradient = getDeterministicGradient(name);
 
   const handleSettingsClick = () => {
     logFrontendEvent({
@@ -21,38 +17,17 @@ export function HubBrandHeader() {
   };
 
   return (
-    <header className="border-b bg-background/80 backdrop-blur-sm">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          {/* Logo/Avatar */}
-          <Avatar className="h-10 w-10 ring-2 ring-white/70 shadow-md shrink-0">
-            {logoUrl && (
-              <AvatarImage 
-                src={logoUrl} 
-                alt={`${name} logo`}
-              />
-            )}
-            <AvatarFallback 
-              className="font-semibold text-white"
-              style={{
-                background: `linear-gradient(135deg, hsl(${gradient.from}), hsl(${gradient.to}))`
-              }}
-            >
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-
-          {/* Business name & tagline */}
-          <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-bold text-foreground truncate">
-              {name}
-            </h1>
-            {tagline && (
-              <p className="text-xs text-muted-foreground truncate">
-                {tagline}
-              </p>
-            )}
-          </div>
+    <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+      <div className="mx-auto px-4 py-3 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <img 
+            src={sidehiveLogo} 
+            alt="SideHive" 
+            className="h-8 w-8 rounded-full object-cover"
+          />
+          <h1 className="text-lg font-semibold text-foreground">
+            SideHive
+          </h1>
         </div>
 
         {/* Settings button */}
