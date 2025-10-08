@@ -29,45 +29,47 @@ function firstOf<T = any>(...vals: (T | null | undefined)[]): T | null {
 }
 
 // === Product family/type normalization (must match DB CHECK) ===
-const ALLOWED_TYPES = new Set([
-  'template', 'ebook', 'session', 'course', 'email-pack', 'video', 'bundle'
-]);
+// DB-allowed values per products_type_check
+const ALLOWED_TYPES = new Set(['digital', 'course', 'service', 'physical']);
 
 const TYPE_MAP: Record<string, string> = {
-  // generic onboarding buckets → canonical types
-  'digital': 'ebook',
-  'services': 'session',
+  // generic onboarding buckets → canonical DB types
+  'digital': 'digital',
+  'services': 'service',
+  'service': 'service',
   'teach': 'course',
-  'physical': 'bundle',
-  // synonyms
-  'checklist': 'template',
-  'checklist / template': 'template',
-  'template': 'template',
-  'notion template': 'template',
-  'canva template': 'template',
-  'digital guide': 'ebook',
-  'guide': 'ebook',
-  'ebook': 'ebook',
-  '1:1 session': 'session',
-  'coaching': 'session',
-  'consulting': 'session',
-  'workshop': 'session',
+  'physical': 'physical',
+
+  // detailed families → DB types (preserve the detail in meta)
+  'ebook': 'digital',
+  'guide': 'digital',
+  'digital guide': 'digital',
+  'template': 'digital',
+  'checklist': 'digital',
+  'checklist / template': 'digital',
+  'notion template': 'digital',
+  'canva template': 'digital',
+  'email pack': 'digital',
+  'email sequence': 'digital',
+  'video': 'digital',
+  'video pack': 'digital',
+  'bundle': 'physical',
+  'starter kit': 'physical',
+  'session': 'service',
+  '1:1 session': 'service',
+  'coaching': 'service',
+  'consulting': 'service',
+  'workshop': 'service',
+  'course': 'course',
   'cohort': 'course',
   'mini-course': 'course',
-  'course': 'course',
-  'email sequence': 'email-pack',
-  'email pack': 'email-pack',
-  'video pack': 'video',
-  'video': 'video',
-  'bundle': 'bundle',
-  'starter kit': 'bundle'
 };
 
-function normalizeType(input?: string | null): string | null {
+function normalizeDbType(input?: string | null): string | null {
   if (!input) return null;
   const k = input.toString().trim().toLowerCase();
   const mapped = TYPE_MAP[k] ?? k;
-  return ALLOWED_TYPES.has(mapped) ? mapped : null; // null passes the DB CHECK
+  return ALLOWED_TYPES.has(mapped) ? mapped : null; // null passes CHECK if column is nullable
 }
 
 // === Campaign platform normalization (must match campaign_items CHECK) ===
@@ -300,7 +302,7 @@ serve(async (req) => {
         if (!title) return null;
 
         const rawType = p?.family ?? p?.category ?? p?.type ?? null;
-        const type = normalizeType(rawType); // may be null (allowed)
+        const dbType = normalizeDbType(rawType); // → 'digital' | 'course' | 'service' | 'physical' | null
 
         const description = p?.description ?? p?.summary ?? p?.notes ?? '';
         const price_low = p?.priceLow ?? null;
@@ -312,7 +314,7 @@ serve(async (req) => {
           business_id: businessId,
           title,
           description,
-          type,                  // canonical or null
+          type: dbType,          // must satisfy DB CHECK (or be null)
           format: p?.format ?? null,
           price: price_low,
           status: 'draft',
@@ -323,7 +325,8 @@ serve(async (req) => {
             price_low,
             price_high,
             price_model,
-            raw_onboarding_type: rawType,
+            raw_onboarding_type: rawType,     // e.g., 'ebook', 'session', 'template'
+            detailed_family: p?.family ?? null, // keep richer/canonical family here
             raw_onboarding: p
           }
         };
