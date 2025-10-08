@@ -19,7 +19,7 @@ interface MigrationResponse {
   error?: string;
 }
 
-// Robust extraction helpers
+// Safe extraction helpers
 function dig<T = any>(obj: any, path: string): T | null {
   return path.split('.').reduce<any>((o, k) => (o == null ? null : o?.[k]), obj) ?? null;
 }
@@ -28,7 +28,49 @@ function firstOf<T = any>(...vals: (T | null | undefined)[]): T | null {
   return vals.find(v => v != null) ?? null;
 }
 
-// Platform normalization and validation
+// === Product family/type normalization (must match DB CHECK) ===
+const ALLOWED_TYPES = new Set([
+  'template', 'ebook', 'session', 'course', 'email-pack', 'video', 'bundle'
+]);
+
+const TYPE_MAP: Record<string, string> = {
+  // generic onboarding buckets → canonical types
+  'digital': 'ebook',
+  'services': 'session',
+  'teach': 'course',
+  'physical': 'bundle',
+  // synonyms
+  'checklist': 'template',
+  'checklist / template': 'template',
+  'template': 'template',
+  'notion template': 'template',
+  'canva template': 'template',
+  'digital guide': 'ebook',
+  'guide': 'ebook',
+  'ebook': 'ebook',
+  '1:1 session': 'session',
+  'coaching': 'session',
+  'consulting': 'session',
+  'workshop': 'session',
+  'cohort': 'course',
+  'mini-course': 'course',
+  'course': 'course',
+  'email sequence': 'email-pack',
+  'email pack': 'email-pack',
+  'video pack': 'video',
+  'video': 'video',
+  'bundle': 'bundle',
+  'starter kit': 'bundle'
+};
+
+function normalizeType(input?: string | null): string | null {
+  if (!input) return null;
+  const k = input.toString().trim().toLowerCase();
+  const mapped = TYPE_MAP[k] ?? k;
+  return ALLOWED_TYPES.has(mapped) ? mapped : null; // null passes the DB CHECK
+}
+
+// === Campaign platform normalization (must match campaign_items CHECK) ===
 const ALLOWED_PLATFORMS = new Set([
   'instagram', 'twitter', 'facebook', 'linkedin', 'youtube', 'tiktok', 'pinterest'
 ]);
@@ -36,17 +78,17 @@ const ALLOWED_PLATFORMS = new Set([
 function normalizePlatform(p?: string): string | null {
   const raw = (p || '').toString().trim().toLowerCase();
   const map: Record<string, string> = {
-    instagram: 'instagram', ig: 'instagram',
-    twitter: 'twitter', x: 'twitter',
-    facebook: 'facebook', fb: 'facebook',
-    linkedin: 'linkedin',
-    youtube: 'youtube', yt: 'youtube',
-    tiktok: 'tiktok',
-    pinterest: 'pinterest',
-    threads: 'instagram'
+    'instagram': 'instagram', 'ig': 'instagram',
+    'twitter': 'twitter', 'x': 'twitter',
+    'facebook': 'facebook', 'fb': 'facebook',
+    'linkedin': 'linkedin',
+    'youtube': 'youtube', 'yt': 'youtube',
+    'tiktok': 'tiktok',
+    'pinterest': 'pinterest',
+    'threads': 'instagram' // map to allowed set
   };
   const norm = map[raw] ?? raw;
-  return ALLOWED_PLATFORMS.has(norm) ? norm : null;
+  return ALLOWED_PLATFORMS.has(norm) ? norm : null; // null = skip
 }
 
 serve(async (req) => {
@@ -249,85 +291,31 @@ serve(async (req) => {
       dig(payload, 'products')
     );
 
-    if (Array.isArray(productsRaw) && productsRaw.length > 0 && businessId) {
-      // Canonical family normalization from productCatalog
-      const ALLOWED_FAMILIES = new Set([
-        'template', 'ebook', 'session', 'course', 'email-pack', 'video', 'bundle'
-      ]);
+    let insertedProductCount = 0;
 
-      const FAMILY_MAP: Record<string, string> = {
-        // generic onboarding buckets
-        'digital': 'ebook',
-        'services': 'session',
-        'teach': 'course',
-        'physical': 'bundle',
-        // specific synonyms
-        'checklist': 'template',
-        'checklist / template': 'template',
-        'template': 'template',
-        'notion template': 'template',
-        'canva template': 'template',
-        'digital guide': 'ebook',
-        'guide': 'ebook',
-        'ebook': 'ebook',
-        '1:1 session': 'session',
-        'coaching': 'session',
-        'consulting': 'session',
-        'workshop': 'session',
-        'cohort': 'course',
-        'mini-course': 'course',
-        'course': 'course',
-        'email sequence': 'email-pack',
-        'email pack': 'email-pack',
-        'video pack': 'video',
-        'video': 'video',
-        'bundle': 'bundle',
-        'starter kit': 'bundle',
-      };
+    if (Array.isArray(productsRaw) && productsRaw.length) {
+      // Map to rows; validate title; normalize type
+      const rows = productsRaw.map((p: any) => {
+        const title = (p?.title || p?.name || '').trim();
+        if (!title) return null;
 
-      const FORMAT_FALLBACK: Record<string, string> = {
-        'template': 'download',
-        'ebook': 'download',
-        'session': 'session',
-        'course': 'course',
-        'email-pack': 'download',
-        'video': 'video',
-        'bundle': 'bundle',
-      };
+        const rawType = p?.family ?? p?.category ?? p?.type ?? null;
+        const type = normalizeType(rawType); // may be null (allowed)
 
-      const normalizeFamily = (input?: string): string | null => {
-        if (!input) return null;
-        const k = input.toLowerCase().trim();
-        const mapped = FAMILY_MAP[k] ?? k;
-        return ALLOWED_FAMILIES.has(mapped) ? mapped : null;
-      };
+        const description = p?.description ?? p?.summary ?? p?.notes ?? '';
+        const price_low = p?.priceLow ?? null;
+        const price_high = p?.priceHigh ?? null;
+        const price_model = p?.priceModel ?? 'one-off';
 
-      const titleOf = (p: any) => p?.title ?? p?.name ?? '';
-      const descOf = (p: any) => p?.description ?? p?.summary ?? p?.notes ?? '';
-
-      const toInsert: any[] = [];
-      for (const p of productsRaw) {
-        const title = (titleOf(p) || '').trim();
-        if (!title) continue;
-
-        const rawFamily = p.family ?? p.category ?? p.type;
-        const family = normalizeFamily(rawFamily);
-        const format = p.format ?? (family ? FORMAT_FALLBACK[family] : null) ?? 'download';
-
-        const price_low = p.priceLow ?? null;
-        const price_high = p.priceHigh ?? null;
-        const price_model = p.priceModel ?? 'one-off';
-
-        toInsert.push({
+        return {
           user_id,
           business_id: businessId,
           title,
-          description: descOf(p),
-          type: family,  // null if normalization failed
-          format,
+          description,
+          type,                  // canonical or null
+          format: p?.format ?? null,
           price: price_low,
           status: 'draft',
-          session_id: session_id,
           fulfillment: {
             source: 'onboarding',
             source_session_id: session_id,
@@ -335,60 +323,63 @@ serve(async (req) => {
             price_low,
             price_high,
             price_model,
-            raw_onboarding_type: rawFamily,
-            raw_onboarding: p,
+            raw_onboarding_type: rawType,
+            raw_onboarding: p
           }
-        });
-      }
+        };
+      }).filter(Boolean) as any[];
 
-      // Idempotency: skip any title already imported for this session
+      // Idempotency: skip titles already imported for this session
+      const titles = rows.map(r => r.title);
+      const { data: existing } = await supabase
+        .from('products')
+        .select('title, fulfillment')
+        .eq('user_id', user_id)
+        .in('title', titles);
+
+      const existingSet = new Set(
+        (existing ?? [])
+          .filter((r: any) => r?.fulfillment?.source_session_id === session_id)
+          .map((r: any) => (r.title || '').toLowerCase())
+      );
+      const toInsert = rows.filter(r => !existingSet.has(r.title.toLowerCase()));
+
       if (toInsert.length) {
-        const titles = toInsert.map((r: any) => r.title);
-        const { data: existing } = await supabase
-          .from('products')
-          .select('id,title,fulfillment')
-          .eq('user_id', user_id)
-          .in('title', titles);
-
-        const existingSet = new Set(
-          (existing ?? [])
-            .filter((r: any) => r?.fulfillment?.source_session_id === session_id)
-            .map((r: any) => (r.title || '').toLowerCase())
-        );
-
-        const finalInsert = toInsert.filter((r: any) => !existingSet.has(r.title.toLowerCase()));
-        
-        if (finalInsert.length) {
-          const { error: productsError } = await supabase
-            .from('products')
-            .insert(finalInsert);
-
-          if (productsError) {
-            console.error('[migrate-onboarding] Products migration failed:', productsError);
-          } else {
-            console.log('[migrate-onboarding:products]', {
-              user_id,
-              session_id,
-              products_in_payload: productsRaw.length,
-              inserted_count: finalInsert.length
-            });
+        const { error } = await supabase.from('products').insert(toInsert);
+        if (error) {
+          console.error('[migrate-onboarding:products] batch insert failed, falling back per-row', error);
+          // Per-row fallback so one bad row doesn't kill the set
+          for (const r of toInsert) {
+            const { error: rowErr } = await supabase.from('products').insert(r);
+            if (rowErr) {
+              console.error('[migrate-onboarding:products] row failed', r.title, rowErr);
+            } else {
+              insertedProductCount++;
+            }
           }
         } else {
-          console.log('[migrate-onboarding:products] All products already migrated');
+          insertedProductCount = toInsert.length;
         }
       }
+
+      console.log('[migrate-onboarding:products]', {
+        session_id,
+        raw_count: productsRaw.length,
+        inserted_count: insertedProductCount
+      });
+    } else {
+      console.log('[migrate-onboarding:products] no products in payload');
     }
 
     // 5. Migrate campaigns and posts (best-effort, non-blocking)
-    const campaignIds: string[] = [];
-    const posts = firstOf(dig<any[]>(payload, 'generatedPosts'), []);
+    const posts = firstOf<any[]>(dig(payload, 'generatedPosts'), []);
     
-    if (Array.isArray(posts) && posts.length > 0 && businessId) {
-      const { data: campaign, error: campaignError } = await supabase
+    if (Array.isArray(posts) && posts.length && businessId) {
+      const { data: campaign, error: campErr } = await supabase
         .from('campaigns')
         .insert({
           business_id: businessId,
-          name: 'Intro Campaign',
+          name: 'Imported from onboarding',
           type: 'intro',
           objective: 'Migrated from onboarding',
           status: 'draft',
@@ -397,36 +388,25 @@ serve(async (req) => {
         .select('id')
         .single();
 
-      if (campaignError) {
-        console.error('[migrate-onboarding] Campaign creation failed (continuing):', campaignError);
+      if (campErr) {
+        console.error('[migrate-onboarding:campaign] insert failed (continuing):', campErr);
       } else {
-        campaignIds.push(campaign.id);
-
-        // Create campaign items with normalized platforms
-        const items = posts
-          .map((post: any, i: number) => {
-            const platform = normalizePlatform(post.platform);
-            if (!platform) {
-              console.log('[migrate-onboarding] Skipping invalid platform:', post.platform);
-              return null;
-            }
-            return {
-              campaign_id: campaign.id,
-              platform,
-              hook: post.hook ?? `Post ${i + 1}`,
-              caption: post.caption ?? '',
-              hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
-            };
-          })
-          .filter(Boolean);
+        const items = posts.map((p: any, i: number) => {
+          const platform = normalizePlatform(p?.platform);
+          if (!platform) return null; // skip to avoid CHECK failures
+          return {
+            campaign_id: campaign.id,
+            platform,
+            hook: p?.hook ?? `Post ${i + 1}`,
+            caption: p?.caption ?? '',
+            hashtags: Array.isArray(p?.hashtags) ? p.hashtags : [],
+          };
+        }).filter(Boolean) as any[];
 
         if (items.length) {
-          const { error: itemsError } = await supabase
-            .from('campaign_items')
-            .insert(items as any[]);
-
-          if (itemsError) {
-            console.error('[migrate-onboarding] campaign_items insert failed (continuing):', itemsError);
+          const { error: itemsErr } = await supabase.from('campaign_items').insert(items);
+          if (itemsErr) {
+            console.error('[migrate-onboarding] campaign_items insert failed (continuing):', itemsErr);
           } else {
             console.log('[migrate-onboarding] campaign_items inserted:', items.length);
           }
@@ -436,7 +416,7 @@ serve(async (req) => {
 
         console.log('[migrate-onboarding:campaign]', { 
           campaign_id: campaign.id, 
-          posts_count: posts?.length ?? 0,
+          posts_count: posts.length,
           valid_items: items.length 
         });
       }
@@ -456,7 +436,6 @@ serve(async (req) => {
     const response: MigrationResponse = {
       success: true,
       profile_id: user_id,
-      campaign_ids: campaignIds,
       shopfront_id: businessId || undefined,
     };
 
