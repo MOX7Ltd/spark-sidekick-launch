@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { HubTile } from '@/components/hub/HubTile';
-import { Package, Megaphone, Users, UserCircle2, Settings, LogOut } from 'lucide-react';
+import { AppSurface } from '@/components/layout/AppSurface';
+import { HubBrandHeader } from '@/components/hub/HubBrandHeader';
+import { Package, Megaphone, Users, UserCircle2, LogOut } from 'lucide-react';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
 
 export default function HubHome() {
@@ -48,31 +50,9 @@ export default function HubHome() {
     });
   };
 
-  const handleSettingsClick = () => {
-    logFrontendEvent({
-      eventType: 'user_action',
-      step: 'hub_home',
-      payload: { action: 'open_settings' }
-    });
-    navigate('/hub/settings');
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
-      {/* Header */}
-      <header className="border-b bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">SideHive Hub</h1>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleSettingsClick}
-            aria-label="Open settings"
-          >
-            <Settings className="h-5 w-5" />
-          </Button>
-        </div>
-      </header>
+    <AppSurface>
+      <HubBrandHeader />
 
       {/* Main content - 2x2 grid */}
       <main className="pb-24">
@@ -109,17 +89,19 @@ export default function HubHome() {
       </main>
 
       {/* Sticky bottom logout */}
-      <div className="sticky bottom-0 left-0 w-full p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-background via-background">
-        <Button
-          variant="ghost"
-          className="w-full"
-          onClick={handleLogout}
-          aria-label="Log out"
-        >
-          <LogOut className="mr-2 h-5 w-5" />
-          Log out
-        </Button>
+      <div className="sticky bottom-0 left-0 w-full -mx-4 mt-6 bg-gradient-to-t from-white/70 to-transparent dark:from-background/70 backdrop-blur-md p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <div className="max-w-2xl mx-auto">
+          <Button
+            variant="ghost"
+            className="w-full"
+            onClick={handleLogout}
+            aria-label="Log out"
+          >
+            <LogOut className="mr-2 h-5 w-5" />
+            Log out
+          </Button>
+        </div>
       </div>
-    </div>
+    </AppSurface>
   );
 }

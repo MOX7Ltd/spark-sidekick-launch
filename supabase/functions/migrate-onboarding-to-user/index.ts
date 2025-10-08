@@ -84,17 +84,23 @@ serve(async (req) => {
     // 3. Create or update business
     let businessId: string | null = null;
     
-    if (payload.context?.business_name) {
+    // Extract business identity from either context or formData
+    const businessIdentity = payload.formData?.businessIdentity || payload.context;
+    const businessName = businessIdentity?.name || businessIdentity?.business_name;
+    
+    if (businessName) {
       const { data: business, error: businessError } = await supabase
         .from('businesses')
         .insert({
           owner_id: user_id,
-          business_name: payload.context.business_name,
-          bio: payload.context.bio,
-          tagline: payload.context.tagline,
-          tone_tags: payload.context.tone_adjectives || payload.context.vibes,
-          audience: payload.context.audiences || payload.context.audience,
-          brand_colors: payload.context.palette ? { colors: payload.context.palette } : null,
+          business_name: businessName,
+          bio: businessIdentity?.bio,
+          tagline: businessIdentity?.tagline,
+          logo_url: businessIdentity?.logoUrl,
+          logo_svg: businessIdentity?.logoSVG,
+          tone_tags: businessIdentity?.tone_adjectives || payload.formData?.vibes || payload.context?.vibes,
+          audience: payload.formData?.audiences || payload.context?.audiences || payload.context?.audience,
+          brand_colors: businessIdentity?.colors ? { colors: businessIdentity.colors } : null,
           status: 'draft',
           session_id: session_id,
         })
