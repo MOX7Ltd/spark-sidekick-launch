@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { AppSurface } from '@/components/layout/AppSurface';
 import { BackBar } from '@/components/hub/BackBar';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ export default function SocialLab() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>(['instagram', 'tiktok']);
   const [concepts, setConcepts] = useState<CampaignConcept[]>([]);
   const [businessContext, setBusinessContext] = useState<any>(null);
+  const hasAutoSuggestedRef = useRef(false);
 
   useEffect(() => {
     logFrontendEvent({ eventType: 'step_transition', step: 'social_lab', payload: {} });
@@ -57,7 +58,7 @@ export default function SocialLab() {
     });
   };
 
-  const handleGenerate = async (formData: any) => {
+  const handleGenerate = useCallback(async (formData: any) => {
     setIsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -65,11 +66,11 @@ export default function SocialLab() {
       const requestBody = {
         user_id: user?.id,
         mode: mode === 'suggest' ? 'suggest' : 'defined',
-        idea: formData.idea,
-        goal: formData.goal,
-        audienceHints: formData.audienceHints,
-        angle: formData.angle,
-        durationPreset: formData.duration,
+        idea: formData.idea || '',
+        goal: formData.goal || 'awareness',
+        audienceHints: formData.audienceHints || (businessContext?.audience ? [businessContext.audience] : []),
+        angle: formData.angle || [],
+        durationPreset: formData.duration || '7d',
         platforms: selectedPlatforms,
         business_context: businessContext ? {
           name: businessContext.business_name,
@@ -109,10 +110,11 @@ export default function SocialLab() {
         description: error.message || 'Could not generate campaign concepts',
         variant: 'destructive'
       });
+      setMode('choose');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [mode, selectedPlatforms, businessContext]);
 
   const handleAddToCampaign = async (post: Post) => {
     try {
@@ -245,6 +247,28 @@ export default function SocialLab() {
     setMode('choose');
     setConcepts([]);
   };
+
+  // Auto-generate on suggest mode
+  useEffect(() => {
+    if (mode === 'suggest' && !hasAutoSuggestedRef.current) {
+      hasAutoSuggestedRef.current = true;
+      setConcepts([]);
+      handleGenerate({
+        mode: 'suggest',
+        idea: '',
+        goal: 'awareness',
+        angle: [],
+        duration: '7d',
+        audienceHints: businessContext?.audiences ?? [],
+        platforms: selectedPlatforms
+      });
+    }
+  }, [mode, handleGenerate, businessContext?.audiences, selectedPlatforms]);
+
+  // Reset guard when leaving suggest mode
+  useEffect(() => {
+    if (mode !== 'suggest') hasAutoSuggestedRef.current = false;
+  }, [mode]);
 
   return (
     <AppSurface>
