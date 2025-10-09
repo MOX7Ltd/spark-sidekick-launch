@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getSessionId } from '@/lib/telemetry';
 
@@ -7,7 +7,6 @@ interface HubBranding {
   tagline?: string;
   logoUrl?: string;
   isLoading: boolean;
-  refetch: () => void;
 }
 
 /**
@@ -52,14 +51,15 @@ export function getDeterministicGradient(name: string): { from: string; to: stri
  * Priority: auth profile/business → onboarding session → fallback
  */
 export function useHubBranding(): HubBranding {
-  const [branding, setBranding] = useState<Omit<HubBranding, 'refetch'>>({
+  const [branding, setBranding] = useState<HubBranding>({
     name: 'Your Business',
     tagline: undefined,
     logoUrl: undefined,
     isLoading: true,
   });
 
-  const fetchBranding = useCallback(async () => {
+  useEffect(() => {
+    async function fetchBranding() {
       try {
         // 1. Try to get from authenticated user's business
         const { data: { session } } = await supabase.auth.getSession();
@@ -127,11 +127,9 @@ export function useHubBranding(): HubBranding {
         });
       }
     }
+
+    fetchBranding();
   }, []);
 
-  useEffect(() => {
-    fetchBranding();
-  }, [fetchBranding]);
-
-  return { ...branding, refetch: fetchBranding };
+  return branding;
 }

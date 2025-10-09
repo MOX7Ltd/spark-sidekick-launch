@@ -26,6 +26,3 @@ verify_jwt = false
 
 [functions.social-post-tools]
 verify_jwt = true
-
-[functions.profile-assist]
-verify_jwt = true
