@@ -19,6 +19,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 export default function ProfileUser() {
   const { toast } = useToast();
@@ -41,6 +42,8 @@ export default function ProfileUser() {
   const [aiTone, setAiTone] = useState('friendly');
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiResult, setAiResult] = useState('');
+  const [aiContext, setAiContext] = useState<any>({});
+  const [showContextEdit, setShowContextEdit] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -160,15 +163,20 @@ export default function ProfileUser() {
       const { data, error } = await supabase.functions.invoke('profile-assist', {
         body: {
           action: aiMode === 'write' ? 'write_user_bio' : 'improve_user_bio',
-          payload: aiMode === 'write' 
-            ? { name: displayName, tone: aiTone }
-            : { current_bio: bio, tone: aiTone }
+          payload: {
+            user_id: userId,
+            name: displayName,
+            current_bio: bio,
+            tone: aiTone,
+            context: showContextEdit ? aiContext : undefined
+          }
         }
       });
 
       if (error) throw error;
       
       setAiResult(data.bio);
+      toast({ title: 'Bio generated successfully' });
     } catch (error) {
       console.error('AI generation failed:', error);
       toast({ title: 'AI assist failed', description: String(error), variant: 'destructive' });
@@ -184,9 +192,45 @@ export default function ProfileUser() {
     toast({ title: 'Bio updated' });
   };
 
-  const openAISheet = (mode: 'write' | 'improve') => {
+  const openAISheet = async (mode: 'write' | 'improve') => {
     setAiMode(mode);
     setAiResult('');
+    setShowContextEdit(false);
+    
+    // Load onboarding context
+    if (userId) {
+      try {
+        const { data: business } = await supabase
+          .from('businesses')
+          .select('business_name, tagline')
+          .eq('owner_id', userId)
+          .maybeSingle();
+
+        // Fetch from onboarding_sessions
+        const { data: session } = await supabase
+          .from('onboarding_sessions')
+          .select('payload')
+          .eq('migrated_to_user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        let aboutYou: any = {};
+        if (session?.payload) {
+          aboutYou = (session.payload as any).formData?.aboutYou || (session.payload as any).aboutYou || {};
+        }
+
+        setAiContext({
+          expertise: aboutYou?.expertise || '',
+          motivation: aboutYou?.motivation || '',
+          business_name: business?.business_name || '',
+          tagline: business?.tagline || ''
+        });
+      } catch (error) {
+        console.error('Failed to load context:', error);
+      }
+    }
+    
     setShowAISheet(true);
   };
 
@@ -309,6 +353,58 @@ export default function ProfileUser() {
           </SheetHeader>
 
           <div className="mt-6 space-y-4">
+            {(aiContext.expertise || aiContext.motivation) && (
+              <Accordion type="single" collapsible defaultValue="context">
+                <AccordionItem value="context">
+                  <AccordionTrigger className="text-sm">
+                    Using your onboarding info
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-3 text-sm">
+                      {aiContext.expertise && (
+                        <div>
+                          <span className="font-medium">Expertise:</span>
+                          {showContextEdit ? (
+                            <Textarea
+                              value={aiContext.expertise}
+                              onChange={(e) => setAiContext({...aiContext, expertise: e.target.value})}
+                              className="mt-1"
+                              rows={2}
+                            />
+                          ) : (
+                            <p className="text-muted-foreground mt-1">{aiContext.expertise}</p>
+                          )}
+                        </div>
+                      )}
+                      {aiContext.motivation && (
+                        <div>
+                          <span className="font-medium">Motivation:</span>
+                          {showContextEdit ? (
+                            <Textarea
+                              value={aiContext.motivation}
+                              onChange={(e) => setAiContext({...aiContext, motivation: e.target.value})}
+                              className="mt-1"
+                              rows={2}
+                            />
+                          ) : (
+                            <p className="text-muted-foreground mt-1">{aiContext.motivation}</p>
+                          )}
+                        </div>
+                      )}
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-xs"
+                        onClick={() => setShowContextEdit(!showContextEdit)}
+                      >
+                        {showContextEdit ? 'Done editing' : 'Edit details for this draft only'}
+                      </Button>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            )}
+
             <div>
               <Label>Tone</Label>
               <Select value={aiTone} onValueChange={setAiTone}>
@@ -325,8 +421,13 @@ export default function ProfileUser() {
             </div>
 
             {aiResult && (
-              <div className="p-4 rounded-2xl bg-muted">
-                <p className="text-sm whitespace-pre-wrap">{aiResult}</p>
+              <div className="space-y-2">
+                <div className="p-4 rounded-2xl bg-muted">
+                  <p className="text-sm whitespace-pre-wrap">{aiResult}</p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  No placeholders should appear. If you see blanks, tap Regenerate.
+                </p>
               </div>
             )}
 

@@ -19,6 +19,63 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
+    // Gather user context from database
+    let userContext: any = {};
+    if (payload.user_id) {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+
+      // Get profile data
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', payload.user_id)
+        .single();
+
+      // Get business data
+      const { data: business } = await supabase
+        .from('businesses')
+        .select('business_name, tagline, meta')
+        .eq('owner_id', payload.user_id)
+        .single();
+
+      // Check for cached onboarding snapshot
+      let aboutYou = business?.meta?.onboarding_snapshot?.aboutYou;
+
+      // Fallback to onboarding_sessions if no snapshot
+      if (!aboutYou) {
+        const { data: session } = await supabase
+          .from('onboarding_sessions')
+          .select('payload')
+          .eq('migrated_to_user_id', payload.user_id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (session?.payload) {
+          aboutYou = (session.payload as any).formData?.aboutYou || (session.payload as any).aboutYou;
+        }
+      }
+
+      // Build context object
+      userContext = {
+        name: profile?.display_name || payload.name || '',
+        expertise: aboutYou?.expertise || '',
+        motivation: aboutYou?.motivation || '',
+        business_name: business?.business_name || '',
+        tagline: business?.tagline || ''
+      };
+
+      console.log('User context gathered:', Object.keys(userContext).filter(k => userContext[k]));
+    }
+
+    // Allow payload overrides for local edits
+    if (payload.context) {
+      userContext = { ...userContext, ...payload.context };
+    }
+
     let tools: any[] = [];
     let userMessage = '';
 
@@ -35,14 +92,22 @@ serve(async (req) => {
               properties: {
                 bio: {
                   type: 'string',
-                  description: 'A warm, first-person bio (150-350 characters) that builds trust'
+                  description: 'A warm, first-person bio (120-250 words) that builds trust'
                 }
               },
               required: ['bio']
             }
           }
         }];
-        userMessage = `Write a ${payload.tone || 'friendly'} first-person bio for ${payload.name}. Make it warm and authentic.`;
+        
+        const contextParts = [
+          userContext.name ? `Name: ${userContext.name}` : '',
+          userContext.expertise ? `Expertise: ${userContext.expertise}` : '',
+          userContext.motivation ? `Motivation: ${userContext.motivation}` : '',
+          userContext.business_name ? `Business: ${userContext.business_name}` : ''
+        ].filter(Boolean).join('\n');
+
+        userMessage = `Write a ${payload.tone || 'friendly'} first-person bio using ONLY the facts below. CRITICAL: Use first person (I, my). Ground every statement in the context provided. Never use placeholders like [hobby] or brackets. Be warm and credible (120-250 words).\n\n${contextParts || 'No context provided - write a brief, authentic bio.'}`;
         break;
 
       case 'improve_user_bio':
@@ -63,7 +128,13 @@ serve(async (req) => {
             }
           }
         }];
-        userMessage = `Improve this bio with a ${payload.tone || 'friendly'} tone: "${payload.current_bio}". Keep it authentic and engaging.`;
+
+        const improveParts = [
+          userContext.expertise ? `Expertise: ${userContext.expertise}` : '',
+          userContext.motivation ? `Motivation: ${userContext.motivation}` : ''
+        ].filter(Boolean).join('\n');
+
+        userMessage = `Improve this bio with a ${payload.tone || 'friendly'} tone: "${payload.current_bio}". ${improveParts ? `Use this context to add specificity:\n${improveParts}` : ''} Keep it authentic, first-person, and engaging. No placeholders or brackets.`;
         break;
 
       case 'rename_business':
