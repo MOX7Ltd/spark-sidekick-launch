@@ -1,15 +1,15 @@
 import { Badge } from '@/components/ui/badge';
-import { ALL_PLATFORMS, PLATFORM_ICONS, Platform } from '@/lib/socialLab';
+import { UI_PLATFORMS, PLATFORM_ICONS, UiPlatform } from '@/lib/platforms';
 import { cn } from '@/lib/utils';
 
 interface PlatformPickerProps {
-  selected: Platform[];
-  onChange: (platforms: Platform[]) => void;
+  selected: UiPlatform[];
+  onChange: (platforms: UiPlatform[]) => void;
   className?: string;
 }
 
 export function PlatformPicker({ selected, onChange, className }: PlatformPickerProps) {
-  const toggle = (platform: Platform) => {
+  const toggle = (platform: UiPlatform) => {
     if (selected.includes(platform)) {
       onChange(selected.filter(p => p !== platform));
     } else {
@@ -18,10 +18,10 @@ export function PlatformPicker({ selected, onChange, className }: PlatformPicker
   };
 
   return (
-    <div className={cn("sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b p-4", className)}>
+    <div className={cn("bg-background/95 backdrop-blur-sm border-b p-4", className)}>
       <p className="text-sm text-muted-foreground mb-2">Select platforms:</p>
       <div className="flex flex-wrap gap-2">
-        {ALL_PLATFORMS.map((platform) => {
+        {UI_PLATFORMS.map((platform) => {
           const isSelected = selected.includes(platform);
           return (
             <Badge

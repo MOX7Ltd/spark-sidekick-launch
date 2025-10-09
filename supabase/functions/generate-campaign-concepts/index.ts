@@ -156,18 +156,57 @@ Keep posts authentic, actionable, and aligned with the ${body.goal} goal.`;
       throw new Error('Invalid JSON from AI');
     }
 
-    // Ensure structure
-    const concepts = (parsed.concepts || [parsed] || []).map((c: any, idx: number) => ({
-      id: crypto.randomUUID(),
-      title: c.title || `Concept ${idx + 1}`,
-      promise: c.promise || c.one_line_promise || '',
-      cadence: c.cadence || { days: 7, posts: 5 },
-      key_messages: c.key_messages || [],
-      suggested_platforms: c.suggested_platforms || body.platforms,
-      posts_by_platform: c.posts_by_platform || {}
-    }));
+    // Platform normalization helpers (match client-side taxonomy)
+    const UI_PLATFORMS = ['instagram','twitter','facebook','linkedin','youtube','tiktok','pinterest','substack'];
+    const ALIAS: Record<string,string> = { 
+      x:'twitter', ig:'instagram', fb:'facebook', yt:'youtube', threads:'instagram',
+      Instagram:'instagram', Twitter:'twitter', Facebook:'facebook', LinkedIn:'linkedin',
+      YouTube:'youtube', TikTok:'tiktok', Pinterest:'pinterest', Substack:'substack'
+    };
+    const toUi = (k: string) => {
+      const lower = (k || '').toLowerCase().trim();
+      return ALIAS[lower] ?? ALIAS[k] ?? lower;
+    };
 
-    console.log('[generate-campaign-concepts] Generated', concepts.length, 'concepts');
+    // Normalize and enrich concepts
+    const concepts = (parsed.concepts || [parsed] || []).map((c: any, idx: number) => {
+      const pbp = c.posts_by_platform || c.postsByPlatform || {};
+      const normEntries = Object.entries(pbp).map(([plat, posts]) => {
+        const key = toUi(String(plat));
+        const arr = Array.isArray(posts) ? posts : [];
+        return [key, arr.map((p: any) => ({ ...p, platform: toUi(p.platform || key) }))];
+      });
+      
+      return {
+        id: crypto.randomUUID(),
+        title: c.title || c.name || `Concept ${idx + 1}`,
+        promise: c.promise || c.one_line_promise || '',
+        cadence: c.cadence || { days: 7, posts: 5 },
+        key_messages: c.key_messages || [],
+        suggested_platforms: Array.isArray(c.suggested_platforms) ? c.suggested_platforms.map(toUi) : [],
+        posts_by_platform: Object.fromEntries(normEntries),
+        goal: c.goal,
+        audience: Array.isArray(c.audience) ? c.audience : (c.audience ? [c.audience] : [])
+      };
+    });
+
+    // Diagnostics for debugging
+    concepts.forEach((c, idx) => {
+      const keys = Object.keys(c.posts_by_platform || {});
+      const counts = Object.fromEntries(keys.map(k => [k, (c.posts_by_platform?.[k] || []).length]));
+      console.log(`[generate-campaign-concepts] Concept ${idx}:`, { 
+        title: c.title, 
+        platform_keys: keys, 
+        post_counts: counts 
+      });
+      
+      const totalPosts = Object.values(c.posts_by_platform).flat().length;
+      if (totalPosts === 0) {
+        console.warn(`[generate-campaign-concepts] Warning: Concept "${c.title}" has NO POSTS`);
+      }
+    });
+
+    console.log('[generate-campaign-concepts] Returning', concepts.length, 'normalized concepts');
 
     return new Response(JSON.stringify({ concepts }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

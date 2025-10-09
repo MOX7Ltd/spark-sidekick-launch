@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PostCard, Post } from './PostCard';
 import { ThumbsDown } from 'lucide-react';
-import { Platform } from '@/lib/socialLab';
+import { UiPlatform, normalizeForUi } from '@/lib/platforms';
 
 export interface CampaignConcept {
   id: string;
@@ -14,11 +14,13 @@ export interface CampaignConcept {
   key_messages: string[];
   suggested_platforms: string[];
   posts_by_platform: Record<string, Post[]>;
+  goal?: string;
+  audience?: string[];
 }
 
 interface CampaignConceptCardProps {
   concept: CampaignConcept;
-  selectedPlatforms: Platform[];
+  selectedPlatforms: UiPlatform[];
   onAddToCampaign: (post: Post) => void;
   onMoreLikeThis: (conceptId: string) => void;
   onMoreLikeThisPost: (post: Post) => void;
@@ -57,6 +59,26 @@ export function CampaignConceptCard({
           <span>•</span>
           <span>{concept.cadence.posts} posts</span>
         </div>
+
+        {concept.goal && (
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Goal</p>
+            <p className="text-sm capitalize">{concept.goal}</p>
+          </div>
+        )}
+
+        {concept.audience && concept.audience.length > 0 && (
+          <div>
+            <p className="text-sm font-medium mb-2">Audience</p>
+            <div className="flex flex-wrap gap-1">
+              {concept.audience.map((aud, i) => (
+                <Badge key={i} variant="secondary" className="text-xs">
+                  {aud}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div>
           <p className="text-sm font-medium mb-2">Key messages</p>
@@ -108,16 +130,33 @@ export function CampaignConceptCard({
 
         {showPosts && (
           <div className="space-y-4 pt-4 border-t">
-            {selectedPlatforms.map((platform) => {
-              const posts = concept.posts_by_platform[platform] || [];
-              if (posts.length === 0) return null;
+            {selectedPlatforms.map((uiPlat) => {
+              // Normalize concept keys for UI comparison
+              const byPlat = concept.posts_by_platform || {};
+              
+              // Find posts for this selected platform regardless of case/alias
+              const posts = Object.entries(byPlat).flatMap(([k, arr]) => {
+                const kUi = normalizeForUi(k);
+                return (kUi === uiPlat && Array.isArray(arr)) ? arr : [];
+              });
+
+              if (!posts.length) {
+                return (
+                  <div key={uiPlat} className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
+                    <h4 className="font-medium capitalize mb-1">{uiPlat}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      No posts were generated for {uiPlat}. Try changing platforms or regenerating.
+                    </p>
+                  </div>
+                );
+              }
 
               return (
-                <div key={platform} className="space-y-3">
-                  <h4 className="font-medium capitalize">{platform}</h4>
+                <div key={uiPlat} className="space-y-3">
+                  <h4 className="font-medium capitalize">{uiPlat}</h4>
                   {posts.map((post, i) => (
                     <PostCard
-                      key={`${platform}-${i}`}
+                      key={`${uiPlat}-${i}`}
                       post={post}
                       onAddToCampaign={onAddToCampaign}
                       onMoreLikeThis={onMoreLikeThisPost}

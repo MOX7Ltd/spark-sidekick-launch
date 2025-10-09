@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { PLATFORM_ICONS, PLATFORM_LIMITS, Platform } from '@/lib/socialLab';
+import { PLATFORM_ICONS, PLATFORM_LIMITS, UiPlatform } from '@/lib/platforms';
 import { Copy, ThumbsDown, Plus, Image, Video, Layers } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -28,7 +28,7 @@ interface PostCardProps {
 
 export function PostCard({ post, onAddToCampaign, onMoreLikeThis, onReject }: PostCardProps) {
   const [showMedia, setShowMedia] = useState(false);
-  const platform = post.platform as Platform;
+  const platform = post.platform as UiPlatform;
   const limits = PLATFORM_LIMITS[platform];
 
   const copyText = () => {
