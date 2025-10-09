@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.generate-product-concepts]
 verify_jwt = false
+
+[functions.social-post-tools]
+verify_jwt = true

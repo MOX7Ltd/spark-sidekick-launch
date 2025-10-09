@@ -3,26 +3,41 @@ import { AppSurface } from '@/components/layout/AppSurface';
 import { BackBar } from '@/components/hub/BackBar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { UI_PLATFORMS, PLATFORM_ICONS, UiPlatform } from '@/lib/platforms';
-import { Copy } from 'lucide-react';
+import { Copy, Edit, Search, MoreVertical, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { PostEditorSheet } from '@/components/social/PostEditorSheet';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 type Item = {
   id: string;
+  campaign_id: string;
   platform: string;
   hook: string;
   caption: string;
   hashtags: string[] | null;
-  status: string;
+  status: 'draft' | 'ready' | 'scheduled' | 'posted';
+  scheduled_at?: string | null;
+  posted_at?: string | null;
   campaign_name?: string;
+  meta?: any;
 };
 
 export default function SocialManage() {
   const [items, setItems] = useState<Item[]>([]);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'ready'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'ready' | 'scheduled' | 'posted'>('all');
   const [platformFilter, setPlatformFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [editingPost, setEditingPost] = useState<Item | null>(null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
 
   useEffect(() => {
     loadItems();
@@ -72,12 +87,16 @@ export default function SocialManage() {
 
       setItems((campaignItems || []).map(item => ({
         id: item.id,
+        campaign_id: item.campaign_id,
         platform: item.platform || 'unknown',
         hook: item.hook || '',
         caption: item.caption || '',
         hashtags: item.hashtags,
-        status: 'draft', // Default to draft for now
-        campaign_name: campaignMap.get(item.campaign_id)
+        status: (item as any).status || 'draft',
+        scheduled_at: item.scheduled_at,
+        posted_at: item.posted_at,
+        campaign_name: campaignMap.get(item.campaign_id),
+        meta: (item as any).meta
       })));
     } catch (error: any) {
       console.error('[SocialManage] Error loading items:', error);
@@ -92,9 +111,16 @@ export default function SocialManage() {
   };
 
   const filteredItems = items.filter(item => {
+    // Don't show deleted items
+    if (item.meta?.deleted_at) return false;
+
     const okStatus = statusFilter === 'all' || item.status === statusFilter;
     const okPlatform = platformFilter === 'all' || item.platform === platformFilter;
-    return okStatus && okPlatform;
+    const okSearch = !searchQuery || 
+      item.hook.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.caption.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return okStatus && okPlatform && okSearch;
   });
 
   const copyPost = (item: Item) => {
@@ -103,19 +129,90 @@ export default function SocialManage() {
     toast({ title: 'Copied to clipboard' });
   };
 
+  const handleEdit = (item: Item) => {
+    setEditingPost(item);
+    setIsEditorOpen(true);
+  };
+
+  const handleStatusChange = async (itemId: string, newStatus: 'draft' | 'ready' | 'scheduled' | 'posted') => {
+    try {
+      const updates: any = { status: newStatus };
+      if (newStatus === 'posted') {
+        updates.posted_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from('campaign_items')
+        .update(updates)
+        .eq('id', itemId);
+
+      if (error) throw error;
+
+      toast({ title: `Marked as ${newStatus}` });
+      loadItems();
+    } catch (error: any) {
+      console.error('[SocialManage] Status update error:', error);
+      toast({
+        title: 'Failed to update status',
+        description: error.message,
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleSoftDelete = async (itemId: string) => {
+    try {
+      const item = items.find(i => i.id === itemId);
+      const { error } = await supabase
+        .from('campaign_items')
+        .update({
+          meta: {
+            ...(item?.meta || {}),
+            deleted_at: new Date().toISOString()
+          }
+        })
+        .eq('id', itemId);
+
+      if (error) throw error;
+
+      toast({ title: 'Post deleted' });
+      loadItems();
+    } catch (error: any) {
+      console.error('[SocialManage] Delete error:', error);
+      toast({
+        title: 'Failed to delete',
+        description: error.message,
+        variant: 'destructive'
+      });
+    }
+  };
+
   return (
     <AppSurface>
       <BackBar to="/hub/social" label="Back to Social" />
-      <div className="mt-4">
-        <h1 className="text-2xl font-bold text-foreground">Manage Posts</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          View and manage your campaign posts
+      
+      {/* Header with gradient */}
+      <div className="mt-4 rounded-2xl bg-gradient-primary p-6 text-primary-foreground">
+        <h1 className="text-2xl font-bold">Manage Posts</h1>
+        <p className="text-sm mt-1 opacity-90">
+          Small steps snowball into sales. 🎯
         </p>
       </div>
 
+      {/* Search */}
+      <div className="mt-6 relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search by hook or caption..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
       {/* Status filters */}
-      <div className="mt-6 flex gap-2 overflow-x-auto pb-2">
-        {(['all', 'draft', 'ready'] as const).map(status => (
+      <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
+        {(['all', 'draft', 'ready', 'scheduled', 'posted'] as const).map(status => (
           <Button
             key={status}
             onClick={() => setStatusFilter(status)}
@@ -172,15 +269,54 @@ export default function SocialManage() {
       ) : (
         <div className="mt-6 space-y-3">
           {filteredItems.map(item => (
-            <div key={item.id} className="rounded-2xl border border-border/50 bg-background/60 backdrop-blur-sm p-4 transition-all hover:border-border">
+            <div key={item.id} className="rounded-2xl border border-border/50 bg-background/60 backdrop-blur-sm p-4 transition-all hover:border-border hover:shadow-brand-sm">
               <div className="flex items-start justify-between mb-2">
-                <Badge variant="outline" className="gap-1">
-                  <span>{PLATFORM_ICONS[item.platform as UiPlatform]}</span>
-                  <span className="capitalize">{item.platform}</span>
-                </Badge>
-                <Badge variant="secondary" className="text-xs">
-                  {item.status}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="gap-1">
+                    <span>{PLATFORM_ICONS[item.platform as UiPlatform]}</span>
+                    <span className="capitalize">{item.platform}</span>
+                  </Badge>
+                  <Badge 
+                    variant={
+                      item.status === 'posted' ? 'default' : 
+                      item.status === 'ready' ? 'secondary' : 
+                      'outline'
+                    }
+                    className="text-xs"
+                  >
+                    {item.status}
+                  </Badge>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleEdit(item)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                    {item.status !== 'ready' && (
+                      <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'ready')}>
+                        Mark Ready
+                      </DropdownMenuItem>
+                    )}
+                    {item.status !== 'posted' && (
+                      <DropdownMenuItem onClick={() => handleStatusChange(item.id, 'posted')}>
+                        Mark Posted
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem 
+                      onClick={() => handleSoftDelete(item.id)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               
               <div className="mb-2">
@@ -213,19 +349,34 @@ export default function SocialManage() {
 
               <div className="flex gap-2">
                 <Button
-                  onClick={() => copyPost(item)}
+                  onClick={() => handleEdit(item)}
                   variant="outline"
                   size="sm"
                   className="flex-1"
                 >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy text
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+                <Button
+                  onClick={() => copyPost(item)}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Copy className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Editor Sheet */}
+      <PostEditorSheet
+        post={editingPost}
+        open={isEditorOpen}
+        onOpenChange={setIsEditorOpen}
+        onSaved={loadItems}
+      />
     </AppSurface>
   );
 }

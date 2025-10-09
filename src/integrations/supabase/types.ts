@@ -150,9 +150,11 @@ export type Database = {
           hashtags: string[] | null
           hook: string | null
           id: string
+          meta: Json | null
           platform: string | null
           posted_at: string | null
           scheduled_at: string | null
+          status: string | null
         }
         Insert: {
           campaign_id: string
@@ -161,9 +163,11 @@ export type Database = {
           hashtags?: string[] | null
           hook?: string | null
           id?: string
+          meta?: Json | null
           platform?: string | null
           posted_at?: string | null
           scheduled_at?: string | null
+          status?: string | null
         }
         Update: {
           campaign_id?: string
@@ -172,9 +176,11 @@ export type Database = {
           hashtags?: string[] | null
           hook?: string | null
           id?: string
+          meta?: Json | null
           platform?: string | null
           posted_at?: string | null
           scheduled_at?: string | null
+          status?: string | null
         }
         Relationships: [
           {
