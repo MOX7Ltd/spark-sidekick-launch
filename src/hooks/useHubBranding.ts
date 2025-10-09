@@ -50,7 +50,7 @@ export function getDeterministicGradient(name: string): { from: string; to: stri
  * Hook to fetch Hub branding data
  * Priority: auth profile/business → onboarding session → fallback
  */
-export function useHubBranding(): HubBranding {
+export function useHubBranding(): HubBranding & { refetch: () => void } {
   const [branding, setBranding] = useState<HubBranding>({
     name: 'Your Business',
     tagline: undefined,
@@ -58,78 +58,78 @@ export function useHubBranding(): HubBranding {
     isLoading: true,
   });
 
-  useEffect(() => {
-    async function fetchBranding() {
-      try {
-        // 1. Try to get from authenticated user's business
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user?.id) {
-          const { data: business, error } = await supabase
-            .from('businesses')
-            .select('business_name, tagline, logo_url, logo_svg')
-            .eq('owner_id', session.user.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+  const fetchBranding = async () => {
+    try {
+      // 1. Try to get from authenticated user's business
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user?.id) {
+        const { data: business, error } = await supabase
+          .from('businesses')
+          .select('business_name, tagline, logo_url, logo_svg')
+          .eq('owner_id', session.user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-          if (!error && business) {
+        if (!error && business) {
+          setBranding({
+            name: business.business_name || 'Your Business',
+            tagline: business.tagline || undefined,
+            logoUrl: business.logo_url || business.logo_svg || undefined,
+            isLoading: false,
+          });
+          return;
+        }
+      }
+
+      // 2. Try to get from onboarding session
+      const sessionId = getSessionId();
+      if (sessionId) {
+        const { data: sessionData, error: sessionError } = await supabase
+          .from('onboarding_sessions')
+          .select('payload')
+          .eq('session_id', sessionId)
+          .is('migrated_at', null)
+          .maybeSingle();
+
+        if (!sessionError && sessionData?.payload) {
+          const payload = sessionData.payload as any;
+          const businessIdentity = payload.formData?.businessIdentity || payload.businessIdentity;
+          
+          if (businessIdentity) {
             setBranding({
-              name: business.business_name || 'Your Business',
-              tagline: business.tagline || undefined,
-              logoUrl: business.logo_url || business.logo_svg || undefined,
+              name: businessIdentity.name || businessIdentity.workingName || 'Your Business',
+              tagline: businessIdentity.tagline || undefined,
+              logoUrl: businessIdentity.logoUrl || businessIdentity.logoSVG || undefined,
               isLoading: false,
             });
             return;
           }
         }
-
-        // 2. Try to get from onboarding session
-        const sessionId = getSessionId();
-        if (sessionId) {
-          const { data: sessionData, error: sessionError } = await supabase
-            .from('onboarding_sessions')
-            .select('payload')
-            .eq('session_id', sessionId)
-            .is('migrated_at', null)
-            .maybeSingle();
-
-          if (!sessionError && sessionData?.payload) {
-            const payload = sessionData.payload as any;
-            const businessIdentity = payload.formData?.businessIdentity || payload.businessIdentity;
-            
-            if (businessIdentity) {
-              setBranding({
-                name: businessIdentity.name || businessIdentity.workingName || 'Your Business',
-                tagline: businessIdentity.tagline || undefined,
-                logoUrl: businessIdentity.logoUrl || businessIdentity.logoSVG || undefined,
-                isLoading: false,
-              });
-              return;
-            }
-          }
-        }
-
-        // 3. Fallback
-        setBranding({
-          name: 'Your Business',
-          tagline: undefined,
-          logoUrl: undefined,
-          isLoading: false,
-        });
-      } catch (error) {
-        console.error('Failed to fetch Hub branding:', error);
-        setBranding({
-          name: 'Your Business',
-          tagline: undefined,
-          logoUrl: undefined,
-          isLoading: false,
-        });
       }
-    }
 
+      // 3. Fallback
+      setBranding({
+        name: 'Your Business',
+        tagline: undefined,
+        logoUrl: undefined,
+        isLoading: false,
+      });
+    } catch (error) {
+      console.error('Failed to fetch Hub branding:', error);
+      setBranding({
+        name: 'Your Business',
+        tagline: undefined,
+        logoUrl: undefined,
+        isLoading: false,
+      });
+    }
+  };
+
+  useEffect(() => {
     fetchBranding();
   }, []);
 
-  return branding;
+  return { ...branding, refetch: fetchBranding };
 }
