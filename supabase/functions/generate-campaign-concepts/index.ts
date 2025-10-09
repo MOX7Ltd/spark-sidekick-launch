@@ -5,6 +5,30 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Platform normalization helper (matches src/lib/platforms.ts taxonomy)
+const PLATFORM_ALIAS: Record<string, string> = {
+  x: 'twitter',
+  ig: 'instagram',
+  fb: 'facebook',
+  yt: 'youtube',
+  threads: 'instagram',
+  instagram: 'instagram',
+  twitter: 'twitter',
+  facebook: 'facebook',
+  linkedin: 'linkedin',
+  youtube: 'youtube',
+  tiktok: 'tiktok',
+  pinterest: 'pinterest',
+  substack: 'substack'
+};
+
+function canonicalizePlatformKey(raw?: string | null): string | null {
+  if (!raw) return null;
+  const k = raw.toString().trim();
+  const lower = k.toLowerCase();
+  return PLATFORM_ALIAS[lower] ?? PLATFORM_ALIAS[k] ?? lower;
+}
+
 interface CampaignRequest {
   user_id?: string;
   mode: 'suggest' | 'defined';
@@ -43,83 +67,117 @@ serve(async (req) => {
       duration: body.durationPreset
     });
 
-    // Build prompt
+    // === Phase 1: Construct messages ===
     const businessInfo = body.business_context
-      ? `Business: ${body.business_context.name || 'Unknown'}
-Tagline: ${body.business_context.tagline || 'N/A'}
-Bio: ${body.business_context.bio || 'N/A'}
-Target audience: ${body.business_context.audiences?.join(', ') || 'general'}
-Brand tone: ${body.business_context.vibes?.join(', ') || 'friendly'}`
-      : 'No business context provided';
+      ? `Name: ${body.business_context.name}
+${body.business_context.tagline ? `Tagline: ${body.business_context.tagline}` : ''}
+${body.business_context.bio ? `Bio: ${body.business_context.bio}` : ''}
+${body.business_context.audiences?.length ? `Audiences: ${body.business_context.audiences.join(', ')}` : ''}
+${body.business_context.vibes?.length ? `Vibes: ${body.business_context.vibes.join(', ')}` : ''}`
+      : 'A small business owner';
 
-    const durationInfo = body.durationPreset
-      ? body.durationPreset === '7d'
-        ? '7 days, 3-5 posts'
-        : body.durationPreset === '14d'
-        ? '14 days, 6-10 posts'
-        : '30 days, 10-20 posts'
-      : '7 days, 3-5 posts';
+    const durationInfo = body.durationPreset === '7d' ? '1 week' :
+                         body.durationPreset === '14d' ? '2 weeks' :
+                         body.durationPreset === '30d' ? '1 month' : '1 week';
 
+    // System message with concise instructions and JSON example
+    const SYSTEM = {
+      role: 'system',
+      content: `You are a social media strategist.
+
+Return JSON that matches the tool schema. For EACH requested platform, generate 2–3 posts (hook, caption, 3–8 hashtags, media guidance). Do not skip platforms.
+
+Example:
+{
+  "concepts": [{
+    "title": "Summer Fitness Challenge",
+    "promise": "Get beach-ready in 30 days",
+    "cadence": { "days": 30, "posts": 12 },
+    "key_messages": ["Consistency wins", "Small steps daily", "Community support"],
+    "posts_by_platform": {
+      "instagram": [{
+        "platform": "instagram",
+        "hook": "Day 1: Your transformation starts NOW 💪",
+        "caption": "Ready to crush your fitness goals? Join our 30-day challenge...",
+        "hashtags": ["#FitnessChallenge","#SummerBody","#GetFit"],
+        "media_guide": { "idea": "Before/after calendar", "specs": ["1:1"] }
+      }],
+      "tiktok": [{
+        "platform": "tiktok",
+        "hook": "POV: You committed to 30 days",
+        "caption": "Watch what happens when you show up every day...",
+        "hashtags": ["#FitnessTok","#Transformation","#30DayChallenge"],
+        "media_guide": { "idea": "Quick montage", "video_beats": ["Start","Mid","Reveal"], "specs": ["9:16","<60s"] }
+      }]
+    }
+  }]
+}`.trim()
+    };
+
+    // User prompt (short and clear)
     const prompt = body.mode === 'suggest'
-      ? `You are a social media strategist. Generate 3 campaign concepts for this business.
+      ? `Generate 2–3 campaign concepts for this business.
 
+Business:
 ${businessInfo}
 
 Platforms: ${body.platforms.join(', ')}
 Duration: ${durationInfo}
 
-For each concept, provide:
-1. A clear campaign title
-2. One-line promise (what the audience gains)
-3. Cadence (days and post count)
-4. 3-5 key messages
-5. Suggested platforms
-6. For EACH selected platform (${body.platforms.join(', ')}), generate 2-3 posts with:
-   - Hook (attention-grabbing first line)
-   - Caption (platform-optimized length: Twitter 240 chars, Instagram/TikTok/Facebook 2200, LinkedIn 3000, Pinterest 500, YouTube 5000)
-   - 3-8 relevant hashtags (platform-appropriate: Twitter 3 max, Instagram 10 max, others 5-8)
-   - Media guidance (non-generative):
-     * idea: What to shoot/create (be specific: "Close-up of ball control drill on green turf")
-     * video_beats: Array of shot steps if video (["Open with wide shot of field", "Cut to close-up of feet"])
-     * carousel: Array of slide ideas if carousel (["Slide 1: Before technique", "Slide 2: During practice"])
-     * specs: Array of practical file specs (["1:1 ratio", "< 60s duration", "Good lighting"])
+CRITICAL: For EACH platform above, include 2–3 posts (hook, caption, 3–8 hashtags, media guidance).`
+      : `Generate 1–2 campaign concepts for: "${body.idea}"
 
-Make posts actionable, conversion-friendly, and authentic to the brand tone. Focus on real value, not hype.`
-      : `You are a social media strategist. Generate 2-3 campaign concepts based on this idea:
-
-Campaign idea: ${body.idea}
 Goal: ${body.goal}
-Angle: ${body.angle?.join(', ')}
-Duration: ${durationInfo}
-
+Business:
 ${businessInfo}
 
 Platforms: ${body.platforms.join(', ')}
+Duration: ${durationInfo}
 
-For each concept, provide:
-1. A clear campaign title
-2. One-line promise
-3. Cadence (days and post count)
-4. 3-5 key messages aligned with the campaign idea
-5. Suggested platforms
-6. For EACH selected platform (${body.platforms.join(', ')}), generate 2-3 posts with:
-   - Hook (attention-grabbing first line)
-   - Caption (platform-optimized length: Twitter 240 chars, Instagram/TikTok/Facebook 2200, LinkedIn 3000, Pinterest 500, YouTube 5000)
-   - 3-8 relevant hashtags (platform-appropriate: Twitter 3 max, Instagram 10 max, others 5-8)
-   - Media guidance (non-generative):
-     * idea: What to shoot/create
-     * video_beats: Array of shot steps if video
-     * carousel: Array of slide ideas if carousel
-     * specs: Array of practical file specs
+CRITICAL: For EACH platform above, include 2–3 posts (hook, caption, 3–8 hashtags, media guidance).`;
 
-Keep posts authentic, actionable, and aligned with the ${body.goal} goal.`;
+    // === Phase 2: Define tool schema ===
+    const POST_ITEM = {
+      type: "object",
+      required: ["platform", "hook", "caption"],
+      properties: {
+        platform: { type: "string" },
+        hook: { type: "string" },
+        caption: { type: "string" },
+        hashtags: { type: "array", items: { type: "string" } },
+        media_guide: {
+          type: "object",
+          properties: {
+            idea: { type: "string" },
+            video_beats: { type: "array", items: { type: "string" } },
+            carousel: { type: "array", items: { type: "string" } },
+            specs: { type: "array", items: { type: "string" } }
+          }
+        }
+      }
+    };
 
-    // Define tool schema for structured output
-    const toolSchema = {
+    const POSTS_BY_PLATFORM = {
+      type: "object",
+      description: "Posts for each platform. Must include ALL requested platforms.",
+      properties: {
+        instagram: { type: "array", items: POST_ITEM },
+        twitter: { type: "array", items: POST_ITEM },
+        facebook: { type: "array", items: POST_ITEM },
+        linkedin: { type: "array", items: POST_ITEM },
+        youtube: { type: "array", items: POST_ITEM },
+        tiktok: { type: "array", items: POST_ITEM },
+        pinterest: { type: "array", items: POST_ITEM },
+        substack: { type: "array", items: POST_ITEM }
+      },
+      additionalProperties: false
+    };
+
+    const TOOLS = [{
       type: "function",
       function: {
         name: "generate_campaign_concepts",
-        description: "Generate social media campaign concepts with platform-specific posts",
+        description: "Generate campaign concepts with posts keyed by platform.",
         parameters: {
           type: "object",
           properties: {
@@ -127,72 +185,30 @@ Keep posts authentic, actionable, and aligned with the ${body.goal} goal.`;
               type: "array",
               items: {
                 type: "object",
+                required: ["title", "posts_by_platform"],
                 properties: {
-                  title: { type: "string", description: "Campaign title" },
-                  promise: { type: "string", description: "One-line value promise" },
-                  goal: { type: "string", description: "Campaign goal" },
-                  audience: { 
-                    type: "array", 
-                    items: { type: "string" },
-                    description: "Target audience segments"
-                  },
+                  title: { type: "string" },
+                  promise: { type: "string" },
                   cadence: {
                     type: "object",
-                    properties: {
-                      days: { type: "number" },
-                      posts: { type: "number" }
-                    },
-                    required: ["days", "posts"]
+                    properties: { days: { type: "number" }, posts: { type: "number" } }
                   },
-                  key_messages: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "3-5 key messages"
-                  },
-                  suggested_platforms: {
-                    type: "array",
-                    items: { type: "string" }
-                  },
-                  posts_by_platform: {
-                    type: "object",
-                    description: "Posts keyed by platform (instagram, twitter, facebook, linkedin, youtube, tiktok, pinterest)",
-                    additionalProperties: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          platform: { type: "string" },
-                          hook: { type: "string" },
-                          caption: { type: "string" },
-                          hashtags: {
-                            type: "array",
-                            items: { type: "string" }
-                          },
-                          media: {
-                            type: "object",
-                            properties: {
-                              idea: { type: "string" },
-                              video_beats: { type: "array", items: { type: "string" } },
-                              carousel: { type: "array", items: { type: "string" } },
-                              specs: { type: "array", items: { type: "string" } }
-                            }
-                          }
-                        },
-                        required: ["platform", "hook", "caption", "hashtags"]
-                      }
-                    }
-                  }
-                },
-                required: ["title", "promise", "cadence", "key_messages", "posts_by_platform"]
+                  key_messages: { type: "array", items: { type: "string" } },
+                  goal: { type: "string" },
+                  audience: { type: "array", items: { type: "string" } },
+                  posts_by_platform: POSTS_BY_PLATFORM
+                }
               }
             }
           },
           required: ["concepts"]
         }
       }
-    };
+    }];
 
-    // Call Lovable AI with tool calling
+    // === Phase 3: Call AI ===
+    console.log('[generate-campaign-concepts] Calling Lovable AI...');
+
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -201,15 +217,10 @@ Keep posts authentic, actionable, and aligned with the ${body.goal} goal.`;
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a social media strategist. Generate structured campaign concepts with posts for each requested platform.'
-          },
-          { role: 'user', content: prompt }
-        ],
-        tools: [toolSchema],
-        tool_choice: { type: "function", function: { name: "generate_campaign_concepts" } }
+        messages: [SYSTEM, { role: 'user', content: prompt }],
+        tools: TOOLS,
+        tool_choice: { type: "function", function: { name: "generate_campaign_concepts" } },
+        temperature: 0.8,
       }),
     });
 
@@ -219,145 +230,196 @@ Keep posts authentic, actionable, and aligned with the ${body.goal} goal.`;
       throw new Error(`AI generation failed: ${response.status}`);
     }
 
-    const data = await response.json();
-    
-    // Extract tool call response or fallback to content
-    let parsed;
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    
-    if (toolCall?.function?.arguments) {
+    // === Phase 4: Parse response ===
+    const aiData = await response.json();
+    const choice = aiData.choices?.[0];
+    if (!choice) throw new Error('No choices in AI response');
+
+    let parsed: any;
+
+    // Try tool call first
+    if (choice.message?.tool_calls?.[0]) {
       console.log('[generate-campaign-concepts] Using tool call response');
-      try {
-        parsed = JSON.parse(toolCall.function.arguments);
-      } catch (e) {
-        console.error('[generate-campaign-concepts] Tool call parse error:', e);
-        throw new Error('Invalid JSON from tool call');
-      }
+      const toolCall = choice.message.tool_calls[0];
+      parsed = typeof toolCall.function.arguments === 'string'
+        ? JSON.parse(toolCall.function.arguments)
+        : toolCall.function.arguments;
+    } else if (choice.message?.content) {
+      // Fallback: parse content
+      console.log('[generate-campaign-concepts] Fallback: parsing content');
+      const content = choice.message.content;
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No JSON found in AI response');
+      parsed = JSON.parse(jsonMatch[0]);
     } else {
-      // Fallback to content-based response
-      const rawContent = data.choices?.[0]?.message?.content;
-      if (!rawContent) {
-        throw new Error('No content or tool call in AI response');
-      }
-      console.log('[generate-campaign-concepts] Falling back to content response');
-      try {
-        parsed = JSON.parse(rawContent);
-      } catch (e) {
-        console.error('[generate-campaign-concepts] JSON parse error:', e, rawContent?.slice(0, 500));
-        throw new Error('Invalid JSON from AI');
-      }
+      throw new Error('No tool_calls or content in AI response');
     }
 
-    // DIAGNOSTIC: Log raw parsed structure
+    if (!parsed.concepts || !Array.isArray(parsed.concepts)) {
+      throw new Error('AI response missing concepts array');
+    }
+
+    // === Diagnostics (Phase 1) ===
     console.log('[DEBUG] Raw AI response keys:', Object.keys(parsed));
-    if (parsed.concepts?.[0]) {
-      const firstConcept = parsed.concepts[0];
+    console.log('[DEBUG] Raw AI response (truncated):', JSON.stringify(parsed).slice(0, 2000));
+    if (parsed.concepts.length > 0) {
+      const sample = parsed.concepts[0];
       console.log('[DEBUG] First concept sample:', JSON.stringify({
-        title: firstConcept.title,
-        posts_by_platform_keys: Object.keys(firstConcept.posts_by_platform || {}),
-        has_posts: firstConcept.posts ? 'yes (flat array)' : 'no',
-        direct_platform_keys: Object.keys(firstConcept).filter(k => 
-          k.toLowerCase().includes('instagram') || 
-          k.toLowerCase().includes('twitter') || 
-          k.toLowerCase().includes('facebook') ||
-          k.toLowerCase().includes('tiktok') ||
-          k.toLowerCase().includes('linkedin')
+        title: sample.title,
+        posts_by_platform_keys: Object.keys(sample.posts_by_platform || {}),
+        has_posts: Object.values(sample.posts_by_platform || {}).some((arr: any) => Array.isArray(arr) && arr.length > 0) ? 'yes' : 'no',
+        direct_platform_keys: Object.keys(sample).filter((k: string) => 
+          ['instagram','twitter','tiktok','facebook','linkedin','youtube','pinterest','substack'].includes(k.toLowerCase())
         )
       }, null, 2));
     }
 
-    // Platform normalization helpers (match client-side taxonomy)
-    const UI_PLATFORMS = ['instagram','twitter','facebook','linkedin','youtube','tiktok','pinterest','substack'];
-    const ALIAS: Record<string,string> = { 
-      x:'twitter', ig:'instagram', fb:'facebook', yt:'youtube', threads:'instagram',
-      Instagram:'instagram', Twitter:'twitter', Facebook:'facebook', LinkedIn:'linkedin',
-      YouTube:'youtube', TikTok:'tiktok', Pinterest:'pinterest', Substack:'substack'
-    };
-    const toUi = (k: string) => {
-      const lower = (k || '').toLowerCase().trim();
-      return ALIAS[lower] ?? ALIAS[k] ?? lower;
-    };
+    // === Phase 5: Normalize platform keys using taxonomy ===
+    function normalizePost(post: any, platformKey: string): any {
+      return {
+        platform: platformKey,
+        hook: post.hook || '',
+        caption: post.caption || '',
+        hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
+        media_guide: post.media_guide || { idea: '' }
+      };
+    }
 
-    // Normalize and enrich concepts with fallback parsing
-    const concepts = (parsed.concepts || [parsed] || []).map((c: any, idx: number) => {
-      let pbp = c.posts_by_platform || c.postsByPlatform || {};
-      
-      // FALLBACK 1: Check for flat posts array with platform field
-      if (Object.keys(pbp).length === 0 && Array.isArray(c.posts)) {
-        console.log('[generate-campaign-concepts] Fallback: grouping flat posts array by platform');
-        pbp = c.posts.reduce((acc: any, post: any) => {
-          const platform = post.platform || 'unknown';
-          if (!acc[platform]) acc[platform] = [];
-          acc[platform].push(post);
-          return acc;
-        }, {});
+    const normalized = parsed.concepts.map((concept: any) => {
+      const pbp = concept.posts_by_platform || {};
+      const normalizedPosts: Record<string, any[]> = {};
+
+      // Normalize platform keys using canonicalizePlatformKey from taxonomy
+      for (const [rawKey, rawPosts] of Object.entries(pbp)) {
+        const platformKey = canonicalizePlatformKey(rawKey);
+        if (!platformKey) continue;
+        if (!Array.isArray(rawPosts)) continue;
+        if (rawPosts.length === 0) continue;
+        normalizedPosts[platformKey] = rawPosts.map((p: any) => normalizePost(p, platformKey));
       }
-      
-      // FALLBACK 2: Check for direct platform keys (instagramPosts, twitterPosts, etc.)
-      if (Object.keys(pbp).length === 0) {
-        const platformKeys = Object.keys(c).filter(k => 
-          k.toLowerCase().includes('posts') && 
-          (k.toLowerCase().includes('instagram') || 
-           k.toLowerCase().includes('twitter') ||
-           k.toLowerCase().includes('facebook') ||
-           k.toLowerCase().includes('tiktok') ||
-           k.toLowerCase().includes('linkedin') ||
-           k.toLowerCase().includes('youtube') ||
-           k.toLowerCase().includes('pinterest'))
-        );
-        
-        if (platformKeys.length > 0) {
-          console.log('[generate-campaign-concepts] Fallback: mapping direct platform keys:', platformKeys);
-          platformKeys.forEach(key => {
-            const platform = key.toLowerCase().replace('posts', '').replace('_', '');
-            if (Array.isArray(c[key])) {
-              pbp[platform] = c[key];
-            }
-          });
+
+      // Fallback parser: check for direct platform keys
+      const directKeys = ['instagram', 'twitter', 'tiktok', 'facebook', 'linkedin', 'youtube', 'pinterest', 'substack'];
+      for (const k of directKeys) {
+        if (Array.isArray(concept[k]) && concept[k].length > 0 && !normalizedPosts[k]) {
+          normalizedPosts[k] = concept[k].map((p: any) => normalizePost(p, k));
+        }
+        // Also check for instagramPosts, twitterPosts, etc.
+        const altKey = `${k}Posts`;
+        if (Array.isArray(concept[altKey]) && concept[altKey].length > 0 && !normalizedPosts[k]) {
+          normalizedPosts[k] = concept[altKey].map((p: any) => normalizePost(p, k));
         }
       }
-      
-      // Normalize platform keys and post objects
-      const normEntries = Object.entries(pbp).map(([plat, posts]) => {
-        const key = toUi(String(plat));
-        const arr = Array.isArray(posts) ? posts : [];
-        return [key, arr.map((p: any) => ({ ...p, platform: toUi(p.platform || key) }))];
-      });
-      
-      const normalizedConcept = {
+
+      // Fallback parser: flat posts array with platform field
+      if (Array.isArray(concept.posts) && concept.posts.length > 0) {
+        for (const post of concept.posts) {
+          const platformKey = canonicalizePlatformKey(post.platform);
+          if (!platformKey) continue;
+          if (!normalizedPosts[platformKey]) normalizedPosts[platformKey] = [];
+          normalizedPosts[platformKey].push(normalizePost(post, platformKey));
+        }
+      }
+
+      return {
         id: crypto.randomUUID(),
-        title: c.title || c.name || `Concept ${idx + 1}`,
-        promise: c.promise || c.one_line_promise || '',
-        cadence: c.cadence || { days: 7, posts: 5 },
-        key_messages: c.key_messages || [],
-        suggested_platforms: Array.isArray(c.suggested_platforms) ? c.suggested_platforms.map(toUi) : [],
-        posts_by_platform: Object.fromEntries(normEntries),
-        goal: c.goal,
-        audience: Array.isArray(c.audience) ? c.audience : (c.audience ? [c.audience] : [])
+        title: concept.title || 'Untitled Campaign',
+        promise: concept.promise || '',
+        cadence: concept.cadence || { days: 7, posts: 7 },
+        key_messages: Array.isArray(concept.key_messages) ? concept.key_messages : [],
+        goal: concept.goal || body.goal || 'awareness',
+        audience: Array.isArray(concept.audience) ? concept.audience : [],
+        posts_by_platform: normalizedPosts
       };
-      
-      return normalizedConcept;
     });
 
-    // Diagnostics for debugging
-    concepts.forEach((c: any, idx: number) => {
-      const keys = Object.keys(c.posts_by_platform || {});
-      const counts = Object.fromEntries(keys.map((k: string) => [k, (c.posts_by_platform?.[k] || []).length]));
-      console.log(`[generate-campaign-concepts] Concept ${idx}:`, { 
-        title: c.title, 
-        platform_keys: keys, 
-        post_counts: counts 
+    // === Check if any concept has posts ===
+    const hasAnyPosts = normalized.some((c: any) => {
+      const keys = Object.keys(c.posts_by_platform);
+      return keys.length > 0 && Object.values(c.posts_by_platform).some((arr: any) => Array.isArray(arr) && arr.length > 0);
+    });
+
+    // === Single retry if no posts ===
+    if (!hasAnyPosts) {
+      console.warn('[generate-campaign-concepts] No posts found in any concept. Retrying with stricter prompt...');
+      const retryPrompt = `Return posts_by_platform with 2–3 posts for EACH of: ${body.platforms.join(', ')}. Do not return empty arrays.
+
+${prompt}`;
+
+      const retryResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [SYSTEM, { role: 'user', content: retryPrompt }],
+          tools: TOOLS,
+          tool_choice: { type: "function", function: { name: "generate_campaign_concepts" } },
+          temperature: 0.9,
+        }),
       });
-      
-      const totalPosts = Object.values(c.posts_by_platform).flat().length;
-      if (totalPosts === 0) {
-        console.warn(`[generate-campaign-concepts] Warning: Concept "${c.title}" has NO POSTS`);
+
+      if (!retryResponse.ok) {
+        console.error('[generate-campaign-concepts] Retry failed:', retryResponse.status);
+      } else {
+        const retryData = await retryResponse.json();
+        const retryChoice = retryData.choices?.[0];
+        if (retryChoice?.message?.tool_calls?.[0]) {
+          const retryParsed = typeof retryChoice.message.tool_calls[0].function.arguments === 'string'
+            ? JSON.parse(retryChoice.message.tool_calls[0].function.arguments)
+            : retryChoice.message.tool_calls[0].function.arguments;
+
+          if (retryParsed.concepts && Array.isArray(retryParsed.concepts)) {
+            console.log('[generate-campaign-concepts] Retry succeeded, using retry result');
+            // Re-normalize retry result
+            const retryNormalized = retryParsed.concepts.map((concept: any) => {
+              const pbp = concept.posts_by_platform || {};
+              const normalizedPosts: Record<string, any[]> = {};
+
+              for (const [rawKey, rawPosts] of Object.entries(pbp)) {
+                const platformKey = canonicalizePlatformKey(rawKey);
+                if (!platformKey || !Array.isArray(rawPosts) || rawPosts.length === 0) continue;
+                normalizedPosts[platformKey] = rawPosts.map((p: any) => normalizePost(p, platformKey));
+              }
+
+              return {
+                id: crypto.randomUUID(),
+                title: concept.title || 'Untitled Campaign',
+                promise: concept.promise || '',
+                cadence: concept.cadence || { days: 7, posts: 7 },
+                key_messages: Array.isArray(concept.key_messages) ? concept.key_messages : [],
+                goal: concept.goal || body.goal || 'awareness',
+                audience: Array.isArray(concept.audience) ? concept.audience : [],
+                posts_by_platform: normalizedPosts
+              };
+            });
+
+            // Replace normalized with retry result
+            normalized.length = 0;
+            normalized.push(...retryNormalized);
+          }
+        }
+      }
+    }
+
+    // === Diagnostics (Phase 2) ===
+    normalized.forEach((concept: any, idx: number) => {
+      const keys = Object.keys(concept.posts_by_platform);
+      const counts: Record<string, number> = {};
+      for (const [k, v] of Object.entries(concept.posts_by_platform)) {
+        counts[k] = Array.isArray(v) ? (v as any[]).length : 0;
+      }
+      console.log(`[generate-campaign-concepts] Concept ${idx}: { title: "${concept.title}", platform_keys: [${keys.map(k => `"${k}"`).join(', ')}], post_counts: ${JSON.stringify(counts)} }`);
+      if (keys.length === 0 || Object.values(counts).every(c => c === 0)) {
+        console.warn(`[generate-campaign-concepts] Warning: Concept "${concept.title}" has NO POSTS`);
       }
     });
 
-    console.log('[generate-campaign-concepts] Returning', concepts.length, 'normalized concepts');
+    console.log('[generate-campaign-concepts] Returning', normalized.length, 'normalized concepts');
 
-    return new Response(JSON.stringify({ concepts }), {
+    return new Response(JSON.stringify({ concepts: normalized }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
