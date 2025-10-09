@@ -17,3 +17,9 @@ verify_jwt = false
 
 [functions.migrate-onboarding-to-user]
 verify_jwt = false
+
+[functions.generate-campaign-concepts]
+verify_jwt = false
+
+[functions.generate-product-concepts]
+verify_jwt = false
