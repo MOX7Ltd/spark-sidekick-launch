@@ -114,7 +114,85 @@ For each concept, provide:
 
 Keep posts authentic, actionable, and aligned with the ${body.goal} goal.`;
 
-    // Call Lovable AI
+    // Define tool schema for structured output
+    const toolSchema = {
+      type: "function",
+      function: {
+        name: "generate_campaign_concepts",
+        description: "Generate social media campaign concepts with platform-specific posts",
+        parameters: {
+          type: "object",
+          properties: {
+            concepts: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string", description: "Campaign title" },
+                  promise: { type: "string", description: "One-line value promise" },
+                  goal: { type: "string", description: "Campaign goal" },
+                  audience: { 
+                    type: "array", 
+                    items: { type: "string" },
+                    description: "Target audience segments"
+                  },
+                  cadence: {
+                    type: "object",
+                    properties: {
+                      days: { type: "number" },
+                      posts: { type: "number" }
+                    },
+                    required: ["days", "posts"]
+                  },
+                  key_messages: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "3-5 key messages"
+                  },
+                  suggested_platforms: {
+                    type: "array",
+                    items: { type: "string" }
+                  },
+                  posts_by_platform: {
+                    type: "object",
+                    description: "Posts keyed by platform (instagram, twitter, facebook, linkedin, youtube, tiktok, pinterest)",
+                    additionalProperties: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          platform: { type: "string" },
+                          hook: { type: "string" },
+                          caption: { type: "string" },
+                          hashtags: {
+                            type: "array",
+                            items: { type: "string" }
+                          },
+                          media: {
+                            type: "object",
+                            properties: {
+                              idea: { type: "string" },
+                              video_beats: { type: "array", items: { type: "string" } },
+                              carousel: { type: "array", items: { type: "string" } },
+                              specs: { type: "array", items: { type: "string" } }
+                            }
+                          }
+                        },
+                        required: ["platform", "hook", "caption", "hashtags"]
+                      }
+                    }
+                  }
+                },
+                required: ["title", "promise", "cadence", "key_messages", "posts_by_platform"]
+              }
+            }
+          },
+          required: ["concepts"]
+        }
+      }
+    };
+
+    // Call Lovable AI with tool calling
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -126,12 +204,12 @@ Keep posts authentic, actionable, and aligned with the ${body.goal} goal.`;
         messages: [
           {
             role: 'system',
-            content: 'You are a social media strategist. Always respond with valid JSON only. No markdown, no explanations.'
+            content: 'You are a social media strategist. Generate structured campaign concepts with posts for each requested platform.'
           },
           { role: 'user', content: prompt }
         ],
-        response_format: { type: 'json_object' },
-        temperature: 0.8
+        tools: [toolSchema],
+        tool_choice: { type: "function", function: { name: "generate_campaign_concepts" } }
       }),
     });
 
@@ -142,18 +220,50 @@ Keep posts authentic, actionable, and aligned with the ${body.goal} goal.`;
     }
 
     const data = await response.json();
-    const rawContent = data.choices?.[0]?.message?.content;
     
-    if (!rawContent) {
-      throw new Error('No content in AI response');
+    // Extract tool call response or fallback to content
+    let parsed;
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    
+    if (toolCall?.function?.arguments) {
+      console.log('[generate-campaign-concepts] Using tool call response');
+      try {
+        parsed = JSON.parse(toolCall.function.arguments);
+      } catch (e) {
+        console.error('[generate-campaign-concepts] Tool call parse error:', e);
+        throw new Error('Invalid JSON from tool call');
+      }
+    } else {
+      // Fallback to content-based response
+      const rawContent = data.choices?.[0]?.message?.content;
+      if (!rawContent) {
+        throw new Error('No content or tool call in AI response');
+      }
+      console.log('[generate-campaign-concepts] Falling back to content response');
+      try {
+        parsed = JSON.parse(rawContent);
+      } catch (e) {
+        console.error('[generate-campaign-concepts] JSON parse error:', e, rawContent?.slice(0, 500));
+        throw new Error('Invalid JSON from AI');
+      }
     }
 
-    let parsed;
-    try {
-      parsed = JSON.parse(rawContent);
-    } catch (e) {
-      console.error('[generate-campaign-concepts] JSON parse error:', e, rawContent);
-      throw new Error('Invalid JSON from AI');
+    // DIAGNOSTIC: Log raw parsed structure
+    console.log('[DEBUG] Raw AI response keys:', Object.keys(parsed));
+    if (parsed.concepts?.[0]) {
+      const firstConcept = parsed.concepts[0];
+      console.log('[DEBUG] First concept sample:', JSON.stringify({
+        title: firstConcept.title,
+        posts_by_platform_keys: Object.keys(firstConcept.posts_by_platform || {}),
+        has_posts: firstConcept.posts ? 'yes (flat array)' : 'no',
+        direct_platform_keys: Object.keys(firstConcept).filter(k => 
+          k.toLowerCase().includes('instagram') || 
+          k.toLowerCase().includes('twitter') || 
+          k.toLowerCase().includes('facebook') ||
+          k.toLowerCase().includes('tiktok') ||
+          k.toLowerCase().includes('linkedin')
+        )
+      }, null, 2));
     }
 
     // Platform normalization helpers (match client-side taxonomy)
@@ -168,16 +278,53 @@ Keep posts authentic, actionable, and aligned with the ${body.goal} goal.`;
       return ALIAS[lower] ?? ALIAS[k] ?? lower;
     };
 
-    // Normalize and enrich concepts
+    // Normalize and enrich concepts with fallback parsing
     const concepts = (parsed.concepts || [parsed] || []).map((c: any, idx: number) => {
-      const pbp = c.posts_by_platform || c.postsByPlatform || {};
+      let pbp = c.posts_by_platform || c.postsByPlatform || {};
+      
+      // FALLBACK 1: Check for flat posts array with platform field
+      if (Object.keys(pbp).length === 0 && Array.isArray(c.posts)) {
+        console.log('[generate-campaign-concepts] Fallback: grouping flat posts array by platform');
+        pbp = c.posts.reduce((acc: any, post: any) => {
+          const platform = post.platform || 'unknown';
+          if (!acc[platform]) acc[platform] = [];
+          acc[platform].push(post);
+          return acc;
+        }, {});
+      }
+      
+      // FALLBACK 2: Check for direct platform keys (instagramPosts, twitterPosts, etc.)
+      if (Object.keys(pbp).length === 0) {
+        const platformKeys = Object.keys(c).filter(k => 
+          k.toLowerCase().includes('posts') && 
+          (k.toLowerCase().includes('instagram') || 
+           k.toLowerCase().includes('twitter') ||
+           k.toLowerCase().includes('facebook') ||
+           k.toLowerCase().includes('tiktok') ||
+           k.toLowerCase().includes('linkedin') ||
+           k.toLowerCase().includes('youtube') ||
+           k.toLowerCase().includes('pinterest'))
+        );
+        
+        if (platformKeys.length > 0) {
+          console.log('[generate-campaign-concepts] Fallback: mapping direct platform keys:', platformKeys);
+          platformKeys.forEach(key => {
+            const platform = key.toLowerCase().replace('posts', '').replace('_', '');
+            if (Array.isArray(c[key])) {
+              pbp[platform] = c[key];
+            }
+          });
+        }
+      }
+      
+      // Normalize platform keys and post objects
       const normEntries = Object.entries(pbp).map(([plat, posts]) => {
         const key = toUi(String(plat));
         const arr = Array.isArray(posts) ? posts : [];
         return [key, arr.map((p: any) => ({ ...p, platform: toUi(p.platform || key) }))];
       });
       
-      return {
+      const normalizedConcept = {
         id: crypto.randomUUID(),
         title: c.title || c.name || `Concept ${idx + 1}`,
         promise: c.promise || c.one_line_promise || '',
@@ -188,12 +335,14 @@ Keep posts authentic, actionable, and aligned with the ${body.goal} goal.`;
         goal: c.goal,
         audience: Array.isArray(c.audience) ? c.audience : (c.audience ? [c.audience] : [])
       };
+      
+      return normalizedConcept;
     });
 
     // Diagnostics for debugging
-    concepts.forEach((c, idx) => {
+    concepts.forEach((c: any, idx: number) => {
       const keys = Object.keys(c.posts_by_platform || {});
-      const counts = Object.fromEntries(keys.map(k => [k, (c.posts_by_platform?.[k] || []).length]));
+      const counts = Object.fromEntries(keys.map((k: string) => [k, (c.posts_by_platform?.[k] || []).length]));
       console.log(`[generate-campaign-concepts] Concept ${idx}:`, { 
         title: c.title, 
         platform_keys: keys, 
