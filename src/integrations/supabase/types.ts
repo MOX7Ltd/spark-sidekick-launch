@@ -752,6 +752,39 @@ export type Database = {
         }
         Relationships: []
       }
+      shopfront_settings: {
+        Row: {
+          announcement_text: string | null
+          business_id: string
+          draft: Json | null
+          layout: Json | null
+          published: Json | null
+          published_at: string | null
+          show_announcement: boolean | null
+          theme: Json | null
+        }
+        Insert: {
+          announcement_text?: string | null
+          business_id: string
+          draft?: Json | null
+          layout?: Json | null
+          published?: Json | null
+          published_at?: string | null
+          show_announcement?: boolean | null
+          theme?: Json | null
+        }
+        Update: {
+          announcement_text?: string | null
+          business_id?: string
+          draft?: Json | null
+          layout?: Json | null
+          published?: Json | null
+          published_at?: string | null
+          show_announcement?: boolean | null
+          theme?: Json | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
