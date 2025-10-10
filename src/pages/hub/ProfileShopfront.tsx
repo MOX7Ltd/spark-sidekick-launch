@@ -94,11 +94,11 @@ function OwnerShopfrontInner() {
         if (!alive) return;
         setBusiness(b);
 
-        // Load published products for this business
+        // Load published products for this user
         const { data: prods, error: prodErr } = await supabase
           .from('products')
           .select('id, title, description, price, status, asset_url')
-          .eq('business_id', biz.id)
+          .eq('user_id', user.id)
           .eq('status', 'published');
 
         if (prodErr) throw prodErr;
