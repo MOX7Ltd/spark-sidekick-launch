@@ -54,7 +54,7 @@ export function ReviewsTable({
                 </div>
                 {r.title && <div className="mt-1 font-medium">{r.title}</div>}
                 <div className="mt-1 text-xs text-muted-foreground">
-                  {r.customer_name || 'Anonymous'} • {new Date(r.created_at).toLocaleDateString()}
+                  {r.reviewer_name || 'Anonymous'} • {new Date(r.created_at).toLocaleDateString()}
                 </div>
               </div>
               {showModeration && (

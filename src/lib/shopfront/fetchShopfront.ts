@@ -48,7 +48,7 @@ export async function fetchShopfront(handle: string): Promise<ShopfrontBundle> {
     // 4) fetch published reviews
     const { data: reviews } = await supabaseShopfront
       .from('reviews')
-      .select('id, rating, title, body, customer_name, reply, created_at')
+      .select('id, rating, title, body, reviewer_name, reply, created_at')
       .eq('business_id', business.id)
       .eq('status', 'published')
       .eq('is_hidden', false)
