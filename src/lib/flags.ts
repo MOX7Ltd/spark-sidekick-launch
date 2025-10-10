@@ -3,6 +3,8 @@ export const FLAGS = {
   SHOPFRONT_V1: true,          // toggles new public route later (unused in Phase 0)
   SHOPFRONT_PREVIEW_V1: false, // when true (later), onboarding preview will switch to new components
   SHOPFRONT_CART_V1: true,     // enables cart UI later (safe stub in Phase 0)
+  MESSAGING_V1: false,         // Phase M0: messaging foundation
+  REVIEWS_V1: false,           // Phase M0: reviews foundation
 } as const;
 
 export type FlagKey = keyof typeof FLAGS;

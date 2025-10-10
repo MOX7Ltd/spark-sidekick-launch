@@ -304,6 +304,98 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_message_replies: {
+        Row: {
+          attachments: Json | null
+          body: string
+          created_at: string | null
+          id: string
+          message_id: string
+          sender_id: string | null
+          sender_type: string
+          via: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          body: string
+          created_at?: string | null
+          id?: string
+          message_id: string
+          sender_id?: string | null
+          sender_type: string
+          via?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          body?: string
+          created_at?: string | null
+          id?: string
+          message_id?: string
+          sender_id?: string | null
+          sender_type?: string
+          via?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_message_replies_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "customer_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_messages: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          customer_email: string
+          customer_name: string | null
+          id: string
+          last_message_at: string | null
+          product_id: string | null
+          status: string | null
+          topic: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          customer_email: string
+          customer_name?: string | null
+          id?: string
+          last_message_at?: string | null
+          product_id?: string | null
+          status?: string | null
+          topic?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          customer_email?: string
+          customer_name?: string | null
+          id?: string
+          last_message_at?: string | null
+          product_id?: string | null
+          status?: string | null
+          topic?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_messages_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_messages_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           action: string
