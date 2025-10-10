@@ -1,5 +1,5 @@
 export type PriceModel = 'one-off' | 'subscription' | 'tiered';
-export type ProductStatus = 'draft' | 'live' | 'hidden';
+export type ProductStatus = 'draft' | 'published';
 export type DeliveryMode = 'digital' | 'service' | 'physical';
 
 export interface PriceTier {
@@ -44,23 +44,19 @@ export function calculateRevenue(price: number, units: number): number {
 
 export function getStatusColor(status: ProductStatus): string {
   switch (status) {
-    case 'live':
+    case 'published':
       return 'bg-green-100 text-green-700 border-green-200';
     case 'draft':
       return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-    case 'hidden':
-      return 'bg-gray-100 text-gray-700 border-gray-200';
   }
 }
 
 export function getStatusLabel(status: ProductStatus): string {
   switch (status) {
-    case 'live':
-      return 'Live';
+    case 'published':
+      return 'Published';
     case 'draft':
       return 'Draft';
-    case 'hidden':
-      return 'Hidden';
   }
 }
 

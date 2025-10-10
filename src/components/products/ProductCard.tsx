@@ -48,7 +48,7 @@ export function ProductCard({
   };
 
   const handleToggle = () => {
-    const newStatus: ProductStatus = status === 'live' ? 'draft' : 'live';
+    const newStatus: ProductStatus = status === 'published' ? 'draft' : 'published';
     onTogglePublish(id, newStatus);
   };
 
@@ -106,9 +106,9 @@ export function ProductCard({
 
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2 flex-1">
-          <Switch checked={status === 'live'} onCheckedChange={handleToggle} />
+          <Switch checked={status === 'published'} onCheckedChange={handleToggle} />
           <span className="text-sm text-muted-foreground">
-            {status === 'live' ? 'Published' : 'Publish'}
+            {status === 'published' ? 'Published' : 'Publish'}
           </span>
         </div>
         <Button variant="outline" size="sm" onClick={() => navigate(`/hub/products/edit/${id}`)}>

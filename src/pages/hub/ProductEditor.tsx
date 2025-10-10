@@ -139,7 +139,7 @@ export default function ProductEditor() {
 
     setSaving(true);
     try {
-      const finalStatus = publish ? 'live' : status;
+      const finalStatus: ProductStatus = publish ? 'published' : status;
 
       const fulfillment: ProductFulfillment = {
         price_model: priceModel,
@@ -174,6 +174,7 @@ export default function ProductEditor() {
           type: normalizedFamily,  // canonical family
           format: family,
           status: finalStatus,
+          visible: finalStatus === 'published',
           price,
           fulfillment: fulfillment as any,
         })

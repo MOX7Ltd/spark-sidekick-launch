@@ -76,7 +76,10 @@ export default function ProductsManage() {
     try {
       const { error } = await supabase
         .from('products')
-        .update({ status: newStatus })
+        .update({ 
+          status: newStatus,
+          visible: newStatus === 'published'
+        })
         .eq('id', id);
 
       if (error) throw error;
@@ -91,7 +94,7 @@ export default function ProductsManage() {
         payload: { product_id: id, to: newStatus },
       });
 
-      toast.success(newStatus === 'live' ? 'Product published!' : 'Product unpublished');
+      toast.success(newStatus === 'published' ? 'Product published!' : 'Product unpublished');
     } catch (error) {
       console.error('Error updating product:', error);
       toast.error('Failed to update product');
@@ -181,7 +184,7 @@ export default function ProductsManage() {
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-2">
-          {['all', 'draft', 'live', 'hidden'].map((status) => (
+          {['all', 'draft', 'published'].map((status) => (
             <button
               key={status}
               onClick={() => {

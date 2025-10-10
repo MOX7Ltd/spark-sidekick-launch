@@ -42,7 +42,7 @@ export function VisibilitySection({
         <div>
           <Label>Publish Status</Label>
           <p className="text-xs text-muted-foreground mt-1">
-            {status === 'live' ? 'Visible to customers' : 'Hidden from shopfront'}
+            {status === 'published' ? 'Visible to customers' : 'Hidden from shopfront'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -59,25 +59,14 @@ export function VisibilitySection({
           </button>
           <button
             type="button"
-            onClick={() => onStatusChange('live')}
+            onClick={() => onStatusChange('published')}
             className={`text-sm px-3 py-2 rounded-lg border transition-all ${
-              status === 'live'
+              status === 'published'
                 ? 'bg-green-100 text-green-700 border-green-200'
                 : 'bg-white/50 border-white/30 hover:bg-white/70'
             }`}
           >
-            Live
-          </button>
-          <button
-            type="button"
-            onClick={() => onStatusChange('hidden')}
-            className={`text-sm px-3 py-2 rounded-lg border transition-all ${
-              status === 'hidden'
-                ? 'bg-gray-100 text-gray-700 border-gray-200'
-                : 'bg-white/50 border-white/30 hover:bg-white/70'
-            }`}
-          >
-            Hidden
+            Published
           </button>
         </div>
       </div>
