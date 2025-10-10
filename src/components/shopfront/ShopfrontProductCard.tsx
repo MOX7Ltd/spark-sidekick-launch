@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { FLAGS } from '@/lib/flags';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,10 +26,11 @@ export function formatPrice(cents: number, currency = 'NZD') {
 export interface ShopfrontProductCardProps {
   product: ProductLike;
   onAddToCart?: (p: ProductLike) => void;
+  onMessage?: (productName?: string) => void;
   className?: string;
 }
 
-export function ShopfrontProductCard({ product, onAddToCart, className }: ShopfrontProductCardProps) {
+export function ShopfrontProductCard({ product, onAddToCart, onMessage, className }: ShopfrontProductCardProps) {
   return (
     <Card className={cn('group overflow-hidden rounded-2xl border shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md', className)}>
       <div className="relative aspect-[4/3] w-full bg-muted">
@@ -58,9 +60,16 @@ export function ShopfrontProductCard({ product, onAddToCart, className }: Shopfr
         {product.description && (
           <p className="line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">{product.description}</p>
         )}
-        <Button className="mt-2 h-11 w-full transition-transform group-hover:scale-[1.01]" onClick={() => onAddToCart?.(product)}>
-          Add to cart
-        </Button>
+        <div className="mt-2 flex gap-2">
+          <Button className="h-11 flex-1 transition-transform group-hover:scale-[1.01]" onClick={() => onAddToCart?.(product)}>
+            Add to cart
+          </Button>
+          {FLAGS.MESSAGING_V1 && onMessage && (
+            <Button variant="ghost" className="h-11" onClick={() => onMessage(product.name)}>
+              Ask
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

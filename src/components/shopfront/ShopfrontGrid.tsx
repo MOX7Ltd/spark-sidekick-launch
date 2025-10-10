@@ -8,6 +8,7 @@ export interface ShopfrontGridProps {
   loading?: boolean;
   columnsHint?: number; // 1–4
   onAddToCart?: (p: ProductLike) => void;
+  onMessage?: (productName?: string) => void;
   className?: string;
 }
 
@@ -16,6 +17,7 @@ export function ShopfrontGrid({
   loading,
   columnsHint = 3,
   onAddToCart,
+  onMessage,
   className,
 }: ShopfrontGridProps) {
   const gridCols = columnsHint;
@@ -46,7 +48,7 @@ export function ShopfrontGrid({
               <Skeleton key={i} className="h-72 rounded-2xl" />
             ))
           : products.map((p) => (
-              <ShopfrontProductCard key={p.id} product={p} onAddToCart={onAddToCart} />
+              <ShopfrontProductCard key={p.id} product={p} onAddToCart={onAddToCart} onMessage={onMessage} />
             ))}
       </div>
     </section>

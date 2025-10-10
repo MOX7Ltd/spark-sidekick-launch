@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { FLAGS } from '@/lib/flags';
 import { ShopfrontHeader } from './ShopfrontHeader';
 import { ShopfrontBios } from './ShopfrontBios';
 import { ShopfrontDiscovery, type DiscoveryState } from './ShopfrontDiscovery';
@@ -7,6 +8,15 @@ import { CartDrawer, type CartLine } from './CartDrawer';
 import { FooterTrust } from './FooterTrust';
 import { AnnouncementBar } from './AnnouncementBar';
 import { SocialProof } from './SocialProof';
+import { MessageModal } from '@/components/messaging/MessageModal';
+import { MessageCTA } from '@/components/messaging/MessageCTA';
+import { ReviewBadge } from '@/components/reviews/ReviewBadge';
+import { ReviewsDrawer } from '@/components/reviews/ReviewsDrawer';
+
+export interface ShopfrontReviewsSummary {
+  avg: number;   // e.g., 4.8
+  count: number; // e.g., 23
+}
 
 export interface ShopfrontViewProps {
   business: {
@@ -34,6 +44,7 @@ export interface ShopfrontViewProps {
     tag?: string | null;
   }>;
   onQueryChange?: (next: DiscoveryState) => void;
+  reviews?: ShopfrontReviewsSummary;
 
   // Optional: override cart for onboarding/preview
   disableCart?: boolean;
@@ -46,12 +57,16 @@ export function ShopfrontView({
   settings,
   products,
   onQueryChange,
+  reviews,
   disableCart,
   linesOverride,
   onAddToCartOverride,
 }: ShopfrontViewProps) {
   const [query, setQuery] = React.useState<DiscoveryState>({ sort: 'relevance' });
   const [open, setOpen] = React.useState(false); // mobile cart sheet
+  const [msgOpen, setMsgOpen] = React.useState(false);
+  const [reviewsOpen, setReviewsOpen] = React.useState(false);
+  const [selectedProductName, setSelectedProductName] = React.useState<string | null>(null);
 
   const [lines, setLines] = React.useState<CartLine[]>([]);
 
@@ -89,6 +104,19 @@ export function ShopfrontView({
         rating={undefined}
       />
 
+      <div className="mx-auto mt-3 flex max-w-screen-xl items-center justify-between px-4 md:px-6">
+        <div>
+          {FLAGS.REVIEWS_V1 && reviews && (
+            <ReviewBadge avg={reviews.avg} count={reviews.count} onClick={() => setReviewsOpen(true)} />
+          )}
+        </div>
+        <div>
+          {FLAGS.MESSAGING_V1 && (
+            <MessageCTA onClick={() => { setSelectedProductName(null); setMsgOpen(true); }} />
+          )}
+        </div>
+      </div>
+
       {settings?.showAnnouncement && settings.announcementText && (
         <AnnouncementBar text={settings.announcementText} className="mt-4" />
       )}
@@ -119,6 +147,10 @@ export function ShopfrontView({
             onAddToCart={(p) =>
               addToCart({ id: p.id, name: p.name, priceCents: p.priceCents })
             }
+            onMessage={(productName) => {
+              setSelectedProductName(productName ?? null);
+              setMsgOpen(true);
+            }}
           />
         </div>
 
@@ -126,6 +158,24 @@ export function ShopfrontView({
       </div>
 
       <FooterTrust contactEmail={business.contactEmail} />
+
+      {FLAGS.MESSAGING_V1 && (
+        <MessageModal
+          open={msgOpen}
+          onOpenChange={setMsgOpen}
+          businessName={business.name}
+          productName={selectedProductName}
+          onSubmit={() => { /* Phase 3: wire to edge function */ }}
+        />
+      )}
+
+      {FLAGS.REVIEWS_V1 && (
+        <ReviewsDrawer
+          open={reviewsOpen}
+          onOpenChange={setReviewsOpen}
+          summary={reviews}
+        />
+      )}
     </div>
   );
 }
