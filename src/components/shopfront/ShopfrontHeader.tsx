@@ -34,7 +34,7 @@ export function ShopfrontHeader({
           <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl border bg-muted md:h-12 md:w-12">
             {logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt={businessName} className="h-full w-full object-cover" />
+              <img loading="lazy" src={logoUrl} alt={`${businessName} logo`} className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
                 {initials}

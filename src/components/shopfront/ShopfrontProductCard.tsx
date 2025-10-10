@@ -30,7 +30,13 @@ export function ShopfrontProductCard({ product, onAddToCart }: ShopfrontProductC
       <div className="aspect-[4/3] w-full bg-muted">
         {product.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
+          <img 
+            loading="lazy" 
+            src={product.imageUrl} 
+            alt={product.name} 
+            className="h-full w-full object-cover"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          />
         ) : null}
       </div>
       <CardContent className="space-y-2 p-4">

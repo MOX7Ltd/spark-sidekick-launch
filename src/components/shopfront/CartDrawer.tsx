@@ -24,6 +24,26 @@ function formatPrice(cents: number, currency = 'NZD') {
 
 export function CartDrawer({ lines, currency, open = false, onOpenChange, className }: CartDrawerProps) {
   const subtotal = lines.reduce((s, l) => s + l.qty * l.priceCents, 0);
+  const sheetRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Keyboard support: Escape closes the mobile sheet
+  React.useEffect(() => {
+    function onKey(e: KeyboardEvent) { 
+      if (e.key === 'Escape' && open) onOpenChange?.(false); 
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onOpenChange]);
+
+  // Focus management: focus first interactive element when sheet opens
+  React.useEffect(() => {
+    if (open && sheetRef.current) {
+      const firstFocusable = sheetRef.current.querySelector<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      firstFocusable?.focus?.();
+    }
+  }, [open]);
 
   return (
     <>
@@ -67,7 +87,12 @@ export function CartDrawer({ lines, currency, open = false, onOpenChange, classN
             <div className="font-medium">{lines.length} item{lines.length === 1 ? '' : 's'}</div>
             <div className="text-muted-foreground">{formatPrice(subtotal, currency)}</div>
           </div>
-          <Button onClick={() => onOpenChange?.(!open)} className="h-11 px-4">
+          <Button 
+            aria-expanded={open}
+            aria-controls="mobile-cart-sheet"
+            onClick={() => onOpenChange?.(!open)} 
+            className="h-11 px-4"
+          >
             {open ? 'Close' : 'View cart'}
           </Button>
         </div>
@@ -75,6 +100,10 @@ export function CartDrawer({ lines, currency, open = false, onOpenChange, classN
 
       {/* Mobile bottom sheet body (very light implementation, no portal) */}
       <div
+        id="mobile-cart-sheet"
+        ref={sheetRef}
+        role="dialog"
+        aria-modal="true"
         className={cn(
           'lg:hidden fixed inset-x-0 z-40 rounded-t-2xl border-t bg-background p-4 shadow-2xl transition-transform',
           open ? 'bottom-[56px]' : 'bottom-[-60vh]',

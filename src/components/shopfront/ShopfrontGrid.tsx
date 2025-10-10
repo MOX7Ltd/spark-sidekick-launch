@@ -19,6 +19,18 @@ export function ShopfrontGrid({
   className,
 }: ShopfrontGridProps) {
   const gridCols = columnsHint;
+
+  // Empty state when no products and not loading
+  if (!loading && products.length === 0) {
+    return (
+      <section className={cn('px-4 md:px-6', className)}>
+        <div className="mx-auto max-w-screen-sm rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
+          No matching products. Try clearing filters or changing your search.
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className={cn('px-4 md:px-6', className)}>
       <div

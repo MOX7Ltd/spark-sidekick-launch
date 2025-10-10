@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ShopfrontView } from '@/components/shopfront/ShopfrontView';
 import { getSettings, saveDraft, publishDraft } from '@/lib/shopfront/settingsApi';
+import { applyTheme } from '@/lib/shopfront/applyTheme';
 
 // TODO: Replace with real business & owner context
 const CURRENT_BUSINESS = {
@@ -54,14 +55,21 @@ function OwnerShopfrontInner() {
       // Prefer draft in editor view, published in customer view (simple approach for now)
       const draft = s.draft ?? {};
       const published = s.published ?? {};
-      setTheme(draft.theme ?? published.theme ?? {});
+      const loadedTheme = draft.theme ?? published.theme ?? {};
+      setTheme(loadedTheme);
       setLayout(draft.layout ?? published.layout ?? { columns: 3 });
       setShowAnn(draft.show_announcement ?? published.show_announcement ?? false);
       setAnnText(draft.announcement_text ?? published.announcement_text ?? '');
+      applyTheme(loadedTheme);
       setLoading(false);
     })();
     return () => { mounted = false; };
   }, [business.id]);
+
+  // Apply theme whenever it changes in the editor
+  React.useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
 
   async function handleSaveDraft() {
     const draftJson = {
