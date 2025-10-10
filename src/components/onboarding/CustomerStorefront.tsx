@@ -3,6 +3,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, User, Star, Sparkles } from 'lucide-react';
+import { FLAGS } from '@/lib/flags';
+import { ShopfrontView } from '@/components/shopfront/ShopfrontView';
+import { adaptOnboardingToShopfront } from '@/lib/shopfront/onboardingAdapter';
 
 interface Product {
   id?: string;
@@ -48,7 +51,8 @@ interface CustomerStorefrontProps {
   }>;
 }
 
-export const CustomerStorefront = ({ idea, aboutYou, audience, businessIdentity, introCampaign, products: providedProducts }: CustomerStorefrontProps) => {
+// Legacy component (keep existing preview behavior when flag is off)
+const LegacyCustomerStorefront = ({ idea, aboutYou, audience, businessIdentity, introCampaign, products: providedProducts }: CustomerStorefrontProps) => {
   // Use provided products or generate fallback products
   const generateFallbackProducts = () => {
     const ideaLower = idea.toLowerCase();
@@ -291,5 +295,42 @@ export const CustomerStorefront = ({ idea, aboutYou, audience, businessIdentity,
         </Badge>
       </div>
     </div>
+  );
+};
+
+// Main export that switches based on flag
+export const CustomerStorefront = (props: CustomerStorefrontProps) => {
+  if (!FLAGS.SHOPFRONT_PREVIEW_V1) {
+    return <LegacyCustomerStorefront {...props} />;
+  }
+
+  // Attempt to read any onboarding state/props available
+  const onboardingState = {
+    businessIdentity: props.businessIdentity,
+    aboutYou: props.aboutYou,
+    products: props.products,
+    idea: props.idea,
+    audience: props.audience,
+    introCampaign: props.introCampaign,
+  };
+
+  const { business, settings, products } = adaptOnboardingToShopfront(onboardingState);
+
+  return (
+    <ShopfrontView
+      business={{
+        id: business.id,
+        name: business.name,
+        logoUrl: business.logoUrl ?? undefined,
+        avatarUrl: business.avatarUrl ?? undefined,
+        tagline: business.tagline ?? undefined,
+        aboutShort: business.aboutShort ?? undefined,
+        contactEmail: business.contactEmail ?? undefined,
+      }}
+      settings={settings}
+      products={products}
+      onQueryChange={() => {}}
+      disableCart
+    />
   );
 };

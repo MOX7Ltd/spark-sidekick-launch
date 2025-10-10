@@ -28,6 +28,9 @@ export interface ShopfrontViewProps {
     imageUrl?: string | null;
   }>;
   onQueryChange?: (next: DiscoveryState) => void;
+  disableCart?: boolean; // NEW — hide cart drawer and make Add to cart a no-op
+  linesOverride?: Array<{ id: string; name: string; qty: number; priceCents: number }>; // optional
+  onAddToCartOverride?: (p: { id: string; name: string; priceCents: number }) => void; // optional
 }
 
 export function ShopfrontView({
@@ -35,12 +38,20 @@ export function ShopfrontView({
   settings,
   products,
   onQueryChange,
+  disableCart = false,
+  linesOverride,
+  onAddToCartOverride,
 }: ShopfrontViewProps) {
   const [query, setQuery] = React.useState<DiscoveryState>({ sort: 'relevance' });
   const [open, setOpen] = React.useState(false); // mobile cart sheet
 
   const [lines, setLines] = React.useState<CartLine[]>([]);
   const addToCart = React.useCallback((p: { id: string; name: string; priceCents: number }) => {
+    if (disableCart) return;
+    if (onAddToCartOverride) { 
+      onAddToCartOverride(p); 
+      return; 
+    }
     setLines((prev) => {
       const idx = prev.findIndex((l) => l.id === p.id);
       if (idx >= 0) {
@@ -51,7 +62,7 @@ export function ShopfrontView({
       return [...prev, { id: p.id, name: p.name, qty: 1, priceCents: p.priceCents }];
     });
     setOpen(true);
-  }, []);
+  }, [disableCart, onAddToCartOverride]);
 
   return (
     <div className="relative">
@@ -91,7 +102,9 @@ export function ShopfrontView({
           />
         </div>
 
-        <CartDrawer lines={lines} open={open} onOpenChange={setOpen} />
+        {!disableCart && (
+          <CartDrawer lines={linesOverride ?? lines} open={open} onOpenChange={setOpen} />
+        )}
       </div>
 
       <FooterTrust contactEmail={business.contactEmail} />
