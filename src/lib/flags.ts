@@ -3,8 +3,8 @@ export const FLAGS = {
   SHOPFRONT_V1: true,
   SHOPFRONT_PREVIEW_V1: true,
   SHOPFRONT_CART_V1: true,
-  MESSAGING_V1: false,
-  REVIEWS_V1: false,
+  MESSAGING_V1: true,
+  REVIEWS_V1: true,
 } as const;
 
 export type FlagKey = keyof typeof FLAGS;
