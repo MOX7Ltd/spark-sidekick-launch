@@ -27,6 +27,8 @@ import ProfileUser from "./pages/hub/ProfileUser";
 import ProfileBusiness from "./pages/hub/ProfileBusiness";
 import ProfileShopfront from "./pages/hub/ProfileShopfront";
 import Settings from "./pages/hub/Settings";
+import PublicShopfront from "./pages/shopfront/PublicShopfront";
+import { FLAGS } from "@/lib/flags";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +62,7 @@ const App = () => (
           <Route path="/hub/profile/business" element={<ProfileBusiness />} />
           <Route path="/hub/profile/shopfront" element={<ProfileShopfront />} />
           <Route path="/hub/settings" element={<Settings />} />
+          {FLAGS.SHOPFRONT_V1 && <Route path="/s/:handle" element={<PublicShopfront />} />}
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
