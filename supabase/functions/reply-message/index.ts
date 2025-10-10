@@ -87,13 +87,16 @@ serve(async (req) => {
       .eq("id", messageId);
 
     // Send email to customer
+    const publicUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://sidehive.app';
     await sendMail({
       to: message.customer_email,
       subject: `Reply from ${business.business_name}`,
-      text: `${business.business_name} replied to your message:\n\n${body}\n\nView full conversation: ${Deno.env.get('PUBLIC_SITE_URL')}/messages/${messageId}`,
+      text: `${business.business_name} replied to your message:\n\n${body}\n\n---\nReply directly to this email to continue the conversation, or view online: ${publicUrl}/messages/${messageId}`,
       html: `<h2>Reply from ${business.business_name}</h2>
              <p>${body.replace(/\n/g, '<br>')}</p>
-             <p><a href="${Deno.env.get('PUBLIC_SITE_URL')}/messages/${messageId}">View full conversation</a></p>`,
+             <hr style="margin: 20px 0;">
+             <p style="color: #666; font-size: 12px;">Reply directly to this email to continue the conversation</p>
+             <p><a href="${publicUrl}/messages/${messageId}">View full conversation</a></p>`,
     });
 
     return new Response(

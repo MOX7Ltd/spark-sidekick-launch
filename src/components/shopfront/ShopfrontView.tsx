@@ -12,10 +12,13 @@ import { MessageModal } from '@/components/messaging/MessageModal';
 import { MessageCTA } from '@/components/messaging/MessageCTA';
 import { ReviewBadge } from '@/components/reviews/ReviewBadge';
 import { ReviewsDrawer } from '@/components/reviews/ReviewsDrawer';
+import { ShopfrontReviews } from '@/components/reviews/ShopfrontReviews';
+import { trackEvent } from '@/lib/analytics';
 
 export interface ShopfrontReviewsSummary {
   avg: number;   // e.g., 4.8
   count: number; // e.g., 23
+  list?: Array<any>; // published reviews
 }
 
 export interface ShopfrontViewProps {
@@ -77,6 +80,13 @@ export function ShopfrontView({
     if (settings.theme.primary) r.style.setProperty('--sh-primary', settings.theme.primary);
     if (settings.theme.accent) r.style.setProperty('--sh-accent', settings.theme.accent);
   }, [settings?.theme]);
+
+  // Track shopfront view
+  React.useEffect(() => {
+    if (business?.id) {
+      trackEvent('view', { businessId: business.id });
+    }
+  }, [business?.id]);
   const addToCart = React.useCallback((p: { id: string; name: string; priceCents: number }) => {
     if (disableCart) return;
     if (onAddToCartOverride) { onAddToCartOverride(p); return; }
@@ -112,7 +122,11 @@ export function ShopfrontView({
         </div>
         <div>
           {FLAGS.MESSAGING_V1 && (
-            <MessageCTA onClick={() => { setSelectedProductName(null); setMsgOpen(true); }} />
+            <MessageCTA onClick={() => { 
+              trackEvent('message_click', { businessId: business.id });
+              setSelectedProductName(null); 
+              setMsgOpen(true); 
+            }} />
           )}
         </div>
       </div>
@@ -156,6 +170,13 @@ export function ShopfrontView({
 
         {!disableCart && <CartDrawer lines={effectiveLines} open={open} onOpenChange={setOpen} />}
       </div>
+
+      {FLAGS.REVIEWS_V1 && reviews?.list && reviews.list.length > 0 && (
+        <section className="mx-auto mt-10 max-w-screen-xl border-t pt-6">
+          <h2 className="px-4 text-lg font-semibold">Customer Reviews</h2>
+          <ShopfrontReviews items={reviews.list} />
+        </section>
+      )}
 
       <FooterTrust contactEmail={business.contactEmail} />
 

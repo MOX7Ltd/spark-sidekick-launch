@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { trackEvent } from '@/lib/analytics';
 
 export function ReviewForm({
   open,
@@ -47,6 +48,9 @@ export function ReviewForm({
       });
 
       if (error) throw error;
+
+      // Track review submission
+      trackEvent('review_submit', { businessId });
 
       toast({
         title: "Review submitted!",

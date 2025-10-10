@@ -75,16 +75,18 @@ serve(async (req) => {
       // Send notification email to business owner
       if (profile?.email) {
         const productInfo = productId ? ` (about a product)` : '';
+        const publicUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://sidehive.app';
         await sendMail({
           to: profile.email,
           subject: `New message from ${customer.name}${productInfo}`,
-          text: `You have a new message on ${business.business_name}:\n\nFrom: ${customer.name} (${customer.email})\nTopic: ${topic}\n\n${body}\n\nReply in your SideHive Hub.`,
+          text: `You have a new message on ${business.business_name}:\n\nFrom: ${customer.name} (${customer.email})\nTopic: ${topic}\n\n${body}\n\n---\nView and reply: ${publicUrl}/hub/customers/messages?id=${msg.id}`,
           html: `<h2>New message on ${business.business_name}</h2>
                  <p><strong>From:</strong> ${customer.name} (${customer.email})</p>
                  <p><strong>Topic:</strong> ${topic}</p>
                  <p><strong>Message:</strong></p>
                  <p>${body.replace(/\n/g, '<br>')}</p>
-                 <p><a href="${Deno.env.get('PUBLIC_SITE_URL') || 'https://sidehive.app'}/hub/customers/messages">Reply in your SideHive Hub</a></p>`,
+                 <hr style="margin: 20px 0;">
+                 <p><a href="${publicUrl}/hub/customers/messages?id=${msg.id}">View and reply in your SideHive Hub</a></p>`,
         });
       }
     }

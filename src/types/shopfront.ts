@@ -30,6 +30,7 @@ export interface ShopfrontSettings {
   layout?: ShopfrontLayout;
   showAnnouncement?: boolean;
   announcementText?: string | null;
+  reviews_summary?: { avg: number; count: number };
   // Future: draft/published JSON blobs (handled in later phases)
 }
 

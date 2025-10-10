@@ -35,6 +35,38 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_events: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          type: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          type: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_events_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       businesses: {
         Row: {
           audience: string | null

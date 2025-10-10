@@ -5,6 +5,7 @@ export const FLAGS = {
   SHOPFRONT_CART_V1: true,
   MESSAGING_V1: true,
   REVIEWS_V1: true,
+  ANALYTICS_V1: false, // toggle to enable analytics tracking
 } as const;
 
 export type FlagKey = keyof typeof FLAGS;

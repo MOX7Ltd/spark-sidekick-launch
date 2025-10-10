@@ -41,7 +41,7 @@ export default function PublicShopfront() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['shopfront', safeHandle],
     queryFn: async () => {
-      if (!safeHandle) return { business: null, settings: null, products: [] };
+      if (!safeHandle) return { business: null, settings: null, products: [], reviews: [] };
       const bundle = await fetchShopfront(safeHandle);
       try { 
         logFrontendEvent?.({
@@ -72,6 +72,7 @@ export default function PublicShopfront() {
 
   const settings = data?.settings ?? { layout: { columns: 3 } };
   const products = data?.products ?? [];
+  const reviews = data?.reviews ?? [];
 
   const seoTitle = `${business.name} • SideHive Shopfront`;
   const seoDesc = business.tagline ?? business.aboutShort ?? 'Discover products and services from this SideHive micro-business.';
@@ -113,6 +114,11 @@ export default function PublicShopfront() {
             business={business as any}
             settings={settings as any}
             products={products as any}
+            reviews={{ 
+              avg: settings?.reviews_summary?.avg ?? 0, 
+              count: settings?.reviews_summary?.count ?? 0,
+              list: reviews 
+            }}
             onQueryChange={(q) => { 
               try { 
                 logFrontendEvent?.({

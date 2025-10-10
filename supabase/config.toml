@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.review-reply]
 verify_jwt = true
+
+[functions.track-analytics]
+verify_jwt = false
