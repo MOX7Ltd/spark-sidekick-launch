@@ -5,4 +5,5 @@ export * from './ShopfrontProductCard';
 export * from './ShopfrontGrid';
 export * from './CartDrawer';
 export * from './FooterTrust';
+export * from './AnnouncementBar';
 export * from './ShopfrontView';

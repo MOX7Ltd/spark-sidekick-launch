@@ -5,6 +5,7 @@ import { ShopfrontDiscovery, type DiscoveryState } from './ShopfrontDiscovery';
 import { ShopfrontGrid } from './ShopfrontGrid';
 import { CartDrawer, type CartLine } from './CartDrawer';
 import { FooterTrust } from './FooterTrust';
+import { AnnouncementBar } from './AnnouncementBar';
 
 export interface ShopfrontViewProps {
   business: {
@@ -18,6 +19,8 @@ export interface ShopfrontViewProps {
   };
   settings?: {
     layout?: { columns?: number };
+    showAnnouncement?: boolean;
+    announcementText?: string | null;
   };
   products: Array<{
     id: string;
@@ -26,11 +29,14 @@ export interface ShopfrontViewProps {
     priceCents: number;
     currency?: string;
     imageUrl?: string | null;
+    tag?: string | null;
   }>;
   onQueryChange?: (next: DiscoveryState) => void;
-  disableCart?: boolean; // NEW — hide cart drawer and make Add to cart a no-op
-  linesOverride?: Array<{ id: string; name: string; qty: number; priceCents: number }>; // optional
-  onAddToCartOverride?: (p: { id: string; name: string; priceCents: number }) => void; // optional
+
+  // Optional: override cart for onboarding/preview
+  disableCart?: boolean;
+  linesOverride?: Array<{ id: string; name: string; qty: number; priceCents: number }>;
+  onAddToCartOverride?: (p: { id: string; name: string; priceCents: number }) => void;
 }
 
 export function ShopfrontView({
@@ -38,7 +44,7 @@ export function ShopfrontView({
   settings,
   products,
   onQueryChange,
-  disableCart = false,
+  disableCart,
   linesOverride,
   onAddToCartOverride,
 }: ShopfrontViewProps) {
@@ -48,10 +54,7 @@ export function ShopfrontView({
   const [lines, setLines] = React.useState<CartLine[]>([]);
   const addToCart = React.useCallback((p: { id: string; name: string; priceCents: number }) => {
     if (disableCart) return;
-    if (onAddToCartOverride) { 
-      onAddToCartOverride(p); 
-      return; 
-    }
+    if (onAddToCartOverride) { onAddToCartOverride(p); return; }
     setLines((prev) => {
       const idx = prev.findIndex((l) => l.id === p.id);
       if (idx >= 0) {
@@ -64,15 +67,21 @@ export function ShopfrontView({
     setOpen(true);
   }, [disableCart, onAddToCartOverride]);
 
+  const effectiveLines = linesOverride ?? lines;
+
   return (
     <div className="relative">
       <ShopfrontHeader
-        logoUrl={business.logoUrl}
+        logoUrl={business.logoUrl ?? undefined}
         businessName={business.name}
-        avatarUrl={business.avatarUrl}
+        avatarUrl={business.avatarUrl ?? undefined}
       />
 
-      <div className="mx-auto grid max-w-screen-xl grid-cols-1 gap-6 lg:grid-cols-[1fr_20rem]">
+      {settings?.showAnnouncement && settings.announcementText && (
+        <AnnouncementBar text={settings.announcementText} className="mt-3" />
+      )}
+
+      <div className="mx-auto mt-4 grid max-w-screen-xl grid-cols-1 gap-6 lg:grid-cols-[1fr_20rem]">
         <div className="min-w-0">
           <ShopfrontBios
             businessTagline={business.tagline}
@@ -86,14 +95,7 @@ export function ShopfrontView({
             }}
           />
           <ShopfrontGrid
-            products={products.map((p) => ({
-              id: p.id,
-              name: p.name,
-              description: p.description,
-              priceCents: p.priceCents,
-              imageUrl: p.imageUrl,
-              currency: p.currency,
-            }))}
+            products={products}
             columnsHint={settings?.layout?.columns ?? 3}
             onAddToCart={(p) =>
               addToCart({ id: p.id, name: p.name, priceCents: p.priceCents })
@@ -102,9 +104,7 @@ export function ShopfrontView({
           />
         </div>
 
-        {!disableCart && (
-          <CartDrawer lines={linesOverride ?? lines} open={open} onOpenChange={setOpen} />
-        )}
+        {!disableCart && <CartDrawer lines={effectiveLines} open={open} onOpenChange={setOpen} />}
       </div>
 
       <FooterTrust contactEmail={business.contactEmail} />

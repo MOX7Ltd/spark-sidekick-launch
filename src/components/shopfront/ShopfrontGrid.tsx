@@ -19,12 +19,10 @@ export function ShopfrontGrid({
   className,
 }: ShopfrontGridProps) {
   const gridCols = columnsHint;
-
-  // Empty state when no products and not loading
   if (!loading && products.length === 0) {
     return (
       <section className={cn('px-4 md:px-6', className)}>
-        <div className="mx-auto max-w-screen-sm rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
+        <div className="mx-auto max-w-screen-sm rounded-2xl border bg-card p-6 text-center text-sm text-muted-foreground">
           No matching products. Try clearing filters or changing your search.
         </div>
       </section>
@@ -35,7 +33,7 @@ export function ShopfrontGrid({
     <section className={cn('px-4 md:px-6', className)}>
       <div
         className={cn(
-          'mx-auto grid max-w-screen-xl gap-3 md:gap-4',
+          'mx-auto grid max-w-screen-xl gap-4 md:gap-5',
           gridCols >= 4
             ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'
             : gridCols === 3
@@ -45,7 +43,7 @@ export function ShopfrontGrid({
       >
         {loading
           ? Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-64 rounded-xl" />
+              <Skeleton key={i} className="h-72 rounded-2xl" />
             ))
           : products.map((p) => (
               <ShopfrontProductCard key={p.id} product={p} onAddToCart={onAddToCart} />
