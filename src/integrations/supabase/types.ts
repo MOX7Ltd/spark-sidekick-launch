@@ -233,6 +233,77 @@ export type Database = {
           },
         ]
       }
+      cart_items: {
+        Row: {
+          cart_id: string
+          created_at: string
+          id: string
+          name_snapshot: string
+          option_id: string | null
+          price_cents_snapshot: number
+          product_id: string
+          qty: number
+          updated_at: string
+        }
+        Insert: {
+          cart_id: string
+          created_at?: string
+          id?: string
+          name_snapshot: string
+          option_id?: string | null
+          price_cents_snapshot?: number
+          product_id: string
+          qty?: number
+          updated_at?: string
+        }
+        Update: {
+          cart_id?: string
+          created_at?: string
+          id?: string
+          name_snapshot?: string
+          option_id?: string | null
+          price_cents_snapshot?: number
+          product_id?: string
+          qty?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_items_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "carts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      carts: {
+        Row: {
+          anon_id: string | null
+          business_id: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          anon_id?: string | null
+          business_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          anon_id?: string | null
+          business_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           action: string
