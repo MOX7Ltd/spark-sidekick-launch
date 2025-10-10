@@ -6,4 +6,5 @@ export * from './ShopfrontGrid';
 export * from './CartDrawer';
 export * from './FooterTrust';
 export * from './AnnouncementBar';
+export * from './SocialProof';
 export * from './ShopfrontView';

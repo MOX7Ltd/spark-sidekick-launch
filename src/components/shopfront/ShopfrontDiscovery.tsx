@@ -25,17 +25,17 @@ export function ShopfrontDiscovery({ value, onChange, className }: ShopfrontDisc
     <div className={cn('px-4 md:px-6', className)}>
       <div className="mx-auto flex max-w-screen-xl items-center gap-2">
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={value.q ?? ''}
             onChange={(e) => onChange({ ...value, q: e.target.value })}
             placeholder="Search products…"
-            className="h-11 pl-9"
+            className="h-12 rounded-full pl-10 shadow-sm"
           />
         </div>
         <Button
           variant="outline"
-          className="h-11 px-3"
+          className="h-12 rounded-full px-4 shadow-sm"
           onClick={() =>
             onChange({
               ...value,
@@ -49,9 +49,9 @@ export function ShopfrontDiscovery({ value, onChange, className }: ShopfrontDisc
       </div>
 
       {value.tags && value.tags.length > 0 && (
-        <div className="mx-auto mt-2 flex max-w-screen-xl flex-nowrap gap-2 overflow-x-auto px-1">
+        <div className="mx-auto mt-3 flex max-w-screen-xl flex-nowrap gap-2 overflow-x-auto px-1">
           {value.tags.map((t) => (
-            <Badge key={t} variant="secondary" className="shrink-0">
+            <Badge key={t} variant="secondary" className="shrink-0 rounded-full">
               {t}
             </Badge>
           ))}

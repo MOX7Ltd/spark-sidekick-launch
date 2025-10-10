@@ -6,6 +6,7 @@ import { ShopfrontGrid } from './ShopfrontGrid';
 import { CartDrawer, type CartLine } from './CartDrawer';
 import { FooterTrust } from './FooterTrust';
 import { AnnouncementBar } from './AnnouncementBar';
+import { SocialProof } from './SocialProof';
 
 export interface ShopfrontViewProps {
   business: {
@@ -19,6 +20,7 @@ export interface ShopfrontViewProps {
   };
   settings?: {
     layout?: { columns?: number };
+    theme?: { primary?: string; accent?: string; radius?: string; density?: string };
     showAnnouncement?: boolean;
     announcementText?: string | null;
   };
@@ -52,6 +54,14 @@ export function ShopfrontView({
   const [open, setOpen] = React.useState(false); // mobile cart sheet
 
   const [lines, setLines] = React.useState<CartLine[]>([]);
+
+  // Apply theme tokens when settings change
+  React.useEffect(() => {
+    if (typeof document === 'undefined' || !settings?.theme) return;
+    const r = document.documentElement;
+    if (settings.theme.primary) r.style.setProperty('--sh-primary', settings.theme.primary);
+    if (settings.theme.accent) r.style.setProperty('--sh-accent', settings.theme.accent);
+  }, [settings?.theme]);
   const addToCart = React.useCallback((p: { id: string; name: string; priceCents: number }) => {
     if (disableCart) return;
     if (onAddToCartOverride) { onAddToCartOverride(p); return; }
@@ -75,14 +85,23 @@ export function ShopfrontView({
         logoUrl={business.logoUrl ?? undefined}
         businessName={business.name}
         avatarUrl={business.avatarUrl ?? undefined}
+        coverImageUrl={undefined}
+        rating={undefined}
       />
 
       {settings?.showAnnouncement && settings.announcementText && (
-        <AnnouncementBar text={settings.announcementText} className="mt-3" />
+        <AnnouncementBar text={settings.announcementText} className="mt-4" />
       )}
 
-      <div className="mx-auto mt-4 grid max-w-screen-xl grid-cols-1 gap-6 lg:grid-cols-[1fr_20rem]">
-        <div className="min-w-0">
+      <SocialProof
+        rating={undefined}
+        customerCount={undefined}
+        showGuarantee={true}
+        className="mt-4"
+      />
+
+      <div className="mx-auto mt-6 grid max-w-screen-xl grid-cols-1 gap-6 px-4 md:px-6 lg:grid-cols-[1fr_20rem]">
+        <div className="min-w-0 space-y-5">
           <ShopfrontBios
             businessTagline={business.tagline}
             businessAboutShort={business.aboutShort}
@@ -100,7 +119,6 @@ export function ShopfrontView({
             onAddToCart={(p) =>
               addToCart({ id: p.id, name: p.name, priceCents: p.priceCents })
             }
-            className="mt-3"
           />
         </div>
 

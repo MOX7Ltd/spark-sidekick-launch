@@ -9,29 +9,39 @@ export interface FooterTrustProps {
 
 export function FooterTrust({ contactEmail, showPoweredBy = true, className }: FooterTrustProps) {
   return (
-    <footer className={cn('px-4 pb-24 pt-6 md:px-6 md:pb-10', className)}>
-      <div className="mx-auto max-w-screen-xl rounded-2xl border bg-card/80 p-4 text-xs text-muted-foreground shadow-sm md:text-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>Refunds & policies • Shipping/booking details • Social links</div>
-          <div className="flex items-center gap-3">
-            {contactEmail && (
-              <a href={`mailto:${contactEmail}`} className="underline">
-                Contact
-              </a>
-            )}
-            {/* Payment badges (placeholder) */}
-            <div className="hidden items-center gap-1 sm:flex">
-              <span className="inline-block h-4 w-6 rounded bg-muted" />
-              <span className="inline-block h-4 w-6 rounded bg-muted" />
-              <span className="inline-block h-4 w-6 rounded bg-muted" />
-            </div>
+    <footer className={cn('px-4 pb-24 pt-8 md:px-6 md:pb-12', className)}>
+      <div className="mx-auto max-w-screen-xl space-y-4">
+        {/* Payment badges row */}
+        <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center gap-1.5 rounded-lg border bg-card/80 px-3 py-2 shadow-sm">
+            <span className="inline-block h-5 w-8 rounded bg-muted" aria-label="Visa" />
+            <span className="inline-block h-5 w-8 rounded bg-muted" aria-label="Mastercard" />
+            <span className="inline-block h-5 w-8 rounded bg-muted" aria-label="Amex" />
           </div>
         </div>
-        {showPoweredBy && (
-          <div className="mt-2 text-[11px]">
-            Powered by <span className="font-semibold">SideHive</span>
+
+        {/* Trust strip */}
+        <div className="rounded-2xl border bg-card/80 p-4 text-xs text-muted-foreground shadow-sm md:p-5 md:text-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-2">
+              <span>Secure checkout</span>
+              <span>•</span>
+              <span>Refund policy</span>
+              <span>•</span>
+              <span>Support</span>
+            </div>
+            {contactEmail && (
+              <a href={`mailto:${contactEmail}`} className="font-medium underline hover:text-foreground">
+                Contact us
+              </a>
+            )}
           </div>
-        )}
+          {showPoweredBy && (
+            <div className="mt-3 border-t pt-3 text-[11px] text-center">
+              Powered by <span className="font-semibold">SideHive</span>
+            </div>
+          )}
+        </div>
       </div>
     </footer>
   );

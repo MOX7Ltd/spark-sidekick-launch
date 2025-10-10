@@ -27,6 +27,7 @@ type ProductView = {
   priceCents: number;
   currency?: string;
   imageUrl?: string | null;
+  tag?: string | null;
 };
 
 export default function ProfileShopfront() {
@@ -110,6 +111,7 @@ function OwnerShopfrontInner() {
           priceCents: p.price ? Math.round(p.price * 100) : 0,
           currency: 'NZD',
           imageUrl: p.asset_url ?? null,
+          tag: p.type ?? p.family ?? null,
         }));
 
         if (!alive) return;
@@ -302,8 +304,18 @@ function OwnerShopfrontInner() {
               business={business}
               settings={
                 tab === 'customer' && publishedSettings
-                  ? { layout: publishedSettings.layout ?? { columns: 3 } }
-                  : { layout: layoutDraft }
+                  ? {
+                      layout: publishedSettings.layout ?? { columns: 3 },
+                      theme: publishedSettings.theme ?? undefined,
+                      showAnnouncement: !!publishedSettings.show_announcement,
+                      announcementText: publishedSettings.announcement_text ?? null,
+                    }
+                  : {
+                      layout: layoutDraft,
+                      theme: themeDraft,
+                      showAnnouncement: showAnnDraft,
+                      announcementText: annTextDraft || null,
+                    }
               }
               products={products}
               onQueryChange={() => {}}

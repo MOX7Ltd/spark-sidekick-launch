@@ -7,6 +7,8 @@ export interface ShopfrontHeaderProps {
   logoUrl?: string | null;
   businessName: string;
   avatarUrl?: string | null;
+  coverImageUrl?: string | null;
+  rating?: { value: number; count: number } | null;
   showPoweredBy?: boolean;
   className?: string;
 }
@@ -15,6 +17,8 @@ export function ShopfrontHeader({
   logoUrl,
   businessName,
   avatarUrl,
+  coverImageUrl,
+  rating,
   showPoweredBy = true,
   className,
 }: ShopfrontHeaderProps) {
@@ -22,27 +26,28 @@ export function ShopfrontHeader({
 
   return (
     <header className={cn('relative', className)}>
-      {/* Soft gradient banner */}
-      <div
-        className="pointer-events-none absolute inset-0 -z-10"
-        aria-hidden
-        style={{
-          background:
-            'linear-gradient(180deg, hsl(var(--muted)) 0%, transparent 70%)',
-        }}
-      />
-
-      {/* Top bar (sticky minimal) */}
-      <div
-        className={cn(
-          'sticky top-0 z-30 w-full border-b bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/50',
-          'px-4 py-2 md:px-6'
+      {/* Cover image or gradient hero */}
+      <div className="relative h-40 w-full overflow-hidden md:h-56">
+        {coverImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            loading="lazy"
+            src={coverImageUrl}
+            alt=""
+            className="h-full w-full object-cover"
+            sizes="100vw"
+          />
+        ) : (
+          <div className="h-full w-full bg-gradient-to-b from-muted to-transparent" />
         )}
-        style={{ paddingTop: 'calc(env(safe-area-inset-top))' }}
-      >
-        <div className="mx-auto flex max-w-screen-xl items-center gap-3">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 overflow-hidden rounded-2xl border bg-muted md:h-12 md:w-12">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-background/70" />
+      </div>
+
+      {/* Identity lockup (overlapping cover) */}
+      <div className="px-4 md:px-6">
+        <div className="mx-auto -mt-8 max-w-screen-xl">
+          <div className="flex items-start gap-4 rounded-2xl border bg-card/95 p-4 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/80 md:p-5">
+            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl border-2 border-background bg-muted md:h-16 md:w-16">
               {logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -52,23 +57,29 @@ export function ShopfrontHeader({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+                <div className="flex h-full w-full items-center justify-center text-lg font-medium text-muted-foreground">
                   {initials}
                 </div>
               )}
             </div>
-            <div className="flex flex-col leading-tight">
-              <span className="text-base font-semibold md:text-lg">{businessName}</span>
-              {showPoweredBy && (
-                <Badge variant="outline" className="mt-0.5 w-fit text-[10px] md:text-xs">
-                  Powered by <span className="ml-1 font-semibold">SideHive</span>
-                </Badge>
-              )}
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg font-bold leading-tight md:text-xl">{businessName}</h1>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                {rating && rating.count > 0 && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <span aria-hidden className="text-sm">⭐</span>
+                    <span className="font-medium">{rating.value.toFixed(1)}</span>
+                    <span>({rating.count})</span>
+                  </div>
+                )}
+                {showPoweredBy && (
+                  <Badge variant="outline" className="text-[10px] md:text-xs">
+                    Powered by <span className="ml-1 font-semibold">SideHive</span>
+                  </Badge>
+                )}
+              </div>
             </div>
-          </div>
-
-          <div className="ml-auto">
-            <Avatar className="h-8 w-8 md:h-9 md:w-9">
+            <Avatar className="h-10 w-10 shrink-0 md:h-11 md:w-11">
               <AvatarImage src={avatarUrl ?? undefined} />
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>

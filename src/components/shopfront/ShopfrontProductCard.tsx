@@ -30,7 +30,7 @@ export interface ShopfrontProductCardProps {
 
 export function ShopfrontProductCard({ product, onAddToCart, className }: ShopfrontProductCardProps) {
   return (
-    <Card className={cn('overflow-hidden rounded-2xl border shadow-sm transition-shadow hover:shadow-md', className)}>
+    <Card className={cn('group overflow-hidden rounded-2xl border shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md', className)}>
       <div className="relative aspect-[4/3] w-full bg-muted">
         {product.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -38,27 +38,27 @@ export function ShopfrontProductCard({ product, onAddToCart, className }: Shopfr
             loading="lazy"
             src={product.imageUrl}
             alt={product.name}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           />
         ) : null}
         {product.tag && (
-          <Badge className="absolute left-3 top-3 rounded-full bg-background/90 backdrop-blur">
+          <Badge className="absolute left-3 top-3 rounded-full bg-background/95 px-2.5 py-0.5 text-xs font-medium shadow-sm backdrop-blur">
             {product.tag}
           </Badge>
         )}
       </div>
-      <CardContent className="space-y-2 p-4">
+      <CardContent className="space-y-2.5 p-4">
         <div className="flex items-start justify-between gap-2">
           <h3 className="line-clamp-2 text-[15px] font-semibold leading-snug">{product.name}</h3>
-          <span className="ml-2 shrink-0 text-sm font-medium">
+          <span className="ml-2 shrink-0 text-base font-bold">
             {formatPrice(product.priceCents, product.currency)}
           </span>
         </div>
         {product.description && (
-          <p className="line-clamp-2 text-sm text-muted-foreground">{product.description}</p>
+          <p className="line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">{product.description}</p>
         )}
-        <Button className="mt-1 w-full h-11" onClick={() => onAddToCart?.(product)}>
+        <Button className="mt-2 h-11 w-full transition-transform group-hover:scale-[1.01]" onClick={() => onAddToCart?.(product)}>
           Add to cart
         </Button>
       </CardContent>
