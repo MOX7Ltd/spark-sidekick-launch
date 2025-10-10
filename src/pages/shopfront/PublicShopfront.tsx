@@ -6,6 +6,7 @@ import { fetchShopfront } from '@/lib/shopfront/fetchShopfront';
 import { ShopfrontView } from '@/components/shopfront/ShopfrontView';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AppSurface } from '@/components/layout/AppSurface';
+import { getOrCreateCart, addItem as cartAddItem } from '@/lib/shopfront/cartApi';
 
 function LoadingSkeleton() {
   return (
