@@ -164,8 +164,9 @@ export function ShopfrontView({
           open={msgOpen}
           onOpenChange={setMsgOpen}
           businessName={business.name}
+          businessId={business.id}
+          productId={null}
           productName={selectedProductName}
-          onSubmit={() => { /* Phase 3: wire to edge function */ }}
         />
       )}
 
@@ -174,6 +175,8 @@ export function ShopfrontView({
           open={reviewsOpen}
           onOpenChange={setReviewsOpen}
           summary={reviews}
+          businessId={business.id}
+          businessName={business.name}
         />
       )}
     </div>

@@ -29,3 +29,18 @@ verify_jwt = true
 
 [functions.profile-assist]
 verify_jwt = true
+
+[functions.new-message]
+verify_jwt = false
+
+[functions.reply-message]
+verify_jwt = true
+
+[functions.new-review]
+verify_jwt = false
+
+[functions.confirm-review]
+verify_jwt = false
+
+[functions.review-reply]
+verify_jwt = true

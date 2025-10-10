@@ -810,39 +810,62 @@ export type Database = {
       }
       reviews: {
         Row: {
+          body: string | null
+          business_id: string | null
           comment: string | null
           created_at: string
+          customer_email: string | null
           id: string
           is_hidden: boolean
-          product_id: string
+          product_id: string | null
           rating: number | null
           reply: string | null
           reviewer_name: string | null
-          user_id: string
+          status: string | null
+          title: string | null
+          user_id: string | null
         }
         Insert: {
+          body?: string | null
+          business_id?: string | null
           comment?: string | null
           created_at?: string
+          customer_email?: string | null
           id?: string
           is_hidden?: boolean
-          product_id: string
+          product_id?: string | null
           rating?: number | null
           reply?: string | null
           reviewer_name?: string | null
-          user_id: string
+          status?: string | null
+          title?: string | null
+          user_id?: string | null
         }
         Update: {
+          body?: string | null
+          business_id?: string | null
           comment?: string | null
           created_at?: string
+          customer_email?: string | null
           id?: string
           is_hidden?: boolean
-          product_id?: string
+          product_id?: string | null
           rating?: number | null
           reply?: string | null
           reviewer_name?: string | null
-          user_id?: string
+          status?: string | null
+          title?: string | null
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "reviews_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shopfront_settings: {
         Row: {
@@ -852,6 +875,7 @@ export type Database = {
           layout: Json | null
           published: Json | null
           published_at: string | null
+          reviews_summary: Json | null
           show_announcement: boolean | null
           theme: Json | null
         }
@@ -862,6 +886,7 @@ export type Database = {
           layout?: Json | null
           published?: Json | null
           published_at?: string | null
+          reviews_summary?: Json | null
           show_announcement?: boolean | null
           theme?: Json | null
         }
@@ -872,6 +897,7 @@ export type Database = {
           layout?: Json | null
           published?: Json | null
           published_at?: string | null
+          reviews_summary?: Json | null
           show_announcement?: boolean | null
           theme?: Json | null
         }
@@ -885,6 +911,10 @@ export type Database = {
       cleanup_old_idempotent_responses: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      compute_business_rating: {
+        Args: { bid: string }
+        Returns: Json
       }
     }
     Enums: {
