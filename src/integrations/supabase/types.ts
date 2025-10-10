@@ -940,6 +940,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      analytics_summary: {
+        Args: { bid: string }
+        Returns: Json
+      }
       cleanup_old_idempotent_responses: {
         Args: Record<PropertyKey, never>
         Returns: undefined

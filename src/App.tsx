@@ -22,6 +22,7 @@ import Customers from "./pages/hub/Customers";
 import CustomersMessages from "./pages/hub/CustomersMessages";
 import CustomersReviews from "./pages/hub/CustomersReviews";
 import CustomersCalendar from "./pages/hub/CustomersCalendar";
+import Analytics from "./pages/hub/Analytics";
 import Profile from "./pages/hub/Profile";
 import ProfileUser from "./pages/hub/ProfileUser";
 import ProfileBusiness from "./pages/hub/ProfileBusiness";
@@ -57,6 +58,7 @@ const App = () => (
           <Route path="/hub/customers/messages" element={<CustomersMessages />} />
           <Route path="/hub/customers/reviews" element={<CustomersReviews />} />
           <Route path="/hub/customers/calendar" element={<CustomersCalendar />} />
+          {FLAGS.ANALYTICS_V1 && <Route path="/hub/analytics" element={<Analytics />} />}
           <Route path="/hub/profile" element={<Profile />} />
           <Route path="/hub/profile/user" element={<ProfileUser />} />
           <Route path="/hub/profile/business" element={<ProfileBusiness />} />

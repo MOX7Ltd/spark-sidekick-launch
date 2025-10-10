@@ -6,8 +6,9 @@ import { HubTile } from '@/components/hub/HubTile';
 import { AppSurface } from '@/components/layout/AppSurface';
 import { HubBrandHeader } from '@/components/hub/HubBrandHeader';
 import HubBrandStrip from '@/components/hub/HubBrandStrip';
-import { Package, Megaphone, Users, UserCircle2, LogOut } from 'lucide-react';
+import { Package, Megaphone, Users, UserCircle2, LogOut, BarChart3 } from 'lucide-react';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
+import { FLAGS } from '@/lib/flags';
 
 export default function HubHome() {
   const navigate = useNavigate();
@@ -89,6 +90,19 @@ export default function HubHome() {
             onClick={() => handleTileClick('profile')}
           />
         </div>
+
+        {/* Analytics link (when enabled) */}
+        {FLAGS.ANALYTICS_V1 && (
+          <div className="mt-3">
+            <HubTile
+              to="/hub/analytics"
+              icon={BarChart3}
+              title="Analytics"
+              desc="Track performance & engagement."
+              onClick={() => handleTileClick('analytics')}
+            />
+          </div>
+        )}
 
         {/* Momentum tip */}
         <p className="mt-4 px-1 text-sm leading-relaxed">
