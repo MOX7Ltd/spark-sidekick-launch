@@ -8,6 +8,7 @@ export const FLAGS = {
   ANALYTICS_V1: true, // enable analytics dashboard
   STRIPE_V1: true, // enable sales performance tracking
   CALENDAR_V1: true, // enable calendar & appointments
+  SOCIAL_V1: true, // enable social performance tracking
 } as const;
 
 export type FlagKey = keyof typeof FLAGS;

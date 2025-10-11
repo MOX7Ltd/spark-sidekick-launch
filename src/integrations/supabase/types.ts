@@ -1074,6 +1074,50 @@ export type Database = {
         }
         Relationships: []
       }
+      social_posts: {
+        Row: {
+          business_id: string | null
+          caption: string | null
+          clicks: number | null
+          conversions: number | null
+          created_at: string | null
+          id: string
+          impressions: number | null
+          platform: string | null
+          posted_at: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          caption?: string | null
+          clicks?: number | null
+          conversions?: number | null
+          created_at?: string | null
+          id?: string
+          impressions?: number | null
+          platform?: string | null
+          posted_at?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          caption?: string | null
+          clicks?: number | null
+          conversions?: number | null
+          created_at?: string | null
+          id?: string
+          impressions?: number | null
+          platform?: string | null
+          posted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_posts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
