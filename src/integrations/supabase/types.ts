@@ -682,6 +682,63 @@ export type Database = {
         }
         Relationships: []
       }
+      orders: {
+        Row: {
+          amount_total: number
+          business_id: string
+          created_at: string | null
+          currency: string | null
+          customer_email: string | null
+          fee_amount: number | null
+          id: string
+          payment_method: string | null
+          product_id: string | null
+          quantity: number | null
+          status: string | null
+        }
+        Insert: {
+          amount_total: number
+          business_id: string
+          created_at?: string | null
+          currency?: string | null
+          customer_email?: string | null
+          fee_amount?: number | null
+          id?: string
+          payment_method?: string | null
+          product_id?: string | null
+          quantity?: number | null
+          status?: string | null
+        }
+        Update: {
+          amount_total?: number
+          business_id?: string
+          created_at?: string | null
+          currency?: string | null
+          customer_email?: string | null
+          fee_amount?: number | null
+          id?: string
+          payment_method?: string | null
+          product_id?: string | null
+          quantity?: number | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_assets: {
         Row: {
           created_at: string | null
@@ -949,6 +1006,10 @@ export type Database = {
         Returns: undefined
       }
       compute_business_rating: {
+        Args: { bid: string }
+        Returns: Json
+      }
+      sales_summary: {
         Args: { bid: string }
         Returns: Json
       }
