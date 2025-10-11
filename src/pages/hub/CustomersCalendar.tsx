@@ -4,9 +4,13 @@ import { AppSurface } from '@/components/layout/AppSurface';
 import { BackBar } from '@/components/hub/BackBar';
 import { CalendarView } from '@/components/calendar/CalendarView';
 import { AppointmentModal } from '@/components/calendar/AppointmentModal';
-import { useAppointments } from '@/hooks/calendar/useAppointments';
+import { FullCalendarView } from '@/components/calendar/FullCalendarView';
+import { AvailabilityForm } from '@/components/calendar/AvailabilityForm';
+import { useCalendarData } from '@/hooks/calendar/useCalendarData';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { startOfWeek } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function CustomersCalendar() {
   const { toast } = useToast();
@@ -25,6 +29,7 @@ export default function CustomersCalendar() {
   const [businessId, setBusinessId] = React.useState<string | null>(null);
   const [selected, setSelected] = React.useState<any>(null);
   const [open, setOpen] = React.useState(false);
+  const [weekStart] = React.useState(startOfWeek(new Date()));
 
   React.useEffect(() => {
     (async () => {
@@ -46,7 +51,7 @@ export default function CustomersCalendar() {
     })();
   }, [toast]);
 
-  const { data: appts = [], refetch } = useAppointments(businessId ?? undefined);
+  const { data: calendar, refetch } = useCalendarData(businessId ?? undefined);
 
   async function updateStatus(status: string) {
     if (!selected) return;
@@ -97,14 +102,41 @@ export default function CustomersCalendar() {
           </p>
         </div>
 
-        <CalendarView
-          appointments={appts}
-          onSelect={(id) => {
-            const appointment = appts.find((a) => a.id === id);
-            setSelected(appointment);
-            setOpen(true);
-          }}
-        />
+        <Tabs defaultValue="week" className="w-full">
+          <TabsList>
+            <TabsTrigger value="week">Week View</TabsTrigger>
+            <TabsTrigger value="list">List View</TabsTrigger>
+            <TabsTrigger value="availability">Availability</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="week" className="space-y-4 mt-4">
+            <FullCalendarView
+              weekStart={weekStart}
+              appointments={calendar?.appointments ?? []}
+              availability={calendar?.availability ?? []}
+              onSelect={(id) => {
+                const appointment = calendar?.appointments.find((a) => a.id === id);
+                setSelected(appointment);
+                setOpen(true);
+              }}
+            />
+          </TabsContent>
+
+          <TabsContent value="list" className="space-y-4 mt-4">
+            <CalendarView
+              appointments={calendar?.appointments ?? []}
+              onSelect={(id) => {
+                const appointment = calendar?.appointments.find((a) => a.id === id);
+                setSelected(appointment);
+                setOpen(true);
+              }}
+            />
+          </TabsContent>
+
+          <TabsContent value="availability" className="space-y-4 mt-4">
+            <AvailabilityForm businessId={businessId!} onSaved={refetch} />
+          </TabsContent>
+        </Tabs>
 
         <AppointmentModal
           open={open}
