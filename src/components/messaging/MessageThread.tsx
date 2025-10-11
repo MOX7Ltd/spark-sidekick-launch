@@ -55,10 +55,10 @@ export function MessageThread({
           </div>
         ) : (
           replies.map((m) => (
-            <div key={m.id} className={cn('flex', m.sender_type === 'business' ? 'justify-end' : 'justify-start')}>
+            <div key={m.id} className={cn('flex', m.sender_type === 'user' ? 'justify-end' : 'justify-start')}>
               <div className={cn(
                 'inline-block max-w-[85%] rounded-2xl px-4 py-2 text-sm',
-                m.sender_type === 'business' 
+                m.sender_type === 'user'
                   ? 'bg-primary text-primary-foreground' 
                   : 'bg-muted'
               )}>
