@@ -67,6 +67,53 @@ export type Database = {
           },
         ]
       }
+      appointments: {
+        Row: {
+          business_id: string
+          created_at: string | null
+          customer_email: string | null
+          customer_name: string | null
+          end_time: string
+          id: string
+          notes: string | null
+          start_time: string
+          status: string | null
+          title: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          end_time: string
+          id?: string
+          notes?: string | null
+          start_time: string
+          status?: string | null
+          title?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          end_time?: string
+          id?: string
+          notes?: string | null
+          start_time?: string
+          status?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       businesses: {
         Row: {
           audience: string | null
