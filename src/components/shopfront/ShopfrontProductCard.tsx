@@ -1,9 +1,12 @@
 import * as React from 'react';
+import { useState } from 'react';
 import { FLAGS } from '@/lib/flags';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ProductLike {
   id: string;
@@ -31,6 +34,43 @@ export interface ShopfrontProductCardProps {
 }
 
 export function ShopfrontProductCard({ product, onAddToCart, onMessage, className }: ShopfrontProductCardProps) {
+  const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
+
+  const handleBuyNow = async () => {
+    if (!FLAGS.STRIPE_PAYMENTS_V1) {
+      onAddToCart?.(product);
+      return;
+    }
+
+    setIsProcessingCheckout(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: {
+          productId: product.id,
+          quantity: 1,
+        },
+      });
+
+      if (error) {
+        console.error('Checkout error:', error);
+        throw error;
+      }
+
+      if (!data?.url) {
+        throw new Error('No checkout URL returned');
+      }
+
+      // Redirect to Stripe Checkout
+      window.location.href = data.url;
+    } catch (error) {
+      console.error('Failed to create checkout:', error);
+      setIsProcessingCheckout(false);
+      // Fallback to cart if checkout fails
+      onAddToCart?.(product);
+    }
+  };
+
   return (
     <Card className={cn('group overflow-hidden rounded-2xl border shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md', className)}>
       <div className="relative aspect-[4/3] w-full bg-muted">
@@ -61,9 +101,26 @@ export function ShopfrontProductCard({ product, onAddToCart, onMessage, classNam
           <p className="line-clamp-2 text-[13px] leading-relaxed text-muted-foreground">{product.description}</p>
         )}
         <div className="mt-2 flex gap-2">
-          <Button className="h-11 flex-1 transition-transform group-hover:scale-[1.01]" onClick={() => onAddToCart?.(product)}>
-            Add to cart
-          </Button>
+          {FLAGS.STRIPE_PAYMENTS_V1 ? (
+            <Button 
+              className="h-11 flex-1 transition-transform group-hover:scale-[1.01]" 
+              onClick={handleBuyNow}
+              disabled={isProcessingCheckout}
+            >
+              {isProcessingCheckout ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Buy Now'
+              )}
+            </Button>
+          ) : (
+            <Button className="h-11 flex-1 transition-transform group-hover:scale-[1.01]" onClick={() => onAddToCart?.(product)}>
+              Add to cart
+            </Button>
+          )}
           {FLAGS.MESSAGING_V1 && onMessage && (
             <Button variant="ghost" className="h-11" onClick={() => onMessage(product.name)}>
               Ask

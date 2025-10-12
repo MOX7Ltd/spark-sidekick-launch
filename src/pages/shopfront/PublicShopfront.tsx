@@ -1,6 +1,7 @@
 import * as React from 'react';
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, Navigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { CheckCircle2, XCircle } from 'lucide-react';
 import { FLAGS } from '@/lib/flags';
 import { fetchShopfront } from '@/lib/shopfront/fetchShopfront';
 import { ShopfrontView } from '@/components/shopfront/ShopfrontView';
@@ -9,6 +10,7 @@ import { AppSurface } from '@/components/layout/AppSurface';
 import { ErrorBoundary } from '@/components/util/ErrorBoundary';
 import { SEOHead } from '@/components/seo/SEOHead';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 function LoadingSkeleton() {
   return (
@@ -36,7 +38,25 @@ export default function PublicShopfront() {
   if (!FLAGS.SHOPFRONT_V1) return <Navigate to="/" replace />;
 
   const { handle } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const safeHandle = (handle ?? '').trim();
+
+  // Check for payment status in URL
+  const paymentSuccess = searchParams.get('success') === 'true';
+  const paymentCancelled = searchParams.get('cancel') === 'true';
+
+  // Clear payment status from URL after showing message
+  React.useEffect(() => {
+    if (paymentSuccess || paymentCancelled) {
+      const timer = setTimeout(() => {
+        searchParams.delete('success');
+        searchParams.delete('cancel');
+        searchParams.delete('session_id');
+        setSearchParams(searchParams, { replace: true });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [paymentSuccess, paymentCancelled, searchParams, setSearchParams]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['shopfront', safeHandle],
@@ -90,6 +110,29 @@ export default function PublicShopfront() {
     >
       <SEOHead title={seoTitle} description={seoDesc} image={seoImg} />
       <AppSurface>
+        {/* Payment Status Messages */}
+        {FLAGS.STRIPE_PAYMENTS_V1 && paymentSuccess && (
+          <div className="mx-auto mb-6 max-w-screen-xl px-4 md:px-6">
+            <Alert className="border-green-200 bg-green-50">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                ✅ Payment successful! Your order has been confirmed. Thank you for your purchase!
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
+        {FLAGS.STRIPE_PAYMENTS_V1 && paymentCancelled && (
+          <div className="mx-auto mb-6 max-w-screen-xl px-4 md:px-6">
+            <Alert className="border-yellow-200 bg-yellow-50">
+              <XCircle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800">
+                Payment cancelled. No charges were made. Feel free to browse and try again when ready.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         {isLoading ? (
           <LoadingSkeleton />
         ) : isError ? (

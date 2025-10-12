@@ -258,6 +258,55 @@ serve(async (req) => {
       }
     }
 
+    // Handle payment_intent.succeeded (marketplace purchases)
+    if (event.type === "payment_intent.succeeded") {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      
+      // Only process if this is a marketplace purchase (has Connect transfer)
+      if (paymentIntent.transfer_data && paymentIntent.metadata?.business_id) {
+        console.log("Processing marketplace payment:", paymentIntent.id);
+
+        const businessId = paymentIntent.metadata.business_id;
+        const productId = paymentIntent.metadata.product_id;
+        const quantity = parseInt(paymentIntent.metadata.quantity || "1", 10);
+        
+        const amountTotal = paymentIntent.amount / 100;
+        const platformFee = paymentIntent.application_fee_amount
+          ? paymentIntent.application_fee_amount / 100
+          : amountTotal * 0.15;
+        const netAmount = amountTotal - platformFee;
+
+        console.log("Order details:", {
+          businessId,
+          productId,
+          amount: amountTotal,
+          fee: platformFee,
+          net: netAmount,
+        });
+
+        // Insert order record
+        const { error: orderError } = await supabase.from("orders").insert({
+          business_id: businessId,
+          product_id: productId,
+          stripe_payment_intent: paymentIntent.id,
+          amount_total: Math.round(amountTotal * 100), // store as cents
+          platform_fee: Math.round(platformFee * 100),
+          net_amount: Math.round(netAmount * 100),
+          customer_email: paymentIntent.receipt_email || null,
+          currency: paymentIntent.currency.toUpperCase(),
+          payment_method: "card",
+          quantity,
+          status: "paid",
+        });
+
+        if (orderError) {
+          console.error("Error inserting order:", orderError);
+        } else {
+          console.log("Order created for payment:", paymentIntent.id);
+        }
+      }
+    }
+
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
       headers: { "Content-Type": "application/json" },

@@ -62,3 +62,6 @@ verify_jwt = true
 
 [functions.create-subscription]
 verify_jwt = true
+
+[functions.create-checkout]
+verify_jwt = false
