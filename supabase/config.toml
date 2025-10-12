@@ -47,3 +47,15 @@ verify_jwt = true
 
 [functions.track-analytics]
 verify_jwt = false
+
+[functions.create-starter-session]
+verify_jwt = true
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.stripe-connect-link]
+verify_jwt = true
+
+[functions.stripe-check-capabilities]
+verify_jwt = true
