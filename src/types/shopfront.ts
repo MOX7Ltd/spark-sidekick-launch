@@ -9,6 +9,8 @@ export interface ShopfrontBusiness {
   tagline?: string | null;
   aboutShort?: string | null;
   contactEmail?: string | null;
+  starterPaid?: boolean;
+  stripeOnboarded?: boolean;
 }
 
 export type Density = 'cozy' | 'comfy' | 'spacious';

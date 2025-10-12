@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { FLAGS } from '@/lib/flags';
 import { fetchShopfront } from '@/lib/shopfront/fetchShopfront';
+import { getShopfrontUrl } from '@/lib/shopfront';
 import { ShopfrontView } from '@/components/shopfront/ShopfrontView';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AppSurface } from '@/components/layout/AppSurface';
@@ -88,15 +89,40 @@ export default function PublicShopfront() {
       tagline: 'Your trusted micro-business on SideHive.',
       aboutShort: null,
       contactEmail: null,
+      starterPaid: false,
+      stripeOnboarded: false,
     };
 
   const settings = data?.settings ?? { layout: { columns: 3 } };
   const products = data?.products ?? [];
   const reviews = data?.reviews ?? [];
 
-  const seoTitle = `${business.name} • SideHive Shopfront`;
-  const seoDesc = business.tagline ?? business.aboutShort ?? 'Discover products and services from this SideHive micro-business.';
-  const seoImg = (business.logoUrl as string | undefined) ?? null;
+  // SEO metadata
+  const seoTitle = `${business.name} | SideHive Shopfront`;
+  const seoDesc = 
+    business.aboutShort?.trim() || 
+    business.tagline?.trim() || 
+    `Explore ${business.name}'s shopfront on SideHive — a creative marketplace for micro-entrepreneurs.`;
+  const seoImg = (business.logoUrl as string | undefined) || '/sidehive-logo.jpg';
+  const seoUrl = getShopfrontUrl(business.handle as string);
+
+  // Only index if paid and onboarded
+  const isIndexable = Boolean(business.starterPaid && business.stripeOnboarded);
+
+  // JSON-LD structured data for rich search results
+  const structuredData = isIndexable ? {
+    "@context": "https://schema.org",
+    "@type": "Store",
+    name: business.name,
+    image: seoImg,
+    description: seoDesc,
+    url: seoUrl,
+    brand: {
+      "@type": "Brand",
+      name: business.name,
+      logo: seoImg,
+    },
+  } : undefined;
 
   return (
     <ErrorBoundary 
@@ -108,7 +134,15 @@ export default function PublicShopfront() {
         </AppSurface>
       }
     >
-      <SEOHead title={seoTitle} description={seoDesc} image={seoImg} />
+      <SEOHead 
+        title={seoTitle} 
+        description={seoDesc} 
+        image={seoImg} 
+        url={seoUrl}
+        businessName={business.name as string}
+        isIndexable={isIndexable}
+        structuredData={structuredData}
+      />
       <AppSurface>
         {/* Payment Status Messages */}
         {FLAGS.STRIPE_PAYMENTS_V1 && paymentSuccess && (

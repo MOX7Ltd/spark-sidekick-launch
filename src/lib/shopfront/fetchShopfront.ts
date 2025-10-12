@@ -71,6 +71,8 @@ export async function fetchShopfront(handle: string): Promise<ShopfrontBundle> {
         tagline: business.tagline,
         aboutShort: business.bio || business.experience || business.audience || null,
         contactEmail: null,
+        starterPaid: business.starter_paid,
+        stripeOnboarded: business.stripe_onboarded,
       } as ShopfrontBusiness,
       settings: settings as ShopfrontSettings ?? { layout: { columns: 3 } } as ShopfrontSettings,
       products: (products ?? []).map((p) => ({
