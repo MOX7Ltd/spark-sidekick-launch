@@ -10,6 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ShopfrontView } from '@/components/shopfront/ShopfrontView';
 import { getSettings, saveDraft, publishDraft } from '@/lib/shopfront/settingsApi';
 import { supabase } from '@/integrations/supabase/client';
+import { getShopfrontUrl } from '@/lib/shopfront';
+import { useClipboard } from '@/hooks/useClipboard';
+import { ExternalLink, Copy, CheckCircle2, Lock } from 'lucide-react';
 
 type Biz = {
   id: string;
@@ -18,6 +21,9 @@ type Biz = {
   avatarUrl?: string | null;
   tagline?: string | null;
   aboutShort?: string | null;
+  handle?: string | null;
+  starterPaid?: boolean;
+  stripeOnboarded?: boolean;
 };
 
 type ProductView = {
@@ -77,7 +83,7 @@ function OwnerShopfrontInner() {
         // Load the owner business
         const { data: biz, error: bizErr } = await supabase
           .from('businesses')
-          .select('id, business_name, tagline, bio, logo_url, owner_id')
+          .select('id, business_name, tagline, bio, logo_url, owner_id, handle, starter_paid, stripe_onboarded')
           .eq('owner_id', user.id)
           .maybeSingle();
 
@@ -91,6 +97,9 @@ function OwnerShopfrontInner() {
           avatarUrl: null,
           tagline: biz.tagline ?? null,
           aboutShort: biz.bio ?? null,
+          handle: biz.handle ?? null,
+          starterPaid: biz.starter_paid ?? false,
+          stripeOnboarded: biz.stripe_onboarded ?? false,
         };
         if (!alive) return;
         setBusiness(b);
@@ -176,7 +185,11 @@ function OwnerShopfrontInner() {
     <AppSurface>
       <BackBar to="/hub/profile" label="Back to Profile" />
 
-      <div className="mx-auto mt-6 grid max-w-screen-xl grid-cols-1 gap-6 lg:grid-cols-[22rem_1fr]">
+      <div className="mx-auto mt-6 max-w-screen-xl space-y-6">
+        {/* Shopfront URL Section */}
+        <ShopfrontUrlSection business={business} />
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[22rem_1fr]">
         {/* Controls */}
         <Card className="h-fit">
           <CardContent className="space-y-4 p-4">
@@ -322,7 +335,95 @@ function OwnerShopfrontInner() {
             />
           )}
         </div>
+        </div>
       </div>
     </AppSurface>
+  );
+}
+
+function ShopfrontUrlSection({ business }: { business: Biz | null }) {
+  const { copy, copied } = useClipboard();
+  const url = getShopfrontUrl(business?.handle);
+
+  if (!business) return null;
+
+  // If not paid yet, show locked message
+  if (!business.starterPaid) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
+        <div className="flex items-start gap-3">
+          <Lock className="h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-500" />
+          <div>
+            <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+              Shopfront URL locked
+            </p>
+            <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+              Your shopfront will become shareable once your Starter Pack payment is completed.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If paid but no handle yet (shouldn't happen but handle gracefully)
+  if (!url) {
+    return (
+      <div className="rounded-xl border border-muted bg-muted/30 p-4">
+        <p className="text-sm text-muted-foreground">
+          Generating your shopfront URL...
+        </p>
+      </div>
+    );
+  }
+
+  // Show active shopfront URL with actions
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-muted-foreground">
+              Your shopfront is live
+            </p>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+            >
+              <span className="truncate">{url}</span>
+              <ExternalLink className="h-4 w-4 flex-shrink-0" />
+            </a>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => window.open(url, "_blank")}
+            >
+              <ExternalLink className="mr-2 h-4 w-4" />
+              View Live
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => copy(url)}
+            >
+              {copied ? (
+                <>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy Link
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

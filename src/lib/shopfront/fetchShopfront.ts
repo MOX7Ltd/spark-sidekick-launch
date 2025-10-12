@@ -18,15 +18,21 @@ export interface ShopfrontBundle {
 
 export async function fetchShopfront(handle: string): Promise<ShopfrontBundle> {
   try {
-    // 1) fetch business
+    // 1) fetch business - validate payment and onboarding status
     const { data: business, error: bizErr } = await supabaseShopfront
       .from('businesses')
-      .select('id, business_name, logo_url, tagline, bio, experience, audience')
-      .eq('business_name', handle)
+      .select('id, business_name, logo_url, tagline, bio, experience, audience, starter_paid, stripe_onboarded, handle')
+      .eq('handle', handle)
       .maybeSingle();
 
     if (bizErr || !business) {
       console.error('fetchShopfront business error:', bizErr);
+      return { business: null, settings: null, products: [], reviews: [] };
+    }
+
+    // Only allow access to paid and onboarded shopfronts
+    if (!business.starter_paid || !business.stripe_onboarded) {
+      console.warn('Shopfront not available - payment or onboarding incomplete');
       return { business: null, settings: null, products: [], reviews: [] };
     }
 
