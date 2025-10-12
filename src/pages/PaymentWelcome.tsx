@@ -16,6 +16,7 @@ export default function PaymentWelcome() {
   const [connectUrl, setConnectUrl] = useState<string | null>(null);
   const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [isCreatingSubscription, setIsCreatingSubscription] = useState(false);
 
   const starterStatus = searchParams.get('starter');
   const stripeStatus = searchParams.get('stripe');
@@ -143,6 +144,46 @@ export default function PaymentWelcome() {
     }, 8000);
   };
 
+  const initiateSubscription = async () => {
+    setIsCreatingSubscription(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        console.error('No session available');
+        return;
+      }
+
+      // Call edge function to create subscription with trial
+      const { data, error } = await supabase.functions.invoke('create-subscription', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) {
+        console.error('Error creating subscription:', error);
+        // Don't block the user if subscription fails - they can do it later from billing page
+        toast({
+          title: "Subscription setup pending",
+          description: "Visit your billing page to complete subscription setup.",
+        });
+        return;
+      }
+
+      console.log('Subscription initiated successfully');
+      toast({
+        title: "Trial activated!",
+        description: "Your 14-day free trial of SideHive Pro has started.",
+      });
+    } catch (error) {
+      console.error('Subscription error:', error);
+    } finally {
+      setIsCreatingSubscription(false);
+    }
+  };
+
   const handleContinue = () => {
     navigate('/hub');
   };
@@ -213,9 +254,38 @@ export default function PaymentWelcome() {
                     </p>
                   </div>
 
-                  <Button onClick={handleContinue} className="w-full" size="lg">
-                    Continue to Dashboard
-                  </Button>
+                  {!isCreatingSubscription && (
+                    <>
+                      <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                        <p className="text-sm text-blue-800 font-medium mb-2">
+                          🎉 Activating your 14-day free trial...
+                        </p>
+                        <p className="text-xs text-blue-700">
+                          You'll have full access to SideHive Pro for 14 days, then $25 NZD/month.
+                        </p>
+                      </div>
+
+                      <Button 
+                        onClick={() => {
+                          initiateSubscription();
+                          setTimeout(() => handleContinue(), 2000);
+                        }} 
+                        className="w-full" 
+                        size="lg"
+                      >
+                        Continue to Dashboard
+                      </Button>
+                    </>
+                  )}
+
+                  {isCreatingSubscription && (
+                    <div className="text-center py-4">
+                      <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Setting up your subscription...
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </>

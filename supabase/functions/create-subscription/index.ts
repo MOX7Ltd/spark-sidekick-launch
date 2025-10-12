@@ -42,59 +42,84 @@ serve(async (req) => {
       );
     }
 
-    console.log("Creating Connect onboarding link for user:", user.id);
+    console.log("Creating subscription for user:", user.id);
 
-    // Get user's business and Connect account ID
-    const { data: business, error: bizError } = await supabase
-      .from("businesses")
-      .select("stripe_account_id, stripe_onboarded")
-      .eq("owner_id", user.id)
+    // Get user's Stripe customer ID
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("stripe_customer_id, subscription_status")
+      .eq("user_id", user.id)
       .single();
 
-    if (bizError || !business?.stripe_account_id) {
-      console.error("Business or Connect account not found:", bizError);
+    if (profileError || !profile?.stripe_customer_id) {
+      console.error("Profile or customer not found:", profileError);
       return new Response(
-        JSON.stringify({ error: "Connect account not found. Complete payment first." }),
+        JSON.stringify({ error: "Stripe customer not found. Please complete payment first." }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check if already onboarded
-    if (business.stripe_onboarded) {
-      console.log("User already onboarded");
+    // Check if already has active subscription
+    if (profile.subscription_status === 'active' || profile.subscription_status === 'trialing') {
+      console.log("User already has active subscription");
       return new Response(
         JSON.stringify({ 
-          onboarded: true, 
-          message: "Account already onboarded" 
+          error: "You already have an active subscription",
+          status: profile.subscription_status 
         }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    const priceId = Deno.env.get("STRIPE_PRICE_ID_PRO");
+    if (!priceId) {
+      console.error("STRIPE_PRICE_ID_PRO not configured");
+      return new Response(
+        JSON.stringify({ error: "Subscription pricing not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Calculate trial end (14 days from now)
+    const trialEnd = Math.floor(Date.now() / 1000) + 14 * 24 * 3600;
+
     const publicSiteUrl = Deno.env.get("PUBLIC_SITE_URL") || "http://localhost:5173";
 
-    // Create account link for onboarding
-    const accountLink = await stripe.accountLinks.create({
-      account: business.stripe_account_id,
-      refresh_url: `${publicSiteUrl}/welcome?stripe=refresh`,
-      return_url: `${publicSiteUrl}/welcome?stripe=return`,
-      type: "account_onboarding",
+    // Create Checkout Session for subscription with trial
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      customer: profile.stripe_customer_id,
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      subscription_data: {
+        trial_end: trialEnd,
+        metadata: {
+          user_id: user.id,
+        },
+      },
+      success_url: `${publicSiteUrl}/hub/billing?subscribed=success`,
+      cancel_url: `${publicSiteUrl}/hub/billing?subscribed=cancel`,
+      metadata: {
+        user_id: user.id,
+        type: "subscription",
+      },
     });
 
-    console.log("Created account link for:", business.stripe_account_id);
+    console.log("Created subscription session:", session.id);
 
     return new Response(
-      JSON.stringify({ 
-        url: accountLink.url,
-        accountId: business.stripe_account_id 
-      }),
+      JSON.stringify({ url: session.url, sessionId: session.id }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
   } catch (error) {
-    console.error("Error creating Connect link:", error);
+    console.error("Error creating subscription:", error);
     const message = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ error: message }),

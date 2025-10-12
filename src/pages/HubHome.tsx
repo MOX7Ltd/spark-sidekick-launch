@@ -6,7 +6,7 @@ import { HubTile } from '@/components/hub/HubTile';
 import { AppSurface } from '@/components/layout/AppSurface';
 import { HubBrandHeader } from '@/components/hub/HubBrandHeader';
 import HubBrandStrip from '@/components/hub/HubBrandStrip';
-import { Package, Megaphone, Users, UserCircle2, LogOut, BarChart3 } from 'lucide-react';
+import { Package, Megaphone, Users, UserCircle2, LogOut, BarChart3, CreditCard } from 'lucide-react';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
 import { FLAGS } from '@/lib/flags';
 
@@ -100,6 +100,19 @@ export default function HubHome() {
               title="Analytics"
               desc="Track performance & engagement."
               onClick={() => handleTileClick('analytics')}
+            />
+          </div>
+        )}
+
+        {/* Billing link (when Stripe enabled) */}
+        {FLAGS.STRIPE_PAYMENTS_V1 && (
+          <div className="mt-3">
+            <HubTile
+              to="/hub/billing"
+              icon={CreditCard}
+              title="Billing"
+              desc="Subscription & payment details."
+              onClick={() => handleTileClick('billing')}
             />
           </div>
         )}
