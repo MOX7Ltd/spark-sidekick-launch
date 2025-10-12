@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { MessageSquare, Star, Calendar, BarChart3 } from 'lucide-react';
+import { MessageSquare, Star, Calendar, BarChart3, Users } from 'lucide-react';
 import { AppSurface } from '@/components/layout/AppSurface';
 import { BackBar } from '@/components/hub/BackBar';
 import { SubHeader } from '@/components/hub/SubHeader';
@@ -53,6 +53,19 @@ export default function Customers() {
           />
         </div>
         
+        {FLAGS.CUSTOMER_INSIGHTS_V1 && (
+          <SubTile
+            variant="card"
+            to="/hub/customers/analytics"
+            icon={<Users className="h-6 w-6" />}
+            title="Customer Insights"
+            desc="Repeat rate, LTV & reviews"
+            onClick={() => handleTileClick('customer_insights')}
+            delay={0.06}
+            accentBorder
+          />
+        )}
+
         {FLAGS.ANALYTICS_V1 && (
           <SubTile
             variant="card"
@@ -61,7 +74,7 @@ export default function Customers() {
             title="Analytics"
             desc="Track views, messages & reviews"
             onClick={() => handleTileClick('analytics')}
-            delay={0.06}
+            delay={FLAGS.CUSTOMER_INSIGHTS_V1 ? 0.09 : 0.06}
             accentBorder
           />
         )}
@@ -73,7 +86,7 @@ export default function Customers() {
           title="Calendar"
           desc="Bookings & events"
           onClick={() => handleTileClick('calendar')}
-          delay={FLAGS.ANALYTICS_V1 ? 0.09 : 0.06}
+          delay={(FLAGS.CUSTOMER_INSIGHTS_V1 ? 0.09 : 0) + (FLAGS.ANALYTICS_V1 ? 0.09 : 0.06)}
           accentBorder
         />
       </div>

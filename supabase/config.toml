@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.refund-order]
 verify_jwt = true
+
+[functions.get-customer-insights]
+verify_jwt = true

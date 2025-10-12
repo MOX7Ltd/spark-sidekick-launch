@@ -1186,6 +1186,19 @@ export type Database = {
         Args: { bid: string }
         Returns: Json
       }
+      get_customer_insights: {
+        Args: { business_uuid: string }
+        Returns: {
+          avg_order_value: number
+          avg_rating: number
+          business_id: string
+          customer_email: string
+          first_purchase: string
+          last_purchase: string
+          total_orders: number
+          total_spend: number
+        }[]
+      }
       sales_summary: {
         Args: { bid: string }
         Returns: Json
