@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { FLAGS } from '@/lib/flags';
+import { PricingFAQModal } from '@/components/pricing/PricingFAQModal';
 
 interface StarterPackPaymentProps {
   onSuccess?: () => void;
@@ -80,6 +81,9 @@ export function StarterPackPayment({ onSuccess }: StarterPackPaymentProps) {
         <p className="text-muted-foreground">
           One simple payment to get started with everything you need
         </p>
+        <div className="flex justify-center pt-2">
+          <PricingFAQModal />
+        </div>
       </div>
 
       <Card className="p-6 space-y-6">

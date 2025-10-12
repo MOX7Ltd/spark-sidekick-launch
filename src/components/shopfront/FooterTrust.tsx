@@ -37,8 +37,13 @@ export function FooterTrust({ contactEmail, showPoweredBy = true, className }: F
             )}
           </div>
           {showPoweredBy && (
-            <div className="mt-3 border-t pt-3 text-[11px] text-center">
-              Powered by <span className="font-semibold">SideHive</span>
+            <div className="mt-3 border-t pt-3 text-[11px] text-center space-y-1">
+              <div>
+                Payments securely processed by <span className="font-semibold">Stripe</span>
+              </div>
+              <div className="text-muted-foreground/80">
+                15% platform fee • Powered by <span className="font-semibold text-foreground">SideHive</span>
+              </div>
             </div>
           )}
         </div>

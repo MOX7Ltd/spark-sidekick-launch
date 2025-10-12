@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { FLAGS } from '@/lib/flags';
+import { PricingSummaryCard } from '@/components/pricing/PricingSummaryCard';
+import { PricingFAQModal } from '@/components/pricing/PricingFAQModal';
 
 export default function Billing() {
   const navigate = useNavigate();
@@ -153,9 +155,12 @@ export default function Billing() {
       <BackBar to="/hub" label="Back to Hub" />
       
       <div className="mx-auto mt-6 max-w-4xl space-y-6 p-4">
-        <div>
-          <h1 className="text-3xl font-bold">Billing & Subscription</h1>
-          <p className="text-muted-foreground">Manage your SideHive Pro subscription</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Billing & Subscription</h1>
+            <p className="text-muted-foreground">Manage your SideHive Pro subscription</p>
+          </div>
+          <PricingFAQModal />
         </div>
 
         {isLoading ? (
@@ -165,6 +170,9 @@ export default function Billing() {
           </Card>
         ) : (
           <div className="space-y-6">
+            {/* Pricing Overview */}
+            <PricingSummaryCard />
+
             {/* Current Plan Card */}
             <Card className="p-6">
               <div className="flex items-start justify-between">
