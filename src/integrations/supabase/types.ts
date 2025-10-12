@@ -157,6 +157,7 @@ export type Database = {
           business_name: string | null
           created_at: string | null
           experience: string | null
+          handle: string | null
           id: string
           idea: string | null
           logo_svg: string | null
@@ -179,6 +180,7 @@ export type Database = {
           business_name?: string | null
           created_at?: string | null
           experience?: string | null
+          handle?: string | null
           id?: string
           idea?: string | null
           logo_svg?: string | null
@@ -201,6 +203,7 @@ export type Database = {
           business_name?: string | null
           created_at?: string | null
           experience?: string | null
+          handle?: string | null
           id?: string
           idea?: string | null
           logo_svg?: string | null

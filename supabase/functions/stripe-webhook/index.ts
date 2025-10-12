@@ -61,6 +61,34 @@ serve(async (req) => {
           console.log("Marked starter_paid=true for user:", userId);
         }
 
+        // Generate shopfront handle if it doesn't exist
+        const { data: business } = await supabase
+          .from("businesses")
+          .select("id, business_name, handle")
+          .eq("owner_id", userId)
+          .maybeSingle();
+
+        if (business && !business.handle) {
+          const slug = (business.business_name || "shop")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)+/g, "")
+            .slice(0, 40);
+
+          const handle = `${slug}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+          const { error: handleError } = await supabase
+            .from("businesses")
+            .update({ handle })
+            .eq("id", business.id);
+
+          if (handleError) {
+            console.error("Error creating shopfront handle:", handleError);
+          } else {
+            console.log("✅ Generated shopfront handle:", handle);
+          }
+        }
+
         // Create Stripe Connect Express account
         const customerEmail = session.customer_email || session.customer_details?.email;
         
