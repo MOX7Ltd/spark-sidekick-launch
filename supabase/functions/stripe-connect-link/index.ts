@@ -76,8 +76,8 @@ serve(async (req) => {
     // Create account link for onboarding
     const accountLink = await stripe.accountLinks.create({
       account: business.stripe_account_id,
-      refresh_url: `${publicSiteUrl}/welcome?stripe=refresh`,
-      return_url: `${publicSiteUrl}/welcome?stripe=return`,
+      refresh_url: `${publicSiteUrl}/hub/profile/shopfront?stripe=refresh`,
+      return_url: `${publicSiteUrl}/hub/profile/shopfront?stripe=return`,
       type: "account_onboarding",
     });
 

@@ -46,9 +46,9 @@ serve(async (req) => {
 
     // Check if user already has a customer ID
     const { data: userRecord } = await supabase
-      .from("users")
+      .from("profiles")
       .select("stripe_customer_id")
-      .eq("id", user.id)
+      .eq("user_id", user.id)
       .single();
 
     let customerId = userRecord?.stripe_customer_id;
@@ -63,9 +63,9 @@ serve(async (req) => {
       customerId = customer.id;
 
       await supabase
-        .from("users")
+        .from("profiles")
         .update({ stripe_customer_id: customerId })
-        .eq("id", user.id);
+        .eq("user_id", user.id);
 
       console.log("Created customer:", customerId);
     }

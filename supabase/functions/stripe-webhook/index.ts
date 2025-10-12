@@ -141,14 +141,14 @@ serve(async (req) => {
 
           // Update user's subscription status
           const { error: subError } = await supabase
-            .from("users")
+            .from("profiles")
             .update({
               subscription_status: subscription.status,
               subscription_current_period_end: new Date(
                 subscription.current_period_end * 1000
               ).toISOString(),
             })
-            .eq("id", userId);
+            .eq("user_id", userId);
 
           if (subError) {
             console.error("Error updating subscription status:", subError);
@@ -172,7 +172,7 @@ serve(async (req) => {
       });
 
       const { error } = await supabase
-        .from("users")
+        .from("profiles")
         .update({
           subscription_status: subscription.status,
           subscription_current_period_end: new Date(
@@ -195,7 +195,7 @@ serve(async (req) => {
       console.log("Subscription deleted:", subscription.id);
 
       const { error } = await supabase
-        .from("users")
+        .from("profiles")
         .update({
           subscription_status: "canceled",
           subscription_current_period_end: new Date(
@@ -219,7 +219,7 @@ serve(async (req) => {
       });
 
       const { error } = await supabase
-        .from("users")
+        .from("profiles")
         .update({
           subscription_status: "past_due",
         })
@@ -249,7 +249,7 @@ serve(async (req) => {
           );
 
           const { error } = await supabase
-            .from("users")
+            .from("profiles")
             .update({
               subscription_status: subscription.status,
               subscription_current_period_end: new Date(
@@ -298,18 +298,17 @@ serve(async (req) => {
         const productId = paymentIntent.metadata.product_id;
         const quantity = parseInt(paymentIntent.metadata.quantity || "1", 10);
         
-        const amountTotal = paymentIntent.amount / 100;
-        const platformFee = paymentIntent.application_fee_amount
-          ? paymentIntent.application_fee_amount / 100
-          : amountTotal * 0.15;
-        const netAmount = amountTotal - platformFee;
+        // All amounts in cents
+        const amountCents = paymentIntent.amount;
+        const feeCents = paymentIntent.application_fee_amount ?? Math.round(amountCents * 0.15);
+        const netCents = amountCents - feeCents;
 
         console.log("Order details:", {
           businessId,
           productId,
-          amount: amountTotal,
-          fee: platformFee,
-          net: netAmount,
+          amount: amountCents,
+          fee: feeCents,
+          net: netCents,
         });
 
         // Upsert order record (idempotent on webhook retries)
@@ -318,9 +317,9 @@ serve(async (req) => {
             business_id: businessId,
             product_id: productId,
             stripe_payment_intent: paymentIntent.id,
-            amount_total: Math.round(amountTotal * 100), // store as cents
-            fee_amount: Math.round(platformFee * 100),
-            net_amount: netAmount,
+            amount_total: amountCents,
+            platform_fee: feeCents,
+            net_amount: netCents,
             customer_email: paymentIntent.receipt_email || null,
             currency: paymentIntent.currency.toUpperCase(),
             payment_method: "card",
@@ -393,7 +392,7 @@ serve(async (req) => {
       });
 
       const { error } = await supabase
-        .from("users")
+        .from("profiles")
         .update({
           subscription_status: subscription.status,
           subscription_current_period_end: new Date(
@@ -409,18 +408,18 @@ serve(async (req) => {
       }
     }
 
-    // Handle transfer.paid (informational - payout to connected account)
-    if (event.type === "transfer.paid") {
+    // Handle transfer.created (funds moved to connected account)
+    if (event.type === "transfer.created") {
       const transfer = event.data.object as Stripe.Transfer;
       
-      console.log("Transfer paid to connected account:", {
+      console.log("Transfer created to connected account:", {
         transferId: transfer.id,
         destination: transfer.destination,
         amount: transfer.amount / 100,
         currency: transfer.currency,
       });
 
-      // Optional: Log payout information for reporting
+      // Optional: Log transfer information for reporting
       // Could extend orders table with payout_transfer_id to track this
     }
 

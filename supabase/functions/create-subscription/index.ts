@@ -46,9 +46,9 @@ serve(async (req) => {
 
     // Get user's Stripe customer ID
     const { data: userRecord, error: userError } = await supabase
-      .from("users")
+      .from("profiles")
       .select("stripe_customer_id, subscription_status")
-      .eq("id", user.id)
+      .eq("user_id", user.id)
       .single();
 
     if (userError || !userRecord?.stripe_customer_id) {
