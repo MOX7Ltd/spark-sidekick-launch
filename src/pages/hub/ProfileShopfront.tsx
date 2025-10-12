@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ShopfrontView } from '@/components/shopfront/ShopfrontView';
+import { StripeOnboardingCard } from '@/components/shopfront/StripeOnboardingCard';
 import { getSettings, saveDraft, publishDraft } from '@/lib/shopfront/settingsApi';
 import { supabase } from '@/integrations/supabase/client';
 import { getShopfrontUrl } from '@/lib/shopfront';
@@ -71,6 +72,8 @@ function OwnerShopfrontInner() {
   const [publishedSettings, setPublishedSettings] = React.useState<any | null>(null);
 
   // Load owner business
+  const [refreshTrigger, setRefreshTrigger] = React.useState(0);
+  
   React.useEffect(() => {
     let alive = true;
     (async () => {
@@ -133,7 +136,7 @@ function OwnerShopfrontInner() {
       }
     })();
     return () => { alive = false; };
-  }, []);
+  }, [refreshTrigger]);
 
   // Load settings (draft + published)
   React.useEffect(() => {
@@ -188,6 +191,15 @@ function OwnerShopfrontInner() {
       <div className="mx-auto mt-6 max-w-screen-xl space-y-6">
         {/* Shopfront URL Section */}
         <ShopfrontUrlSection business={business} />
+
+        {/* Stripe Onboarding Card - Only show if paid but not onboarded */}
+        {business?.starterPaid && !business?.stripeOnboarded && (
+          <StripeOnboardingCard
+            businessId={business.id}
+            stripeOnboarded={business.stripeOnboarded}
+            onStatusUpdate={() => setRefreshTrigger(prev => prev + 1)}
+          />
+        )}
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[22rem_1fr]">
         {/* Controls */}

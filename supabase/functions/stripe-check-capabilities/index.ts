@@ -44,13 +44,17 @@ serve(async (req) => {
     // Get user's Connect account ID
     const { data: business } = await supabase
       .from("businesses")
-      .select("stripe_account_id")
+      .select("stripe_account_id, stripe_onboarded")
       .eq("owner_id", user.id)
       .single();
 
     if (!business?.stripe_account_id) {
       return new Response(
-        JSON.stringify({ error: "No Connect account found" }),
+        JSON.stringify({ 
+          error: "No Connect account found",
+          hasAccount: false,
+          onboarded: false,
+        }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -65,20 +69,27 @@ serve(async (req) => {
       detailsSubmitted: account.details_submitted,
     });
 
-    // If charges are enabled, update database
-    if (account.charges_enabled) {
+    // If charges are enabled and not yet marked, update database
+    if (account.charges_enabled && !business.stripe_onboarded) {
+      console.log("Syncing stripe_onboarded=true for account:", account.id);
       await supabase
         .from("businesses")
         .update({ stripe_onboarded: true })
         .eq("owner_id", user.id);
     }
 
+    const requiresOnboarding = !account.charges_enabled || !account.details_submitted;
+
     return new Response(
       JSON.stringify({
-        charges_enabled: account.charges_enabled || false,
-        payouts_enabled: account.payouts_enabled || false,
-        details_submitted: account.details_submitted || false,
+        hasAccount: true,
         onboarded: account.charges_enabled || false,
+        capabilities: {
+          charges_enabled: account.charges_enabled || false,
+          payouts_enabled: account.payouts_enabled || false,
+          details_submitted: account.details_submitted || false,
+        },
+        requiresOnboarding,
       }),
       {
         status: 200,
