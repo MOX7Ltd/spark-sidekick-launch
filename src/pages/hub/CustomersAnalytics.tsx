@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
 import { Users, Repeat, DollarSign, Star, TrendingUp } from 'lucide-react';
+import { CustomerDetailDrawer } from '@/components/customers/CustomerDetailDrawer';
 
 export default function CustomersAnalytics() {
   if (!FLAGS.CUSTOMER_INSIGHTS_V1) {
@@ -24,6 +25,8 @@ export default function CustomersAnalytics() {
 
   const { toast } = useToast();
   const [businessId, setBusinessId] = React.useState<string | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = React.useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
 
   React.useEffect(() => {
     (async () => {
@@ -78,11 +81,17 @@ export default function CustomersAnalytics() {
       .slice(0, 10)
       .map((c: any) => ({
         email: c.customer_email?.split('@')[0] || 'Unknown',
+        fullEmail: c.customer_email,
         spend: Number(c.total_spend || 0),
         orders: Number(c.total_orders || 0),
         rating: Number(c.avg_rating || 0),
       }));
   }, [data]);
+
+  const handleCustomerClick = (email: string) => {
+    setSelectedCustomer(email);
+    setDrawerOpen(true);
+  };
 
   return (
     <AppSurface>
@@ -192,11 +201,19 @@ export default function CustomersAnalytics() {
               <Card className="bg-card border-border">
                 <CardHeader>
                   <CardTitle>Top Customers by Spend</CardTitle>
+                  <p className="text-sm text-muted-foreground">Click any bar to view customer details</p>
                 </CardHeader>
                 <CardContent>
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={topCustomers}>
+                      <BarChart 
+                        data={topCustomers}
+                        onClick={(e) => {
+                          if (e?.activePayload?.[0]?.payload?.fullEmail) {
+                            handleCustomerClick(e.activePayload[0].payload.fullEmail);
+                          }
+                        }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis 
                           dataKey="email" 
@@ -212,10 +229,21 @@ export default function CustomersAnalytics() {
                             border: '1px solid hsl(var(--border))',
                             borderRadius: '0.5rem',
                           }}
+                          cursor={{ fill: 'hsl(var(--muted))' }}
                         />
                         <Legend />
-                        <Bar dataKey="spend" fill="hsl(var(--primary))" name="Total Spend ($)" />
-                        <Bar dataKey="orders" fill="hsl(var(--sh-teal-500))" name="Orders" />
+                        <Bar 
+                          dataKey="spend" 
+                          fill="hsl(var(--primary))" 
+                          name="Total Spend ($)"
+                          cursor="pointer"
+                        />
+                        <Bar 
+                          dataKey="orders" 
+                          fill="hsl(var(--sh-teal-500))" 
+                          name="Orders"
+                          cursor="pointer"
+                        />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -236,6 +264,17 @@ export default function CustomersAnalytics() {
             )}
           </div>
         )}
+
+        {/* Customer Detail Drawer */}
+        <CustomerDetailDrawer
+          businessId={businessId || ''}
+          customerEmail={selectedCustomer}
+          open={drawerOpen}
+          onClose={() => {
+            setDrawerOpen(false);
+            setSelectedCustomer(null);
+          }}
+        />
       </div>
     </AppSurface>
   );

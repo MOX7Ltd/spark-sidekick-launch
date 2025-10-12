@@ -71,3 +71,6 @@ verify_jwt = true
 
 [functions.get-customer-insights]
 verify_jwt = true
+
+[functions.get-customer-profile]
+verify_jwt = true
