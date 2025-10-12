@@ -113,14 +113,14 @@ serve(async (req) => {
 
           // Update user's subscription status
           const { error: subError } = await supabase
-            .from("profiles")
+            .from("users")
             .update({
               subscription_status: subscription.status,
               subscription_current_period_end: new Date(
                 subscription.current_period_end * 1000
               ).toISOString(),
             })
-            .eq("user_id", userId);
+            .eq("id", userId);
 
           if (subError) {
             console.error("Error updating subscription status:", subError);
@@ -144,7 +144,7 @@ serve(async (req) => {
       });
 
       const { error } = await supabase
-        .from("profiles")
+        .from("users")
         .update({
           subscription_status: subscription.status,
           subscription_current_period_end: new Date(
@@ -167,7 +167,7 @@ serve(async (req) => {
       console.log("Subscription deleted:", subscription.id);
 
       const { error } = await supabase
-        .from("profiles")
+        .from("users")
         .update({
           subscription_status: "canceled",
           subscription_current_period_end: new Date(
@@ -191,7 +191,7 @@ serve(async (req) => {
       });
 
       const { error } = await supabase
-        .from("profiles")
+        .from("users")
         .update({
           subscription_status: "past_due",
         })
@@ -221,7 +221,7 @@ serve(async (req) => {
           );
 
           const { error } = await supabase
-            .from("profiles")
+            .from("users")
             .update({
               subscription_status: subscription.status,
               subscription_current_period_end: new Date(
@@ -284,20 +284,23 @@ serve(async (req) => {
           net: netAmount,
         });
 
-        // Insert order record
-        const { error: orderError } = await supabase.from("orders").insert({
-          business_id: businessId,
-          product_id: productId,
-          stripe_payment_intent: paymentIntent.id,
-          amount_total: Math.round(amountTotal * 100), // store as cents
-          platform_fee: Math.round(platformFee * 100),
-          net_amount: Math.round(netAmount * 100),
-          customer_email: paymentIntent.receipt_email || null,
-          currency: paymentIntent.currency.toUpperCase(),
-          payment_method: "card",
-          quantity,
-          status: "paid",
-        });
+        // Upsert order record (idempotent on webhook retries)
+        const { error: orderError } = await supabase.from("orders").upsert(
+          {
+            business_id: businessId,
+            product_id: productId,
+            stripe_payment_intent: paymentIntent.id,
+            amount_total: Math.round(amountTotal * 100), // store as cents
+            fee_amount: Math.round(platformFee * 100),
+            net_amount: netAmount,
+            customer_email: paymentIntent.receipt_email || null,
+            currency: paymentIntent.currency.toUpperCase(),
+            payment_method: "card",
+            quantity,
+            status: "paid",
+          },
+          { onConflict: "stripe_payment_intent" }
+        );
 
         if (orderError) {
           console.error("Error inserting order:", orderError);
@@ -362,7 +365,7 @@ serve(async (req) => {
       });
 
       const { error } = await supabase
-        .from("profiles")
+        .from("users")
         .update({
           subscription_status: subscription.status,
           subscription_current_period_end: new Date(
