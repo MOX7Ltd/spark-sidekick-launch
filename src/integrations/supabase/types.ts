@@ -164,7 +164,10 @@ export type Database = {
           naming_preference: string | null
           owner_id: string | null
           session_id: string | null
+          starter_paid: boolean | null
           status: string | null
+          stripe_account_id: string | null
+          stripe_onboarded: boolean | null
           tagline: string | null
           tone_tags: string[] | null
           updated_at: string | null
@@ -183,7 +186,10 @@ export type Database = {
           naming_preference?: string | null
           owner_id?: string | null
           session_id?: string | null
+          starter_paid?: boolean | null
           status?: string | null
+          stripe_account_id?: string | null
+          stripe_onboarded?: boolean | null
           tagline?: string | null
           tone_tags?: string[] | null
           updated_at?: string | null
@@ -202,7 +208,10 @@ export type Database = {
           naming_preference?: string | null
           owner_id?: string | null
           session_id?: string | null
+          starter_paid?: boolean | null
           status?: string | null
+          stripe_account_id?: string | null
+          stripe_onboarded?: boolean | null
           tagline?: string | null
           tone_tags?: string[] | null
           updated_at?: string | null
@@ -773,10 +782,13 @@ export type Database = {
           customer_email: string | null
           fee_amount: number | null
           id: string
+          net_amount: number | null
           payment_method: string | null
+          platform_fee: number | null
           product_id: string | null
           quantity: number | null
           status: string | null
+          stripe_payment_intent: string | null
         }
         Insert: {
           amount_total: number
@@ -786,10 +798,13 @@ export type Database = {
           customer_email?: string | null
           fee_amount?: number | null
           id?: string
+          net_amount?: number | null
           payment_method?: string | null
+          platform_fee?: number | null
           product_id?: string | null
           quantity?: number | null
           status?: string | null
+          stripe_payment_intent?: string | null
         }
         Update: {
           amount_total?: number
@@ -799,10 +814,13 @@ export type Database = {
           customer_email?: string | null
           fee_amount?: number | null
           id?: string
+          net_amount?: number | null
           payment_method?: string | null
+          platform_fee?: number | null
           product_id?: string | null
           quantity?: number | null
           status?: string | null
+          stripe_payment_intent?: string | null
         }
         Relationships: [
           {
@@ -956,6 +974,9 @@ export type Database = {
           email: string | null
           last_active_at: string | null
           starter_pack_shared: boolean
+          stripe_customer_id: string | null
+          subscription_current_period_end: string | null
+          subscription_status: string | null
           timezone: string | null
           user_id: string
         }
@@ -965,6 +986,9 @@ export type Database = {
           email?: string | null
           last_active_at?: string | null
           starter_pack_shared?: boolean
+          stripe_customer_id?: string | null
+          subscription_current_period_end?: string | null
+          subscription_status?: string | null
           timezone?: string | null
           user_id: string
         }
@@ -974,6 +998,9 @@ export type Database = {
           email?: string | null
           last_active_at?: string | null
           starter_pack_shared?: boolean
+          stripe_customer_id?: string | null
+          subscription_current_period_end?: string | null
+          subscription_status?: string | null
           timezone?: string | null
           user_id?: string
         }
@@ -1117,6 +1144,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      stripe_events: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          type?: string
+        }
+        Relationships: []
       }
     }
     Views: {

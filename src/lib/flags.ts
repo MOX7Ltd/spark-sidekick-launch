@@ -9,6 +9,7 @@ export const FLAGS = {
   STRIPE_V1: true, // enable sales performance tracking
   CALENDAR_V1: true, // enable calendar & appointments
   SOCIAL_V1: true, // enable social performance tracking
+  STRIPE_PAYMENTS_V1: true, // enable Stripe integration (starter pack, subscriptions, marketplace)
 } as const;
 
 export type FlagKey = keyof typeof FLAGS;
