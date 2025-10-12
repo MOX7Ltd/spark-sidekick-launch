@@ -45,13 +45,13 @@ serve(async (req) => {
     console.log("Creating starter session for user:", user.id);
 
     // Check if user already has a customer ID
-    const { data: profile } = await supabase
-      .from("profiles")
+    const { data: userRecord } = await supabase
+      .from("users")
       .select("stripe_customer_id")
-      .eq("user_id", user.id)
+      .eq("id", user.id)
       .single();
 
-    let customerId = profile?.stripe_customer_id;
+    let customerId = userRecord?.stripe_customer_id;
 
     // Create Stripe Customer if doesn't exist
     if (!customerId) {
@@ -63,9 +63,9 @@ serve(async (req) => {
       customerId = customer.id;
 
       await supabase
-        .from("profiles")
+        .from("users")
         .update({ stripe_customer_id: customerId })
-        .eq("user_id", user.id);
+        .eq("id", user.id);
 
       console.log("Created customer:", customerId);
     }

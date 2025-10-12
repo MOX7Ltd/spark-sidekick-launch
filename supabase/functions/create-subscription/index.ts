@@ -45,14 +45,14 @@ serve(async (req) => {
     console.log("Creating subscription for user:", user.id);
 
     // Get user's Stripe customer ID
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
+    const { data: userRecord, error: userError } = await supabase
+      .from("users")
       .select("stripe_customer_id, subscription_status")
-      .eq("user_id", user.id)
+      .eq("id", user.id)
       .single();
 
-    if (profileError || !profile?.stripe_customer_id) {
-      console.error("Profile or customer not found:", profileError);
+    if (userError || !userRecord?.stripe_customer_id) {
+      console.error("User record or customer not found:", userError);
       return new Response(
         JSON.stringify({ error: "Stripe customer not found. Please complete payment first." }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -60,12 +60,12 @@ serve(async (req) => {
     }
 
     // Check if already has active subscription
-    if (profile.subscription_status === 'active' || profile.subscription_status === 'trialing') {
+    if (userRecord.subscription_status === 'active' || userRecord.subscription_status === 'trialing') {
       console.log("User already has active subscription");
       return new Response(
         JSON.stringify({ 
           error: "You already have an active subscription",
-          status: profile.subscription_status 
+          status: userRecord.subscription_status 
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -88,7 +88,7 @@ serve(async (req) => {
     // Create Checkout Session for subscription with trial
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      customer: profile.stripe_customer_id,
+      customer: userRecord.stripe_customer_id,
       line_items: [
         {
           price: priceId,
