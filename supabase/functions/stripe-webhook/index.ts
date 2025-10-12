@@ -307,6 +307,92 @@ serve(async (req) => {
       }
     }
 
+    // Handle payment_intent.payment_failed (marketplace payment failures)
+    if (event.type === "payment_intent.payment_failed") {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      
+      console.log("Payment intent failed:", paymentIntent.id);
+
+      // Update existing order if it exists
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: "failed" })
+        .eq("stripe_payment_intent", paymentIntent.id);
+
+      if (error) {
+        console.error("Error updating failed payment:", error);
+      } else {
+        console.log("Marked order as failed for payment:", paymentIntent.id);
+      }
+    }
+
+    // Handle charge.refunded (refunds for marketplace purchases)
+    if (event.type === "charge.refunded") {
+      const charge = event.data.object as Stripe.Charge;
+      const paymentIntentId = charge.payment_intent as string;
+      
+      console.log("Charge refunded:", {
+        chargeId: charge.id,
+        paymentIntent: paymentIntentId,
+        amountRefunded: charge.amount_refunded / 100,
+      });
+
+      if (paymentIntentId) {
+        const { error } = await supabase
+          .from("orders")
+          .update({ status: "refunded" })
+          .eq("stripe_payment_intent", paymentIntentId);
+
+        if (error) {
+          console.error("Error updating refunded order:", error);
+        } else {
+          console.log("Marked order as refunded for payment:", paymentIntentId);
+        }
+      }
+    }
+
+    // Handle customer.subscription.created (new subscriptions)
+    if (event.type === "customer.subscription.created") {
+      const subscription = event.data.object as Stripe.Subscription;
+      
+      console.log("Subscription created:", {
+        id: subscription.id,
+        customer: subscription.customer,
+        status: subscription.status,
+      });
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          subscription_status: subscription.status,
+          subscription_current_period_end: new Date(
+            subscription.current_period_end * 1000
+          ).toISOString(),
+        })
+        .eq("stripe_customer_id", subscription.customer as string);
+
+      if (error) {
+        console.error("Error creating subscription record:", error);
+      } else {
+        console.log("Created subscription record for customer:", subscription.customer);
+      }
+    }
+
+    // Handle transfer.paid (informational - payout to connected account)
+    if (event.type === "transfer.paid") {
+      const transfer = event.data.object as Stripe.Transfer;
+      
+      console.log("Transfer paid to connected account:", {
+        transferId: transfer.id,
+        destination: transfer.destination,
+        amount: transfer.amount / 100,
+        currency: transfer.currency,
+      });
+
+      // Optional: Log payout information for reporting
+      // Could extend orders table with payout_transfer_id to track this
+    }
+
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
       headers: { "Content-Type": "application/json" },

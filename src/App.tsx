@@ -23,6 +23,7 @@ import CustomersMessages from "./pages/hub/CustomersMessages";
 import CustomersReviews from "./pages/hub/CustomersReviews";
 import CustomersCalendar from "./pages/hub/CustomersCalendar";
 import Analytics from "./pages/hub/Analytics";
+import SalesPerformance from "./pages/hub/SalesPerformance";
 import Profile from "./pages/hub/Profile";
 import ProfileUser from "./pages/hub/ProfileUser";
 import ProfileBusiness from "./pages/hub/ProfileBusiness";
@@ -61,6 +62,7 @@ const App = () => (
           <Route path="/hub/customers/reviews" element={<CustomersReviews />} />
           <Route path="/hub/customers/calendar" element={<CustomersCalendar />} />
           {FLAGS.ANALYTICS_V1 && <Route path="/hub/analytics" element={<Analytics />} />}
+          {FLAGS.STRIPE_PAYMENTS_V1 && <Route path="/hub/sales" element={<SalesPerformance />} />}
           <Route path="/hub/profile" element={<Profile />} />
           <Route path="/hub/profile/user" element={<ProfileUser />} />
           <Route path="/hub/profile/business" element={<ProfileBusiness />} />
