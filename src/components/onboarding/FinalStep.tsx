@@ -97,7 +97,7 @@ export const FinalStep = ({ formData, context, onCheckoutComplete, navigate, toa
             </p>
           </div>
         </div>
-        <DebugPanel info={{ context, formData, currentStep: 7 }} />
+        <DebugPanel info={{ step: 'FinalStep', brandContext: context }} />
       </>
     );
   }
@@ -110,7 +110,7 @@ export const FinalStep = ({ formData, context, onCheckoutComplete, navigate, toa
         businessName={context.business_name || formData.businessIdentity?.name || 'your business'}
         onContinue={onCheckoutComplete}
       />
-      <DebugPanel info={{ context, formData, currentStep: 7 }} />
+      <DebugPanel info={{ step: 'FinalStep', brandContext: context }} />
     </>
   );
 };

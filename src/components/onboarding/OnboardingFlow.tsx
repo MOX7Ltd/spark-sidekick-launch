@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { StepOne } from './StepOne';
 import { StepAboutYouMobile } from './StepAboutYouMobile';
 import { StepAboutBusiness } from './StepAboutBusiness';
 import { SocialPostPreview } from './SocialPostPreview';
 import { StepBusinessIdentity } from './StepBusinessIdentity';
 import { StarterPackReveal } from './StarterPackReveal';
-import { StarterPackCheckout } from './StarterPackCheckout';
-import LaunchPricing from './LaunchPricing';
+import { FinalStep } from './FinalStep';
 import { ProgressBar } from './ProgressBar';
 import { useToast } from '@/hooks/use-toast';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
