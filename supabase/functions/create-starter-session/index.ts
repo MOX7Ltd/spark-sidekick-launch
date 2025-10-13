@@ -22,7 +22,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get authenticated user
+    // Get authenticated user from Authorization header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -44,9 +44,9 @@ serve(async (req) => {
 
     console.log("Creating starter session for user:", user.id);
 
-    // Get session_id from request body
+    // Get session_id from request body and headers
     const body = await req.json();
-    const sessionId = body.session_id;
+    const sessionId = body.session_id || req.headers.get('X-Session-Id');
 
     // Check if user already has a customer ID
     const { data: userRecord } = await supabase

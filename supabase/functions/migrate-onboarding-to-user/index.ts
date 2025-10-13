@@ -257,33 +257,68 @@ serve(async (req) => {
       posts_count: dig<any[]>(payload, 'generatedPosts')?.length ?? 0
     });
     
+    // Find or create business (enforce one business per user)
     if (businessName) {
-      const { data: business, error: businessError } = await supabase
+      const { data: existing } = await supabase
         .from('businesses')
-        .insert({
-          owner_id: user_id,
-          business_name: businessName,
-          bio: bio,
-          tagline: tagline,
-          logo_url: logo_url,
-          logo_svg: logo_svg,
-          tone_tags: toneAdj,
-          audience: audience,
-          brand_colors: (Array.isArray(brandColors) && brandColors.length > 0) 
-            ? { colors: brandColors } 
-            : null,
-          status: 'draft',
-          session_id: session_id,
-        })
         .select('id')
-        .single();
+        .eq('owner_id', user_id)
+        .neq('status', 'deleted')
+        .maybeSingle();
 
-      if (businessError) {
-        console.error('[migrate-onboarding] Business creation failed:', businessError);
-        throw new Error(`Business creation failed: ${businessError.message}`);
+      if (existing) {
+        // Update existing business with onboarding data
+        const { error: updateError } = await supabase
+          .from('businesses')
+          .update({
+            business_name: businessName,
+            bio: bio || existing.bio,
+            tagline: tagline || existing.tagline,
+            logo_url: logo_url || existing.logo_url,
+            logo_svg: logo_svg || existing.logo_svg,
+            tone_tags: toneAdj || existing.tone_tags,
+            audience: audience || existing.audience,
+            brand_colors: (Array.isArray(brandColors) && brandColors.length > 0) 
+              ? { colors: brandColors } 
+              : existing.brand_colors,
+          })
+          .eq('id', existing.id);
+
+        if (updateError) {
+          console.error('[migrate-onboarding] Business update failed:', updateError);
+        } else {
+          businessId = existing.id;
+          console.log('[migrate-onboarding] Business updated:', businessId);
+        }
       } else {
-        businessId = business.id;
-        console.log('[migrate-onboarding] Business created:', businessId);
+        // Create new business
+        const { data: business, error: businessError } = await supabase
+          .from('businesses')
+          .insert({
+            owner_id: user_id,
+            business_name: businessName,
+            bio: bio,
+            tagline: tagline,
+            logo_url: logo_url,
+            logo_svg: logo_svg,
+            tone_tags: toneAdj,
+            audience: audience,
+            brand_colors: (Array.isArray(brandColors) && brandColors.length > 0) 
+              ? { colors: brandColors } 
+              : null,
+            status: 'draft',
+            session_id: session_id,
+          })
+          .select('id')
+          .single();
+
+        if (businessError) {
+          console.error('[migrate-onboarding] Business creation failed:', businessError);
+          throw new Error(`Business creation failed: ${businessError.message}`);
+        } else {
+          businessId = business.id;
+          console.log('[migrate-onboarding] Business created:', businessId);
+        }
       }
     }
 
