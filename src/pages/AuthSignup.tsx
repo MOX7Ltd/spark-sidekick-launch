@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
-import { getOnboardingSessionId, clearOnboardingSession } from '@/lib/onboardingSession';
+import { getSessionId } from '@/lib/telemetry';
 
 export default function AuthSignup() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -17,26 +18,6 @@ export default function AuthSignup() {
     password: '',
     name: '',
   });
-
-  const handleMigration = async (userId: string) => {
-    const sessionId = getOnboardingSessionId();
-    if (!sessionId) return;
-
-    try {
-      const { error } = await supabase.functions.invoke('migrate-onboarding-to-user', {
-        body: { user_id: userId, session_id: sessionId }
-      });
-
-      if (error) {
-        console.error('Migration failed:', error);
-      } else {
-        console.log('Onboarding data migrated successfully');
-        clearOnboardingSession();
-      }
-    } catch (error) {
-      console.error('Migration error:', error);
-    }
-  };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,18 +40,31 @@ export default function AuthSignup() {
         payload: { action: 'start_signup' },
       });
 
-      const { data, error } = await supabase.auth.signUp({
+      const redirectTo = searchParams.get('next') || '/onboarding/final';
+
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/signin`,
+          emailRedirectTo: `${window.location.origin}${redirectTo}`,
           data: {
             display_name: formData.name || undefined,
           },
         },
       });
 
-      if (error) throw error;
+      if (signUpError) throw signUpError;
+
+      // Auto sign-in if session wasn't automatically created
+      let session = signUpData.session;
+      if (!session) {
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+        if (signInError) throw signInError;
+        session = signInData.session;
+      }
 
       await logFrontendEvent({
         eventType: 'user_action',
@@ -78,17 +72,29 @@ export default function AuthSignup() {
         payload: { action: 'complete_signup' },
       });
 
-      // Migrate onboarding data if session exists
-      if (data.user?.id) {
-        await handleMigration(data.user.id);
+      // Migrate onboarding data
+      const sessionId = getSessionId();
+      if (session && sessionId) {
+        try {
+          await supabase.functions.invoke('migrate-onboarding-to-user', {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: { session_id: sessionId }
+          });
+          console.log('Onboarding data migrated successfully');
+        } catch (migrationError) {
+          console.error('Migration error:', migrationError);
+          // Don't block the user if migration fails
+        }
       }
 
       toast({
         title: 'Account created!',
-        description: 'Please sign in to continue',
+        description: 'Welcome to SideHive.',
       });
 
-      navigate('/auth/signin');
+      navigate(redirectTo);
     } catch (error: any) {
       console.error('Signup error:', error);
       toast({

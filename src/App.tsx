@@ -33,6 +33,7 @@ import Settings from "./pages/hub/Settings";
 import Billing from "./pages/hub/Billing";
 import PublicShopfront from "./pages/shopfront/PublicShopfront";
 import PaymentWelcome from "./pages/PaymentWelcome";
+import OnboardingFinal from "./pages/OnboardingFinal";
 import { FLAGS } from "@/lib/flags";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,8 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth/signup" element={<AuthSignup />} />
           <Route path="/auth/signin" element={<AuthSignin />} />
+          <Route path="/onboarding/final" element={<OnboardingFinal />} />
+          <Route path="/payment/welcome" element={<PaymentWelcome />} />
           <Route path="/hub" element={<HubHome />} />
           <Route path="/hub/products" element={<Products />} />
           <Route path="/hub/products/lab" element={<ProductsLab />} />
@@ -72,7 +75,6 @@ const App = () => (
           <Route path="/hub/settings" element={<Settings />} />
           {FLAGS.STRIPE_PAYMENTS_V1 && <Route path="/hub/billing" element={<Billing />} />}
           {FLAGS.SHOPFRONT_V1 && <Route path="/s/:handle" element={<PublicShopfront />} />}
-          {FLAGS.STRIPE_PAYMENTS_V1 && <Route path="/welcome" element={<PaymentWelcome />} />}
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

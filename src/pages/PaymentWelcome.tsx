@@ -16,7 +16,8 @@ export default function PaymentWelcome() {
   const [connectUrl, setConnectUrl] = useState<string | null>(null);
   const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
-  const [isCreatingSubscription, setIsCreatingSubscription] = useState(false);
+  const [hasStarterPaid, setHasStarterPaid] = useState<boolean | null>(null);
+  const [isResumingPayment, setIsResumingPayment] = useState(false);
 
   const starterStatus = searchParams.get('starter');
   const stripeStatus = searchParams.get('stripe');
@@ -24,10 +25,42 @@ export default function PaymentWelcome() {
   const csId = searchParams.get('cs_id');
 
   useEffect(() => {
-    if ((starterStatus === 'success' || type === 'starter') && !stripeStatus) {
+    checkPaymentStatus();
+  }, []);
+
+  useEffect(() => {
+    if ((starterStatus === 'success' || (type === 'starter' && hasStarterPaid)) && !stripeStatus) {
       initiateConnectOnboarding();
     }
-  }, [starterStatus, type, stripeStatus]);
+  }, [starterStatus, type, stripeStatus, hasStarterPaid]);
+
+  const checkPaymentStatus = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/auth/signin');
+        return;
+      }
+
+      // Check if user has paid for starter pack
+      const { data: businesses } = await supabase
+        .from('businesses')
+        .select('starter_paid')
+        .eq('owner_id', session.user.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const paid = businesses?.[0]?.starter_paid || false;
+      setHasStarterPaid(paid);
+
+      // If not paid and we're on this page, show abandoned checkout state
+      if (!paid && type === 'starter' && !csId) {
+        // Show abandoned checkout UI
+      }
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+    }
+  };
 
   const initiateConnectOnboarding = async () => {
     try {
@@ -146,43 +179,44 @@ export default function PaymentWelcome() {
     }, 8000);
   };
 
-  const initiateSubscription = async () => {
-    setIsCreatingSubscription(true);
-
+  const handleResumePayment = async () => {
+    setIsResumingPayment(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.access_token) {
-        console.error('No session available');
+      if (!session) {
+        toast({
+          title: "Please sign in",
+          variant: "destructive"
+        });
+        navigate('/auth/signin');
         return;
       }
 
-      // Call edge function to create subscription with trial
-      const { data, error } = await supabase.functions.invoke('create-subscription', {
+      const sessionId = localStorage.getItem('session_id') || '';
+      const response = await supabase.functions.invoke('create-starter-session', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
+          'X-Session-Id': sessionId,
         },
+        body: {
+          session_id: sessionId,
+          flow: 'starter_pack'
+        }
       });
 
-      if (error) {
-        console.error('Error creating subscription:', error);
-        // Don't block the user if subscription fails - they can do it later from billing page
-        toast({
-          title: "Subscription setup pending",
-          description: "Visit your billing page to complete subscription setup.",
-        });
-        return;
+      if (response.error) throw response.error;
+      if (response.data?.url) {
+        window.location.href = response.data.url;
       }
-
-      console.log('Subscription initiated successfully');
-      toast({
-        title: "Trial activated!",
-        description: "Your 14-day free trial of SideHive Pro has started.",
-      });
     } catch (error) {
-      console.error('Subscription error:', error);
+      console.error('Resume payment error:', error);
+      toast({
+        title: "Couldn't resume payment",
+        description: "Please try again or contact support.",
+        variant: "destructive",
+      });
     } finally {
-      setIsCreatingSubscription(false);
+      setIsResumingPayment(false);
     }
   };
 
@@ -200,7 +234,46 @@ export default function PaymentWelcome() {
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-2xl w-full">
           <div className="p-8 space-y-6">
-            {(starterStatus === 'success' || type === 'starter') && (
+            {/* Abandoned Checkout State */}
+            {type === 'starter' && hasStarterPaid === false && !csId && (
+              <>
+                <div className="text-center space-y-3">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center">
+                    <XCircle className="h-8 w-8 text-orange-600" />
+                  </div>
+                  <h1 className="text-3xl md:text-4xl font-bold">
+                    Finish unlocking your Hub
+                  </h1>
+                  <p className="text-lg text-muted-foreground">
+                    It looks like your payment didn't finish.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <Button
+                    onClick={handleResumePayment}
+                    disabled={isResumingPayment}
+                    className="w-full h-14 text-lg bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
+                    size="lg"
+                  >
+                    {isResumingPayment ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      'Resume payment'
+                    )}
+                  </Button>
+                  <p className="text-sm text-center text-muted-foreground">
+                    Starter Pack is a one-time $10 setup. Your 14-day trial begins today.
+                  </p>
+                </div>
+              </>
+            )}
+
+            {/* Success State */}
+            {((starterStatus === 'success' || (type === 'starter' && hasStarterPaid)) && hasStarterPaid !== false) && (
               <>
                 <div className="text-center space-y-3">
                   <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">

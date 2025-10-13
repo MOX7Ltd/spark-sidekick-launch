@@ -22,10 +22,11 @@ import { generateBusinessIdentity, generateLogos, generateCampaign } from '@/lib
 
 interface OnboardingFlowProps {
   onComplete?: (data: OnboardingData) => void;
+  initialStep?: number;
 }
 
-export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
-  const [currentStep, setCurrentStep] = useState(1);
+export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowProps) => {
+  const [currentStep, setCurrentStep] = useState(initialStep);
   const [formData, setFormData] = useState<Partial<OnboardingData>>({});
   const [context, setContext] = useState<BrandContext>({
     idea_text: '',
@@ -280,30 +281,84 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     formData: Partial<OnboardingData>; 
     onCheckoutComplete: () => void;
   }) => {
-    const [stage, setStage] = useState<'auth' | 'reveal' | 'pricing' | 'checkout'>('auth');
+    const [stage, setStage] = useState<'reveal' | 'pricing'>('reveal');
     const [session, setSession] = useState<any>(null);
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+    const [isSigningUp, setIsSigningUp] = useState(false);
+    const [signupData, setSignupData] = useState({ email: '', password: '', name: '' });
 
     useEffect(() => {
       const checkAuth = async () => {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         setSession(currentSession);
         setIsCheckingAuth(false);
-        
-        if (currentSession) {
-          setStage('reveal');
-        }
       };
       checkAuth();
     }, []);
 
+    const handleInlineSignup = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setIsSigningUp(true);
+
+      try {
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: signupData.email,
+          password: signupData.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/onboarding/final`,
+            data: { display_name: signupData.name || undefined }
+          }
+        });
+
+        if (signUpError) throw signUpError;
+
+        // Auto sign-in if session wasn't created
+        if (!signUpData.session) {
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: signupData.email,
+            password: signupData.password,
+          });
+          if (signInError) throw signInError;
+          setSession(signInData.session);
+        } else {
+          setSession(signUpData.session);
+        }
+
+        // Call migration
+        const deviceId = getSessionId();
+        await supabase.functions.invoke('migrate-onboarding-to-user', {
+          headers: {
+            Authorization: `Bearer ${signUpData.session?.access_token || ''}`,
+          },
+          body: { session_id: deviceId }
+        });
+
+        toast({ title: 'Account created!', description: 'Welcome to SideHive.' });
+      } catch (error: any) {
+        toast({
+          title: 'Signup failed',
+          description: error.message || 'Please try again',
+          variant: 'destructive'
+        });
+      } finally {
+        setIsSigningUp(false);
+      }
+    };
+
     const handleStartCheckout = async () => {
-      if (!session) return;
+      if (!session) {
+        toast({
+          title: "Please create your account to continue",
+          variant: "destructive"
+        });
+        return;
+      }
 
       try {
         const deviceId = getSessionId();
         const response = await supabase.functions.invoke('create-starter-session', {
           headers: {
+            Authorization: `Bearer ${session.access_token}`,
             'X-Session-Id': deviceId,
           },
           body: {
@@ -334,26 +389,70 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
       );
     }
 
+    // If no session, show inline signup before reveal
     if (!session) {
       return (
         <Card className="max-w-md mx-auto">
           <CardHeader>
             <CardTitle>Create your account</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              We'll save your progress and link your shopfront. Nothing is lost.
-            </p>
-            <Button
-              size="lg"
-              onClick={() => navigate('/auth/signup?next=/onboarding/final')}
-              className="w-full"
-            >
-              Continue with email
-            </Button>
-            <p className="text-xs text-center text-muted-foreground">
-              We never post without permission.
-            </p>
+          <CardContent>
+            <form onSubmit={handleInlineSignup} className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Your brand is live-ready! Create an account to unlock your hub and start selling.
+              </p>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Name (optional)</label>
+                <input
+                  type="text"
+                  placeholder="Your name"
+                  value={signupData.name}
+                  onChange={(e) => setSignupData({ ...signupData, name: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-md"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Email</label>
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  value={signupData.email}
+                  onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-md"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Password</label>
+                <input
+                  type="password"
+                  placeholder="At least 8 characters"
+                  value={signupData.password}
+                  onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-md"
+                  required
+                  minLength={8}
+                />
+              </div>
+              <Button
+                type="submit"
+                size="lg"
+                disabled={isSigningUp}
+                className="w-full"
+              >
+                {isSigningUp ? 'Creating account...' : 'Continue with email'}
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => navigate('/auth/signin?next=/onboarding/final')}
+                  className="underline"
+                >
+                  Sign in
+                </button>
+              </p>
+            </form>
           </CardContent>
         </Card>
       );
