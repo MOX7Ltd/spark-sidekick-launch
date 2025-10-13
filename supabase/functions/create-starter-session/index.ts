@@ -44,6 +44,10 @@ serve(async (req) => {
 
     console.log("Creating starter session for user:", user.id);
 
+    // Get session_id from request body
+    const body = await req.json();
+    const sessionId = body.session_id;
+
     // Check if user already has a customer ID
     const { data: userRecord } = await supabase
       .from("profiles")
@@ -88,11 +92,12 @@ serve(async (req) => {
           quantity: 1,
         },
       ],
-      success_url: `${publicSiteUrl}/welcome?starter=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${publicSiteUrl}/welcome?starter=cancel`,
+      success_url: `${publicSiteUrl}/payment/welcome?type=starter&cs_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${publicSiteUrl}/onboarding/final`,
+      client_reference_id: user.id,
       metadata: {
-        user_id: user.id,
-        type: "starter_pack",
+        session_id: sessionId || '',
+        flow: "starter_pack",
       },
     });
 

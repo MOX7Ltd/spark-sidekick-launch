@@ -6,6 +6,7 @@ import { Check, Sparkles, ArrowRight, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { FLAGS } from '@/lib/flags';
+import { getSessionId } from '@/lib/telemetry';
 
 interface StarterPackCheckoutProps {
   onContinue: () => void;
@@ -47,6 +48,10 @@ export const StarterPackCheckout = ({ onContinue, businessName }: StarterPackChe
         const { data, error } = await supabase.functions.invoke('create-starter-session', {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
+            'X-Session-Id': getSessionId(),
+          },
+          body: {
+            session_id: getSessionId(),
           },
         });
 

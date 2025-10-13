@@ -35,6 +35,7 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   // Context updater callback
   const onUpdateContext = useCallback(
@@ -380,10 +381,14 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
             />
           )}
 
-          {/* Step 7: Launch Pricing (Replaces Checkout) */}
-          {currentStep === 7 && (
-            <LaunchPricing onBack={goBack} />
-          )}
+          {/* Step 7: Auth gate + Starter Pack */}
+          {currentStep === 7 && <FinalStep 
+            formData={formData} 
+            context={context} 
+            onCheckoutComplete={handleCheckoutComplete}
+            navigate={navigate}
+            toast={toast}
+          />}
         </div>
       </div>
       

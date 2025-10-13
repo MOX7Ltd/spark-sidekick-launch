@@ -42,23 +42,62 @@ serve(async (req) => {
     // Handle checkout.session.completed
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
-      const userId = session.metadata?.user_id;
-      const sessionType = session.metadata?.type;
+      const userId = session.client_reference_id || session.metadata?.user_id;
+      const flow = session.metadata?.flow;
+      const telemetrySessionId = session.metadata?.session_id;
 
-      console.log("Checkout completed:", { userId, sessionType, sessionId: session.id });
+      console.log("Checkout completed:", { userId, flow, sessionId: session.id });
 
       // Handle Starter Pack payment
-      if (userId && sessionType === "starter_pack") {
-        // Mark starter pack as paid
+      if (userId && flow === "starter_pack") {
+        // 1) Mark business as paid and active
         const { error: bizError } = await supabase
           .from("businesses")
-          .update({ starter_paid: true })
-          .eq("owner_id", userId);
+          .update({ 
+            starter_paid: true,
+            status: 'active'
+          })
+          .eq("owner_id", userId)
+          .order('created_at', { ascending: false })
+          .limit(1);
 
         if (bizError) {
           console.error("Error updating business:", bizError);
         } else {
-          console.log("Marked starter_paid=true for user:", userId);
+          console.log("Business marked as starter_paid for user:", userId);
+        }
+
+        // 2) Start 14-day trial in profiles
+        const trialEndDate = new Date();
+        trialEndDate.setDate(trialEndDate.getDate() + 14);
+        
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({
+            subscription_status: 'trialing',
+            subscription_current_period_end: trialEndDate.toISOString(),
+          })
+          .eq("user_id", userId);
+
+        if (profileError) {
+          console.error("Error updating profile trial:", profileError);
+        } else {
+          console.log("14-day trial started for user:", userId);
+        }
+
+        // 3) Mark onboarding session as migrated (audit trail)
+        if (telemetrySessionId) {
+          const { error: sessionError } = await supabase
+            .from("onboarding_sessions")
+            .update({ 
+              migrated_to_user_id: userId, 
+              migrated_at: new Date().toISOString() 
+            })
+            .eq("session_id", telemetrySessionId);
+
+          if (sessionError) {
+            console.error("Error marking onboarding session:", sessionError);
+          }
         }
 
         // Generate shopfront handle if it doesn't exist

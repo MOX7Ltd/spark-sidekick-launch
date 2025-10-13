@@ -20,12 +20,14 @@ export default function PaymentWelcome() {
 
   const starterStatus = searchParams.get('starter');
   const stripeStatus = searchParams.get('stripe');
+  const type = searchParams.get('type');
+  const csId = searchParams.get('cs_id');
 
   useEffect(() => {
-    if (starterStatus === 'success') {
+    if ((starterStatus === 'success' || type === 'starter') && !stripeStatus) {
       initiateConnectOnboarding();
     }
-  }, [starterStatus]);
+  }, [starterStatus, type, stripeStatus]);
 
   const initiateConnectOnboarding = async () => {
     try {
@@ -197,46 +199,62 @@ export default function PaymentWelcome() {
     <AppSurface>
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-lg w-full p-8 space-y-6">
-          {starterStatus === 'success' && (
+          {(starterStatus === 'success' || type === 'starter') && (
             <>
               <div className="text-center space-y-2">
                 <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
                   <CheckCircle2 className="h-8 w-8 text-green-600" />
                 </div>
-                <h1 className="text-2xl font-bold">Payment Successful!</h1>
+                <h1 className="text-2xl font-bold">Payment successful — your 14-day trial has started</h1>
                 <p className="text-muted-foreground">
-                  Your SideHive Starter Pack is activated
+                  Your shopfront is ready. To receive money from sales, set up payouts with Stripe.
                 </p>
               </div>
 
               {!onboardingComplete && connectUrl && (
                 <div className="space-y-4">
-                  <div className="bg-muted p-4 rounded-lg space-y-2">
-                    <h3 className="font-semibold">Next Step: Connect Stripe Payouts</h3>
+                  <div className="bg-muted p-4 rounded-lg space-y-3">
+                    <h3 className="font-semibold">Set up payouts to receive money from sales</h3>
                     <p className="text-sm text-muted-foreground">
-                      Set up your payout account to receive payments from customers.
-                      This takes just 2-3 minutes.
+                      Complete Stripe Connect onboarding. It only takes a couple of minutes.
                     </p>
+                    <ol className="list-decimal ml-5 space-y-1 text-sm text-muted-foreground">
+                      <li>Finish Stripe Connect onboarding (1–3 minutes)</li>
+                      <li>Return here automatically</li>
+                      <li>Start selling and get paid</li>
+                    </ol>
                   </div>
 
-                  <Button
-                    onClick={openConnectOnboarding}
-                    className="w-full"
-                    size="lg"
-                    disabled={isCheckingOnboarding}
-                  >
-                    {isCheckingOnboarding ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Waiting for onboarding...
-                      </>
-                    ) : (
-                      <>
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        Complete Stripe Setup
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={openConnectOnboarding}
+                      className="flex-1"
+                      size="lg"
+                      disabled={isCheckingOnboarding}
+                    >
+                      {isCheckingOnboarding ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Waiting...
+                        </>
+                      ) : (
+                        <>
+                          Set up payouts
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={handleContinue}
+                      variant="outline"
+                      size="lg"
+                    >
+                      Go to my Hub
+                    </Button>
+                  </div>
+
+                  <p className="text-xs text-center text-muted-foreground">
+                    We never see your bank details. Stripe securely handles verification.
+                  </p>
 
                   {isCheckingOnboarding && (
                     <p className="text-xs text-center text-muted-foreground">
