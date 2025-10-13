@@ -50,115 +50,188 @@ serve(async (req) => {
 
       // Handle Starter Pack payment
       if (userId && flow === "starter_pack") {
-        // 1) Mark business as paid and active
-        const { error: bizError } = await supabase
-          .from("businesses")
-          .update({ 
-            starter_paid: true,
-            status: 'active'
-          })
-          .eq("owner_id", userId)
-          .order('created_at', { ascending: false })
-          .limit(1);
+        try {
+          // 1) Ensure Stripe Customer exists
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("stripe_customer_id")
+            .eq("user_id", userId)
+            .single();
 
-        if (bizError) {
-          console.error("Error updating business:", bizError);
-        } else {
-          console.log("Business marked as starter_paid for user:", userId);
-        }
+          let customerId = profile?.stripe_customer_id;
 
-        // 2) Start 14-day trial in profiles
-        const trialEndDate = new Date();
-        trialEndDate.setDate(trialEndDate.getDate() + 14);
-        
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .update({
-            subscription_status: 'trialing',
-            subscription_current_period_end: trialEndDate.toISOString(),
-          })
-          .eq("user_id", userId);
+          if (!customerId) {
+            console.log("Creating Stripe customer for user:", userId);
+            const customerEmail = session.customer_email || session.customer_details?.email;
+            const customer = await stripe.customers.create({
+              email: customerEmail,
+              metadata: { user_id: userId },
+            });
+            customerId = customer.id;
 
-        if (profileError) {
-          console.error("Error updating profile trial:", profileError);
-        } else {
-          console.log("14-day trial started for user:", userId);
-        }
+            await supabase
+              .from("profiles")
+              .update({ stripe_customer_id: customerId })
+              .eq("user_id", userId);
 
-        // 3) Mark onboarding session as migrated (audit trail)
-        if (telemetrySessionId) {
-          const { error: sessionError } = await supabase
-            .from("onboarding_sessions")
-            .update({ 
-              migrated_to_user_id: userId, 
-              migrated_at: new Date().toISOString() 
-            })
-            .eq("session_id", telemetrySessionId);
-
-          if (sessionError) {
-            console.error("Error marking onboarding session:", sessionError);
+            console.log("Created Stripe customer:", customerId);
           }
-        }
 
-        // Generate shopfront handle if it doesn't exist
-        const { data: business } = await supabase
-          .from("businesses")
-          .select("id, business_name, handle")
-          .eq("owner_id", userId)
-          .maybeSingle();
-
-        if (business && !business.handle) {
-          const slug = (business.business_name || "shop")
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "-")
-            .replace(/(^-|-$)+/g, "")
-            .slice(0, 40);
-
-          const handle = `${slug}-${Math.floor(1000 + Math.random() * 9000)}`;
-
-          const { error: handleError } = await supabase
-            .from("businesses")
-            .update({ handle })
-            .eq("id", business.id);
-
-          if (handleError) {
-            console.error("Error creating shopfront handle:", handleError);
-          } else {
-            console.log("✅ Generated shopfront handle:", handle);
-          }
-        }
-
-        // Create Stripe Connect Express account
-        const customerEmail = session.customer_email || session.customer_details?.email;
-        
-        if (customerEmail) {
-          console.log("Creating Stripe Connect account for:", customerEmail);
-
-          const account = await stripe.accounts.create({
-            type: "express",
-            email: customerEmail,
-            capabilities: {
-              card_payments: { requested: true },
-              transfers: { requested: true },
-            },
-            metadata: { user_id: userId },
+          // 2) Check if subscription already exists (idempotency)
+          const existingSubscriptions = await stripe.subscriptions.list({
+            customer: customerId,
+            status: 'all',
+            limit: 1,
           });
 
-          console.log("Created Connect account:", account.id);
-
-          // Store Connect account ID
-          const { error: accountError } = await supabase
-            .from("businesses")
-            .update({ stripe_account_id: account.id })
-            .eq("owner_id", userId);
-
-          if (accountError) {
-            console.error("Error storing Connect account ID:", accountError);
+          let subscription;
+          if (existingSubscriptions.data.length > 0 && 
+              (existingSubscriptions.data[0].status === 'active' || 
+               existingSubscriptions.data[0].status === 'trialing')) {
+            subscription = existingSubscriptions.data[0];
+            console.log("Using existing subscription:", subscription.id);
           } else {
-            console.log("Stored stripe_account_id for user:", userId);
+            // 3) Create subscription with 14-day trial
+            const priceId = Deno.env.get("STRIPE_PRICE_ID_PRO");
+            if (!priceId) {
+              throw new Error("STRIPE_PRICE_ID_PRO not configured");
+            }
+
+            const trialEndTimestamp = Math.floor(Date.now() / 1000) + (14 * 24 * 60 * 60);
+
+            subscription = await stripe.subscriptions.create({
+              customer: customerId,
+              items: [{ price: priceId }],
+              trial_end: trialEndTimestamp,
+              metadata: {
+                user_id: userId,
+                source: 'starter_pack',
+              },
+            });
+
+            console.log("Created subscription with trial:", {
+              id: subscription.id,
+              status: subscription.status,
+              trial_end: subscription.trial_end,
+            });
           }
-        } else {
-          console.error("No customer email found in session");
+
+          // 4) Update profiles with subscription details
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .update({
+              subscription_status: subscription.status,
+              subscription_current_period_end: new Date(
+                subscription.current_period_end * 1000
+              ).toISOString(),
+            })
+            .eq("user_id", userId);
+
+          if (profileError) {
+            console.error("Error updating profile with subscription:", profileError);
+          } else {
+            console.log("Updated profile with subscription status:", subscription.status);
+          }
+
+          // 5) Mark business as paid and active
+          const { error: bizError } = await supabase
+            .from("businesses")
+            .update({ 
+              starter_paid: true,
+              status: 'active'
+            })
+            .eq("owner_id", userId)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (bizError) {
+            console.error("Error updating business:", bizError);
+          } else {
+            console.log("Business marked as starter_paid for user:", userId);
+          }
+
+          // 6) Mark onboarding session as migrated (audit trail)
+          if (telemetrySessionId) {
+            const { error: sessionError } = await supabase
+              .from("onboarding_sessions")
+              .update({ 
+                migrated_to_user_id: userId, 
+                migrated_at: new Date().toISOString() 
+              })
+              .eq("session_id", telemetrySessionId);
+
+            if (sessionError) {
+              console.error("Error marking onboarding session:", sessionError);
+            }
+          }
+
+          // 7) Generate shopfront handle if it doesn't exist
+          const { data: business } = await supabase
+            .from("businesses")
+            .select("id, business_name, handle, stripe_account_id")
+            .eq("owner_id", userId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (business && !business.handle) {
+            const slug = (business.business_name || "shop")
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/(^-|-$)+/g, "")
+              .slice(0, 40);
+
+            const handle = `${slug}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+            const { error: handleError } = await supabase
+              .from("businesses")
+              .update({ handle })
+              .eq("id", business.id);
+
+            if (handleError) {
+              console.error("Error creating shopfront handle:", handleError);
+            } else {
+              console.log("✅ Generated shopfront handle:", handle);
+            }
+          }
+
+          // 8) Create Stripe Connect Express account if needed
+          if (business && !business.stripe_account_id) {
+            const customerEmail = session.customer_email || session.customer_details?.email;
+            
+            if (customerEmail) {
+              console.log("Creating Stripe Connect account for:", customerEmail);
+
+              const account = await stripe.accounts.create({
+                type: "express",
+                email: customerEmail,
+                capabilities: {
+                  card_payments: { requested: true },
+                  transfers: { requested: true },
+                },
+                metadata: { user_id: userId },
+              });
+
+              console.log("Created Connect account:", account.id);
+
+              // Store Connect account ID
+              const { error: accountError } = await supabase
+                .from("businesses")
+                .update({ stripe_account_id: account.id })
+                .eq("id", business.id);
+
+              if (accountError) {
+                console.error("Error storing Connect account ID:", accountError);
+              } else {
+                console.log("Stored stripe_account_id for user:", userId);
+              }
+            } else {
+              console.error("No customer email found in session");
+            }
+          }
+        } catch (error) {
+          console.error("Error processing starter pack payment:", error);
+          throw error;
         }
       }
 
