@@ -198,170 +198,110 @@ export default function PaymentWelcome() {
   return (
     <AppSurface>
       <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-lg w-full p-8 space-y-6">
-          {(starterStatus === 'success' || type === 'starter') && (
-            <>
-              <div className="text-center space-y-2">
-                <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-                  <CheckCircle2 className="h-8 w-8 text-green-600" />
-                </div>
-                <h1 className="text-2xl font-bold">Payment successful — your 14-day trial has started</h1>
-                <p className="text-muted-foreground">
-                  Your shopfront is ready. To receive money from sales, set up payouts with Stripe.
-                </p>
-              </div>
-
-              {!onboardingComplete && connectUrl && (
-                <div className="space-y-4">
-                  <div className="bg-muted p-4 rounded-lg space-y-3">
-                    <h3 className="font-semibold">Set up payouts to receive money from sales</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Complete Stripe Connect onboarding. It only takes a couple of minutes.
-                    </p>
-                    <ol className="list-decimal ml-5 space-y-1 text-sm text-muted-foreground">
-                      <li>Finish Stripe Connect onboarding (1–3 minutes)</li>
-                      <li>Return here automatically</li>
-                      <li>Start selling and get paid</li>
-                    </ol>
+        <Card className="max-w-2xl w-full">
+          <div className="p-8 space-y-6">
+            {(starterStatus === 'success' || type === 'starter') && (
+              <>
+                <div className="text-center space-y-3">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                    <CheckCircle2 className="h-8 w-8 text-green-600" />
                   </div>
+                  <h1 className="text-3xl md:text-4xl font-bold">
+                    Payment successful — your 14-day trial has started
+                  </h1>
+                  <p className="text-lg text-muted-foreground">
+                    Your Hub is live. Let's make sure you get paid.
+                  </p>
+                </div>
 
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={openConnectOnboarding}
-                      className="flex-1"
-                      size="lg"
-                      disabled={isCheckingOnboarding}
-                    >
-                      {isCheckingOnboarding ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Waiting...
-                        </>
-                      ) : (
-                        <>
-                          Set up payouts
-                        </>
-                      )}
-                    </Button>
+                {!onboardingComplete && connectUrl && (
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button
+                        onClick={openConnectOnboarding}
+                        className="flex-1 h-14 text-lg bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
+                        size="lg"
+                        disabled={isCheckingOnboarding}
+                      >
+                        {isCheckingOnboarding ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Checking status...
+                          </>
+                        ) : (
+                          'Connect my bank'
+                        )}
+                      </Button>
+                      <Button
+                        onClick={handleContinue}
+                        variant="outline"
+                        className="h-14 text-lg"
+                        size="lg"
+                      >
+                        Go to my Hub
+                      </Button>
+                    </div>
+
+                    <p className="text-sm text-center text-muted-foreground">
+                      Stripe securely handles verification. We never see your bank details.
+                    </p>
+                  </div>
+                )}
+
+                {onboardingComplete && (
+                  <div className="space-y-4 text-center">
+                    <p className="text-green-600 font-medium text-lg">✓ Payouts are configured!</p>
                     <Button
                       onClick={handleContinue}
-                      variant="outline"
+                      className="bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
                       size="lg"
                     >
                       Go to my Hub
                     </Button>
                   </div>
+                )}
+              </>
+            )}
 
-                  <p className="text-xs text-center text-muted-foreground">
-                    We never see your bank details. Stripe securely handles verification.
-                  </p>
-
-                  {isCheckingOnboarding && (
-                    <p className="text-xs text-center text-muted-foreground">
-                      Checking onboarding status every 8 seconds...
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {onboardingComplete && (
-                <div className="space-y-4">
-                  <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                    <p className="text-sm text-green-800 font-medium">
-                      ✅ All set! Your shopfront is ready to accept payments.
-                    </p>
-                  </div>
-
-                  {!isCreatingSubscription && (
-                    <>
-                      <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                        <p className="text-sm text-blue-800 font-medium mb-2">
-                          🎉 Activating your 14-day free trial...
-                        </p>
-                        <p className="text-xs text-blue-700">
-                          You'll have full access to SideHive Pro for 14 days, then $25 NZD/month.
-                        </p>
-                      </div>
-
-                      <Button 
-                        onClick={() => {
-                          initiateSubscription();
-                          setTimeout(() => handleContinue(), 2000);
-                        }} 
-                        className="w-full" 
-                        size="lg"
-                      >
-                        Continue to Dashboard
-                      </Button>
-                    </>
-                  )}
-
-                  {isCreatingSubscription && (
-                    <div className="text-center py-4">
-                      <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Setting up your subscription...
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-
-          {starterStatus === 'cancel' && (
-            <>
-              <div className="text-center space-y-2">
-                <div className="mx-auto w-16 h-16 rounded-full bg-yellow-100 flex items-center justify-center">
-                  <XCircle className="h-8 w-8 text-yellow-600" />
+            {stripeStatus === 'cancelled' && (
+              <div className="text-center space-y-4">
+                <div className="mx-auto w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                  <XCircle className="h-8 w-8 text-red-600" />
                 </div>
                 <h1 className="text-2xl font-bold">Payment Cancelled</h1>
                 <p className="text-muted-foreground">
-                  You cancelled the payment. No charges were made.
+                  Your payment was not completed. You can try again when you're ready.
                 </p>
+                <div className="flex gap-2 justify-center">
+                  <Button onClick={() => navigate('/onboarding/final')}>
+                    Try again
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate('/')}>
+                    Go home
+                  </Button>
+                </div>
               </div>
+            )}
 
-              <div className="space-y-4">
-                <Button onClick={() => navigate('/onboarding')} className="w-full" size="lg">
-                  Try Again
-                </Button>
-                <Button
-                  onClick={() => navigate('/')}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Back to Home
-                </Button>
+            {stripeStatus === 'return' && (
+              <div className="text-center space-y-4">
+                <h1 className="text-2xl font-bold">Stripe Connect Status</h1>
+                {onboardingComplete ? (
+                  <>
+                    <p className="text-green-600 font-medium">✓ Connect setup complete!</p>
+                    <Button onClick={handleContinue}>Go to my Hub</Button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-muted-foreground">
+                      Stripe is reviewing your details. You can continue setting up your hub.
+                    </p>
+                    <Button onClick={handleContinue}>Go to my Hub</Button>
+                  </>
+                )}
               </div>
-            </>
-          )}
-
-          {stripeStatus === 'return' && (
-            <>
-              <div className="text-center space-y-2">
-                <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
-                <h1 className="text-2xl font-bold">Completing Setup...</h1>
-                <p className="text-muted-foreground">
-                  Verifying your Stripe account configuration
-                </p>
-              </div>
-            </>
-          )}
-
-          {stripeStatus === 'refresh' && (
-            <>
-              <div className="text-center space-y-2">
-                <h1 className="text-2xl font-bold">Setup Incomplete</h1>
-                <p className="text-muted-foreground">
-                  Please complete your Stripe account setup to continue
-                </p>
-              </div>
-
-              <Button onClick={initiateConnectOnboarding} className="w-full" size="lg">
-                Retry Setup
-              </Button>
-            </>
-          )}
+            )}
+          </div>
         </Card>
       </div>
     </AppSurface>

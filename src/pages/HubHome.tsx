@@ -6,11 +6,11 @@ import { HubTile } from '@/components/hub/HubTile';
 import { AppSurface } from '@/components/layout/AppSurface';
 import { HubBrandHeader } from '@/components/hub/HubBrandHeader';
 import HubBrandStrip from '@/components/hub/HubBrandStrip';
-import { Package, Megaphone, Users, UserCircle2, LogOut, BarChart3, CreditCard, TrendingUp, AlertCircle } from 'lucide-react';
+import { HubWelcomeCard } from '@/components/hub/HubWelcomeCard';
+import { Package, Megaphone, Users, UserCircle2, LogOut, BarChart3, CreditCard, TrendingUp } from 'lucide-react';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
 import { FLAGS } from '@/lib/flags';
 import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const startConnectOnboarding = async (toast: any) => {
   try {
@@ -41,7 +41,9 @@ export default function HubHome() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [business, setBusiness] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
     const checkAuthAndAccess = async () => {
@@ -66,6 +68,15 @@ export default function HubHome() {
 
       const latestBusiness = businesses?.[0];
       setBusiness(latestBusiness);
+
+      // Fetch profile for trial info
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
+      
+      setProfile(profileData);
       setIsLoading(false);
 
       if (FLAGS.STRIPE_PAYMENTS_V1 && (!latestBusiness || !latestBusiness.starter_paid)) {
@@ -76,6 +87,15 @@ export default function HubHome() {
         });
         navigate('/payment/welcome?type=starter');
         return;
+      }
+
+      // Show welcome card on first visit or if not onboarded
+      const hasSeenWelcome = localStorage.getItem('hub_welcome_seen');
+      if (!hasSeenWelcome || !latestBusiness?.stripe_onboarded) {
+        setShowWelcome(true);
+        if (!hasSeenWelcome) {
+          localStorage.setItem('hub_welcome_seen', 'true');
+        }
       }
     };
     
@@ -124,22 +144,14 @@ export default function HubHome() {
       <HubBrandHeader />
       <HubBrandStrip />
 
-      {FLAGS.STRIPE_PAYMENTS_V1 && business && !business.stripe_onboarded && (
-        <Alert className="mb-4 border-amber-500 bg-amber-50">
-          <AlertCircle className="h-4 w-4 text-amber-600" />
-          <AlertTitle className="text-amber-900">Set up payouts to receive money from sales</AlertTitle>
-          <AlertDescription className="text-amber-800">
-            Complete Stripe Connect onboarding. It only takes a couple of minutes.
-            <Button
-              onClick={() => startConnectOnboarding(toast)}
-              variant="default"
-              size="sm"
-              className="mt-2"
-            >
-              Set up payouts
-            </Button>
-          </AlertDescription>
-        </Alert>
+      {showWelcome && (
+        <HubWelcomeCard
+          name={profile?.display_name || business?.business_name}
+          shopfrontUrl={business?.handle ? `${window.location.origin}/s/${business.handle}` : undefined}
+          trialEndIso={profile?.subscription_current_period_end}
+          stripeOnboarded={business?.stripe_onboarded || false}
+          onConnect={() => startConnectOnboarding(toast)}
+        />
       )}
 
       <main className="pb-6">

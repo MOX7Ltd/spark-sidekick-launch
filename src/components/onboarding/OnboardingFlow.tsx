@@ -6,11 +6,16 @@ import { StepAboutBusiness } from './StepAboutBusiness';
 import { SocialPostPreview } from './SocialPostPreview';
 import { StepBusinessIdentity } from './StepBusinessIdentity';
 import { StarterPackReveal } from './StarterPackReveal';
-import { FinalStep } from './FinalStep';
+import { StarterPackRevealV2 } from './launch/StarterPackRevealV2';
+import { StarterPackPricingCard } from './launch/StarterPackPricingCard';
 import { ProgressBar } from './ProgressBar';
 import { useToast } from '@/hooks/use-toast';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
 import { DebugPanel } from '@/components/debug/DebugPanel';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { getSessionId } from '@/lib/telemetry';
 import type { OnboardingData } from '@/types/onboarding';
 import type { BrandContext } from '@/types/brand';
 import { generateBusinessIdentity, generateLogos, generateCampaign } from '@/lib/api';
@@ -270,6 +275,111 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
     }
   };
 
+  // Composite component for Step 7: Launch Experience
+  const FinaliseLaunchStep = ({ formData, onCheckoutComplete }: { 
+    formData: Partial<OnboardingData>; 
+    onCheckoutComplete: () => void;
+  }) => {
+    const [stage, setStage] = useState<'auth' | 'reveal' | 'pricing' | 'checkout'>('auth');
+    const [session, setSession] = useState<any>(null);
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+    useEffect(() => {
+      const checkAuth = async () => {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
+        setIsCheckingAuth(false);
+        
+        if (currentSession) {
+          setStage('reveal');
+        }
+      };
+      checkAuth();
+    }, []);
+
+    const handleStartCheckout = async () => {
+      if (!session) return;
+
+      try {
+        const deviceId = getSessionId();
+        const response = await supabase.functions.invoke('create-starter-session', {
+          headers: {
+            'X-Session-Id': deviceId,
+          },
+          body: {
+            session_id: deviceId,
+            flow: 'starter_pack'
+          }
+        });
+
+        if (response.error) throw response.error;
+        if (response.data?.url) {
+          window.location.href = response.data.url;
+        }
+      } catch (error) {
+        console.error('Checkout error:', error);
+        toast({
+          title: "Couldn't start checkout",
+          description: "Please try again or contact support.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    if (isCheckingAuth) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-pulse text-muted-foreground">Loading...</div>
+        </div>
+      );
+    }
+
+    if (!session) {
+      return (
+        <Card className="max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle>Create your account</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              We'll save your progress and link your shopfront. Nothing is lost.
+            </p>
+            <Button
+              size="lg"
+              onClick={() => navigate('/auth/signup?next=/onboarding/final')}
+              className="w-full"
+            >
+              Continue with email
+            </Button>
+            <p className="text-xs text-center text-muted-foreground">
+              We never post without permission.
+            </p>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    switch (stage) {
+      case 'reveal':
+        return (
+          <StarterPackRevealV2
+            businessName={formData.businessIdentity?.name || 'Your Business'}
+            logoUrl={formData.businessIdentity?.logoUrl || formData.businessIdentity?.logoSVG}
+            brandColors={formData.businessIdentity?.colors}
+            onContinue={() => setStage('pricing')}
+          />
+        );
+      case 'pricing':
+        return (
+          <StarterPackPricingCard
+            onStartCheckout={handleStartCheckout}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
   // Step labels for progress bar - remapped to show Step 2 for both "About You" and "Vibe & Audience"
   const getStepLabel = (step: number): string => {
     const labels = {
@@ -381,14 +491,13 @@ export const OnboardingFlow = ({ onComplete }: OnboardingFlowProps) => {
             />
           )}
 
-          {/* Step 7: Auth gate + Starter Pack */}
-          {currentStep === 7 && <FinalStep 
-            formData={formData} 
-            context={context} 
-            onCheckoutComplete={handleCheckoutComplete}
-            navigate={navigate}
-            toast={toast}
-          />}
+          {/* Step 7: Launch Experience (Auth → Reveal → Pricing → Checkout) */}
+          {currentStep === 7 && (
+            <FinaliseLaunchStep
+              formData={formData}
+              onCheckoutComplete={handleCheckoutComplete}
+            />
+          )}
         </div>
       </div>
       
