@@ -14,6 +14,8 @@ import { logFrontendEvent } from '@/lib/frontendEventLogger';
 import { DebugPanel } from '@/components/debug/DebugPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { getSessionId } from '@/lib/telemetry';
 import type { OnboardingData } from '@/types/onboarding';
@@ -402,34 +404,34 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
                 Your brand is live-ready! Create an account to unlock your hub and start selling.
               </p>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Name (optional)</label>
-                <input
+                <Label htmlFor="name">Name (optional)</Label>
+                <Input
+                  id="name"
                   type="text"
                   placeholder="Your name"
                   value={signupData.name}
                   onChange={(e) => setSignupData({ ...signupData, name: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Email</label>
-                <input
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
                   type="email"
                   placeholder="you@example.com"
                   value={signupData.email}
                   onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Password</label>
-                <input
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
                   type="password"
                   placeholder="At least 8 characters"
                   value={signupData.password}
                   onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md"
                   required
                   minLength={8}
                 />
