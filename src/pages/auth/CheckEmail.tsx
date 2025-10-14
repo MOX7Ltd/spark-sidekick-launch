@@ -1,14 +1,45 @@
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Mail } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Mail } from "lucide-react";
 
 export default function CheckEmail() {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [authed, setAuthed] = useState(false);
+  const { toast } = useToast();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const email = searchParams.get('email') || 'your email';
+  const [params] = useSearchParams();
 
-  const handleOpenMail = () => {
-    window.location.href = `mailto:${email}`;
+  useEffect(() => {
+    setEmail(params.get("email") || "");
+    // Initial check
+    checkSession();
+  }, []);
+
+  const checkSession = async () => {
+    const { data } = await supabase.auth.getSession();
+    setAuthed(!!data.session);
+  };
+
+  const handleContinue = async () => {
+    setLoading(true);
+    const { data } = await supabase.auth.getSession();
+
+    if (!data.session) {
+      setLoading(false);
+      toast({
+        title: "Email not confirmed yet",
+        description: "Please click the link we sent to your email before continuing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Authenticated → continue
+    navigate("/onboarding/final");
   };
 
   return (
@@ -44,18 +75,20 @@ export default function CheckEmail() {
             </p>
 
             <Button
-              onClick={handleOpenMail}
+              onClick={handleContinue}
+              disabled={loading}
               variant="hero"
               size="lg"
               className="w-full"
             >
-              Open mail app
+              {loading ? "Checking..." : "Continue to Starter Pack"}
             </Button>
 
-            <div className="text-sm text-muted-foreground space-y-1">
-              <p>Didn't receive the email?</p>
-              <p>Check your spam folder or contact support.</p>
-            </div>
+            {!authed && (
+              <p className="mt-4 text-sm text-muted-foreground">
+                Not received yet? Check your spam folder or click the link again when it arrives.
+              </p>
+            )}
           </div>
         </div>
       </main>
