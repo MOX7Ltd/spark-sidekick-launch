@@ -18,6 +18,7 @@ import { regenerateBusinessNames, regenerateSingleName, generateLogos, generateB
 import { useToast } from '@/hooks/use-toast';
 import type { BusinessIdentity, AboutYou } from '@/types/onboarding';
 import type { BrandContext } from '@/types/brand';
+import { inferBusinessType } from '@/lib/aiPrompts';
 
 interface StepBusinessIdentityProps {
   onNext: (businessIdentity: BusinessIdentity) => void;
@@ -199,6 +200,8 @@ export const StepBusinessIdentity = ({
   const generateNames = async () => {
     setIsGeneratingNames(true);
     try {
+      const businessType = inferBusinessType(idea);
+      
       // Use the unified generate function if provided, otherwise fall back to direct API
       if (onGenerateIdentity) {
         const fullIdentity = await onGenerateIdentity();
@@ -213,7 +216,8 @@ export const StepBusinessIdentity = ({
           vibes,
           aboutYou,
           bannedWords,
-          rejectedNames: []
+          rejectedNames: [],
+          business_type: businessType
         });
         setGeneratedBio(fullIdentity.bio || '');
         setGeneratedColors(fullIdentity.colors || []);
@@ -238,13 +242,16 @@ export const StepBusinessIdentity = ({
     
     setIsGeneratingNames(true);
     try {
+      const businessType = inferBusinessType(idea);
+      
       const fullIdentity = await generateBusinessIdentity({
         idea,
         audiences,
         vibes, // Use vibes from Step 3
         aboutYou,
         rejectedNames: [existingName],
-        bannedWords
+        bannedWords,
+        business_type: businessType
       });
       
       setGeneratedBio(fullIdentity.bio || '');
@@ -273,13 +280,16 @@ export const StepBusinessIdentity = ({
   const handleRegenerateNames = async () => {
     setIsGeneratingNames(true);
     try {
+      const businessType = inferBusinessType(idea);
+      
       const newNames = await regenerateBusinessNames({
         idea,
         audiences,
         vibes, // Use vibes from Step 3
         aboutYou,
         bannedWords,
-        rejectedNames
+        rejectedNames,
+        business_type: businessType
       });
       
       setNameOptions(newNames);
@@ -314,6 +324,7 @@ export const StepBusinessIdentity = ({
     setRegeneratingIndex(index);
     
     try {
+      const businessType = inferBusinessType(idea);
       const existingNames = nameOptions.map(opt => opt.name).filter((_, i) => i !== index);
       
       const newName = await regenerateSingleName({
@@ -322,7 +333,8 @@ export const StepBusinessIdentity = ({
         vibes,
         aboutYou,
         bannedWords: [...bannedWords, ...wordsInName],
-        rejectedNames: [...rejectedNames, rejectedOption.name, ...existingNames]
+        rejectedNames: [...rejectedNames, rejectedOption.name, ...existingNames],
+        business_type: businessType
       });
       
       // Add defensive checks for the response

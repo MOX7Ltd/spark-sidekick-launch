@@ -84,6 +84,9 @@ export interface GenerateIdentityRequest {
   // Generation flags
   regenerateNamesOnly?: boolean;
   regenerateSingleName?: boolean;
+  
+  // Business type inference
+  business_type?: 'service' | 'product' | 'education' | 'general';
 }
 
 export interface GenerateLogosRequest {

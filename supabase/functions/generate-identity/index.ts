@@ -11,7 +11,7 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 // Model configuration (centralized for easy updates)
 const NAMING_MODEL = Deno.env.get('NAMING_MODEL') || 'google/gemini-2.5-pro';
-const NAMING_TEMP = parseFloat(Deno.env.get('NAMING_TEMP') || '0.7');
+const NAMING_TEMP = parseFloat(Deno.env.get('NAMING_TEMP') || '0.65'); // 0.6-0.7 range for creativity + coherence
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -43,6 +43,7 @@ const requestSchema = z.object({
   rejectedNames: z.array(z.string()).default([]),
   regenerateNamesOnly: z.boolean().default(false),
   regenerateSingleName: z.boolean().default(false),
+  business_type: z.enum(['service', 'product', 'education', 'general']).optional(),
 }).or(
   // Backwards compatibility for old payloads
   z.object({
@@ -160,15 +161,33 @@ serve(async (req) => {
     const toneHints = vibes.slice(1);
     const audienceStr = audiences.join(', ');
     
-    // Extract service phrase for naming
-    function servicePhrase(idea: string): string {
-      const t = (idea || '').toLowerCase();
-      if (/soccer|football/.test(t)) return 'soccer coaching';
-      if (/guitar|music/.test(t)) return 'guitar lessons';
-      if (/tutor|math|algebra|study/.test(t)) return 'math tutoring';
-      if (/fitness|yoga|training/.test(t)) return 'fitness coaching';
-      return 'coaching';
+    // Infer business type from idea
+    function inferBusinessType(idea: string): 'service' | 'product' | 'education' | 'general' {
+      const lower = idea.toLowerCase();
+      
+      const serviceKeywords = [
+        'mow', 'lawn', 'paint', 'clean', 'wash', 'repair', 'fix', 'install',
+        'plumb', 'design', 'photograph', 'walk dogs', 'pet sit', 'babysit',
+        'landscap', 'garden', 'handyman', 'electrician', 'carpentry'
+      ];
+      
+      const educationKeywords = [
+        'teach', 'tutor', 'coach', 'mentor', 'train', 'course', 'lesson',
+        'academy', 'workshop', 'class', 'instruct', 'consulting'
+      ];
+      
+      const productKeywords = [
+        'sell', 'shop', 'store', 'ecommerce', 'product', 'goods',
+        'handmade', 'craft', 'digital download'
+      ];
+      
+      if (serviceKeywords.some(k => lower.includes(k))) return 'service';
+      if (educationKeywords.some(k => lower.includes(k))) return 'education';
+      if (productKeywords.some(k => lower.includes(k))) return 'product';
+      return 'general';
     }
+    
+    const businessType = validationResult.data.business_type || inferBusinessType(idea);
 
     console.log('[generate-identity] Normalized input:', { 
       audiences, 
@@ -186,41 +205,57 @@ serve(async (req) => {
       ? `${nameInfo.firstName || ''} ${nameInfo.lastName || ''}`.trim()
       : '';
     
-    // Build name prompt with constraints
+    // Build name prompt with business type awareness
     const wantCount = regenerateSingleName ? 2 : 6;
     const namingMode = normalized.naming_mode || 'descriptive';
-    const s = servicePhrase(idea);
     
-    // Side-hustle focused naming prompt
+    // Dynamic naming prompt that adapts to business type
     const namingPrompt = `
-You are a senior brand namer helping ${isPersonalBrand ? 'a solo entrepreneur' : 'a small business owner'}.
+You are helping a new microbusiness owner name their business.
 
-Business context:
-- Idea: "${idea}"
-- Service: ${s}
-- Audience: ${audienceStr}
-- Tone: ${vibes.join(', ')}
-${isPersonalBrand ? `- Founder: ${personalName} (MUST incorporate name tastefully in at least 2 options)` : ''}
+Inputs:
+- Business idea or category: ${idea}
+- Audience they want to serve: ${audienceStr}
+- Tone or vibe: ${vibes.join(', ')}
+- Experience or background: ${aboutYou.expertise}
+- Business type: ${businessType}
+${isPersonalBrand ? `- Founder name: ${personalName} (should be incorporated in at least 2 options)` : ''}
 
-Task: Generate ${wantCount} distinct business names with taglines (<= 12 words each).
+Your goal:
+Generate ${wantCount} business names that sound natural, trustworthy, and relevant
+to this exact business type and audience — not digital courses or coaching,
+unless the idea explicitly involves teaching.
 
-Mode: Side-Hustle Descriptive (default)
-- Generate 2–3 word names that sound natural and clear, as if this were a real person's side business.
-- Prioritize clarity over cleverness.
-- Examples:
-  • "First Touch Coaching" (youth soccer training)
-  • "Morris Guitar Lessons" (personal brand)
-  • "Meal Prep Made Easy" (home cooking support)
-  • "Pitch Skills Training" (public speaking coaching)
-- Use plain, familiar words. Avoid coined terms unless they're short, obvious, and human-sounding.
+Guidelines:
+- If the business provides a **service** (e.g. mowing lawns, cleaning, painting, plumbing, design work, photography), produce names that sound like **local service providers** or small brands customers would hire.
+  Examples: "Greenstreet Lawns", "Playfield Mowing", "Kapiti Lawn Co."
+  
+- If it sells **products** (digital or physical), lean toward brandable product names.
+  Examples: "CozyNest Candles", "Peak Performance Gear", "Handmade Haven"
+  
+- If it's **education or consulting**, then use learning-oriented phrasing.
+  Examples: "First Touch Coaching", "Morris Guitar Lessons", "Growth Path Consulting"
+  
+- Never add "Coaching", "Academy", "Training", "Consulting" unless the idea explicitly includes teaching.
+- Use warm, authentic tones (trust, pride, craft, community, nature).
+- Prefer short, easy-to-remember names (2–4 words).
+- Avoid clichés like "Solutions", "Enterprises", "Online".
+- Return a JSON array of objects: [{ "name": "...", "tagline": "..." }].
 
-${isPersonalBrand ? `CRITICAL: At least 2 of the ${wantCount} names MUST include "${personalName}" (e.g., "${personalName.split(' ')[0]} ${s}", "${s} with ${personalName.split(' ')[0]}")` : ''}
+Example for a lawn care service:
+[
+  { "name": "Greenstreet Lawns", "tagline": "Beautiful yards, local care" },
+  { "name": "Playfield Mowing", "tagline": "Groundskeeper-level lawns for every home" },
+  { "name": "Kapiti Lawn Co.", "tagline": "Enjoy your greenspace — we'll handle the rest" }
+]
+
+${isPersonalBrand ? `CRITICAL: At least 2 of the ${wantCount} names MUST include "${personalName}"` : ''}
 
 Quality guidelines:
 ✓ Easy to say and spell
-✓ Service-forward and audience-appropriate
+✓ Matches business type (service vs product vs education)
 ✓ Distinct from each other
-✓ At least 1 option with "{City}" placeholder for localization
+✓ At least 1 option with geographic reference for local services
 ✗ No alliteration (matching first letters)
 ✗ No corporate jargon (academy, solutions, systems, ventures, collective, HQ, institute, labs)
 ✗ No vague buzzwords (apex, synergy, quantum, elevate, alpha, echelon, ascend, prime, omni)
