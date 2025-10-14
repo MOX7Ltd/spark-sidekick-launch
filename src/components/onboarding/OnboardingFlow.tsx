@@ -298,71 +298,9 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
       checkAuth();
     }, []);
 
-    const handleInlineSignup = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setIsSigningUp(true);
-
-      try {
-        const disableConfirm = import.meta.env.VITE_DISABLE_EMAIL_CONFIRM === 'true';
-        
-        if (disableConfirm) {
-          // Dev/preview: immediate sign-in
-          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-            email: signupData.email,
-            password: signupData.password,
-            options: {
-              data: { display_name: signupData.name || undefined }
-            }
-          });
-
-          if (signUpError) throw signUpError;
-
-          let session = signUpData.session;
-          if (!session) {
-            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-              email: signupData.email,
-              password: signupData.password,
-            });
-            if (signInError) throw signInError;
-            session = signInData.session;
-          }
-
-          // Call migration
-          const deviceId = getSessionId();
-          await supabase.functions.invoke('migrate-onboarding-to-user', {
-            headers: {
-              Authorization: `Bearer ${session?.access_token || ''}`,
-            },
-            body: { session_id: deviceId }
-          });
-
-          setSession(session);
-          toast({ title: 'Account created!', description: 'Welcome to SideHive.' });
-        } else {
-          // Production: email confirmation flow
-          const { error: signUpError } = await supabase.auth.signUp({
-            email: signupData.email,
-            password: signupData.password,
-            options: {
-              emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding/final`,
-              data: { display_name: signupData.name || undefined }
-            }
-          });
-
-          if (signUpError) throw signUpError;
-
-          // Route to check-email page
-          navigate(`/auth/check-email?email=${encodeURIComponent(signupData.email)}`);
-        }
-      } catch (error: any) {
-        toast({
-          title: 'Signup failed',
-          description: error.message || 'Please try again',
-          variant: 'destructive'
-        });
-      } finally {
-        setIsSigningUp(false);
-      }
+    const handleInlineSignup = () => {
+      // Route to signup page with redirect back to this step
+      navigate('/auth/signup?next=/onboarding/final');
     };
 
     const handleStartCheckout = async () => {
@@ -409,70 +347,34 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
       );
     }
 
-    // If no session, show inline signup before reveal
+    // If no session, show CTA to route to signup
     if (!session) {
       return (
         <Card className="max-w-md mx-auto">
           <CardHeader>
             <CardTitle>Create your account</CardTitle>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleInlineSignup} className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Your brand is live-ready! Create an account to unlock your hub and start selling.
-              </p>
-              <div className="space-y-2">
-                <Label htmlFor="name">Name (optional)</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Your name"
-                  value={signupData.name}
-                  onChange={(e) => setSignupData({ ...signupData, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={signupData.email}
-                  onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="At least 8 characters"
-                  value={signupData.password}
-                  onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
-                  required
-                  minLength={8}
-                />
-              </div>
-              <Button
-                type="submit"
-                size="lg"
-                disabled={isSigningUp}
-                className="w-full"
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Your brand is live-ready! Create an account to unlock your hub and start selling.
+            </p>
+            <Button
+              onClick={handleInlineSignup}
+              size="lg"
+              className="w-full"
+            >
+              Continue
+            </Button>
+            <p className="text-xs text-center text-muted-foreground">
+              Already have an account?{' '}
+              <button
+                type="button"
+                onClick={() => navigate('/auth/signin?next=/onboarding/final')}
+                className="underline"
               >
-                {isSigningUp ? 'Creating account...' : 'Continue with email'}
-              </Button>
-              <p className="text-xs text-center text-muted-foreground">
-                Already have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => navigate('/auth/signin?next=/onboarding/final')}
-                  className="underline"
-                >
-                  Sign in
-                </button>
-              </p>
-            </form>
+                Sign in
+              </button>
+            </p>
           </CardContent>
         </Card>
       );

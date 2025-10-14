@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
 import { getSessionId } from '@/lib/telemetry';
+import { confirmByEmailRequired, isEmailConfirmError } from '@/lib/authConfirm';
 
 export default function AuthSignup() {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ export default function AuthSignup() {
       const next = searchParams.get('next') || '/onboarding/final';
 
       // DEV/PREVIEW: bypass email confirmation for faster testing
-      if (import.meta.env.VITE_DISABLE_EMAIL_CONFIRM === 'true') {
+      if (!confirmByEmailRequired) {
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
@@ -59,12 +60,28 @@ export default function AuthSignup() {
         // Auto sign-in for dev
         let session = signUpData.session;
         if (!session) {
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email: formData.email,
-            password: formData.password,
-          });
-          if (signInError) throw signInError;
-          session = signInData.session;
+          try {
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+              email: formData.email,
+              password: formData.password,
+            });
+            if (signInError) {
+              // Graceful fallback: if email not confirmed, send to check-email
+              if (isEmailConfirmError(signInError)) {
+                toast({
+                  title: 'Check your email',
+                  description: 'We sent you a confirmation link.',
+                });
+                navigate(`/auth/check-email?email=${encodeURIComponent(formData.email)}`);
+                return;
+              }
+              throw signInError;
+            }
+            session = signInData.session;
+          } catch (signInError) {
+            // If sign-in fails for any reason in dev mode, let it throw
+            throw signInError;
+          }
         }
 
         // Migrate onboarding data
