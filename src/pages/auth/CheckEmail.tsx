@@ -15,14 +15,32 @@ export default function CheckEmail() {
 
   useEffect(() => {
     setEmail(params.get("email") || "");
-    // Initial check
-    checkSession();
+  }, [params]);
+
+  // Listen for auth state changes and check initial session
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setAuthed(!!session);
+    });
+
+    // Check for existing session immediately
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAuthed(!!session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const checkSession = async () => {
-    const { data } = await supabase.auth.getSession();
-    setAuthed(!!data.session);
-  };
+  // Auto-redirect when authenticated
+  useEffect(() => {
+    if (authed) {
+      const timer = setTimeout(() => {
+        navigate("/onboarding/final");
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [authed, navigate]);
 
   const handleContinue = async () => {
     setLoading(true);
@@ -70,24 +88,32 @@ export default function CheckEmail() {
           </div>
 
           <div className="space-y-4 pt-4">
-            <p className="text-sm text-muted-foreground">
-              Click the link in the email to confirm your account and continue to SideHive.
-            </p>
+            {authed ? (
+              <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+                <p className="text-primary font-medium">
+                  ✓ Email confirmed! Redirecting to your Starter Pack...
+                </p>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Click the link in the email to confirm your account and continue to SideHive.
+                </p>
 
-            <Button
-              onClick={handleContinue}
-              disabled={loading}
-              variant="hero"
-              size="lg"
-              className="w-full"
-            >
-              {loading ? "Checking..." : "Continue to Starter Pack"}
-            </Button>
+                <Button
+                  onClick={handleContinue}
+                  disabled={loading}
+                  variant="hero"
+                  size="lg"
+                  className="w-full"
+                >
+                  {loading ? "Checking..." : "Continue to Starter Pack"}
+                </Button>
 
-            {!authed && (
-              <p className="mt-4 text-sm text-muted-foreground">
-                Not received yet? Check your spam folder or click the link again when it arrives.
-              </p>
+                <p className="mt-4 text-sm text-muted-foreground">
+                  Not received yet? Check your spam folder or click the link again when it arrives.
+                </p>
+              </>
             )}
           </div>
         </div>
