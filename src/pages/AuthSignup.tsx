@@ -40,13 +40,63 @@ export default function AuthSignup() {
         payload: { action: 'start_signup' },
       });
 
-      const redirectTo = searchParams.get('next') || '/onboarding/final';
+      const next = searchParams.get('next') || '/onboarding/final';
 
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      // DEV/PREVIEW: bypass email confirmation for faster testing
+      if (import.meta.env.VITE_DISABLE_EMAIL_CONFIRM === 'true') {
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              display_name: formData.name || undefined,
+            },
+          },
+        });
+
+        if (signUpError) throw signUpError;
+
+        // Auto sign-in for dev
+        let session = signUpData.session;
+        if (!session) {
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: formData.email,
+            password: formData.password,
+          });
+          if (signInError) throw signInError;
+          session = signInData.session;
+        }
+
+        // Migrate onboarding data
+        const sessionId = getSessionId();
+        if (session && sessionId) {
+          try {
+            await supabase.functions.invoke('migrate-onboarding-to-user', {
+              headers: {
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              body: { session_id: sessionId }
+            });
+          } catch (migrationError) {
+            console.error('Migration error:', migrationError);
+          }
+        }
+
+        toast({
+          title: 'Account created!',
+          description: 'Welcome to SideHive.',
+        });
+
+        navigate(next);
+        return;
+      }
+
+      // PRODUCTION: email confirmation flow
+      const { error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}${redirectTo}`,
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
           data: {
             display_name: formData.name || undefined,
           },
@@ -55,46 +105,18 @@ export default function AuthSignup() {
 
       if (signUpError) throw signUpError;
 
-      // Auto sign-in if session wasn't automatically created
-      let session = signUpData.session;
-      if (!session) {
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password,
-        });
-        if (signInError) throw signInError;
-        session = signInData.session;
-      }
-
       await logFrontendEvent({
         eventType: 'user_action',
         step: 'signup',
         payload: { action: 'complete_signup' },
       });
 
-      // Migrate onboarding data
-      const sessionId = getSessionId();
-      if (session && sessionId) {
-        try {
-          await supabase.functions.invoke('migrate-onboarding-to-user', {
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-            },
-            body: { session_id: sessionId }
-          });
-          console.log('Onboarding data migrated successfully');
-        } catch (migrationError) {
-          console.error('Migration error:', migrationError);
-          // Don't block the user if migration fails
-        }
-      }
-
       toast({
-        title: 'Account created!',
-        description: 'Welcome to SideHive.',
+        title: 'Check your email',
+        description: 'We sent you a confirmation link.',
       });
 
-      navigate(redirectTo);
+      navigate(`/auth/check-email?email=${encodeURIComponent(formData.email)}`);
     } catch (error: any) {
       console.error('Signup error:', error);
       toast({

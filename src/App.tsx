@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AuthSignup from "./pages/AuthSignup";
 import AuthSignin from "./pages/AuthSignin";
+import CheckEmail from "./pages/auth/CheckEmail";
+import AuthCallback from "./pages/auth/Callback";
 import HubHome from "./pages/HubHome";
 import Products from "./pages/hub/Products";
 import ProductsLab from "./pages/hub/ProductsLab";
@@ -49,6 +51,8 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth/signup" element={<AuthSignup />} />
           <Route path="/auth/signin" element={<AuthSignin />} />
+          <Route path="/auth/check-email" element={<CheckEmail />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/onboarding/final" element={<OnboardingFinal />} />
           <Route path="/payment/welcome" element={<PaymentWelcome />} />
           <Route path="/hub" element={<HubHome />} />
