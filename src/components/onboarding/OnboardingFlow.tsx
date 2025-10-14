@@ -303,39 +303,57 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
       setIsSigningUp(true);
 
       try {
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: signupData.email,
-          password: signupData.password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/onboarding/final`,
-            data: { display_name: signupData.name || undefined }
-          }
-        });
-
-        if (signUpError) throw signUpError;
-
-        // Auto sign-in if session wasn't created
-        if (!signUpData.session) {
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        const disableConfirm = import.meta.env.VITE_DISABLE_EMAIL_CONFIRM === 'true';
+        
+        if (disableConfirm) {
+          // Dev/preview: immediate sign-in
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email: signupData.email,
             password: signupData.password,
+            options: {
+              data: { display_name: signupData.name || undefined }
+            }
           });
-          if (signInError) throw signInError;
-          setSession(signInData.session);
+
+          if (signUpError) throw signUpError;
+
+          let session = signUpData.session;
+          if (!session) {
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+              email: signupData.email,
+              password: signupData.password,
+            });
+            if (signInError) throw signInError;
+            session = signInData.session;
+          }
+
+          // Call migration
+          const deviceId = getSessionId();
+          await supabase.functions.invoke('migrate-onboarding-to-user', {
+            headers: {
+              Authorization: `Bearer ${session?.access_token || ''}`,
+            },
+            body: { session_id: deviceId }
+          });
+
+          setSession(session);
+          toast({ title: 'Account created!', description: 'Welcome to SideHive.' });
         } else {
-          setSession(signUpData.session);
+          // Production: email confirmation flow
+          const { error: signUpError } = await supabase.auth.signUp({
+            email: signupData.email,
+            password: signupData.password,
+            options: {
+              emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding/final`,
+              data: { display_name: signupData.name || undefined }
+            }
+          });
+
+          if (signUpError) throw signUpError;
+
+          // Route to check-email page
+          navigate(`/auth/check-email?email=${encodeURIComponent(signupData.email)}`);
         }
-
-        // Call migration
-        const deviceId = getSessionId();
-        await supabase.functions.invoke('migrate-onboarding-to-user', {
-          headers: {
-            Authorization: `Bearer ${signUpData.session?.access_token || ''}`,
-          },
-          body: { session_id: deviceId }
-        });
-
-        toast({ title: 'Account created!', description: 'Welcome to SideHive.' });
       } catch (error: any) {
         toast({
           title: 'Signup failed',

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { getSessionId } from '@/lib/telemetry';
 import { useToast } from '@/hooks/use-toast';
@@ -7,8 +7,8 @@ import { Loader2 } from 'lucide-react';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
-  const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<'processing' | 'migrating' | 'error'>('processing');
 
   useEffect(() => {
@@ -16,30 +16,45 @@ export default function AuthCallback() {
       try {
         setStatus('processing');
 
-        // Exchange the auth code for a session
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) throw error;
-        
-        const session = data.session;
-        if (!session) {
-          throw new Error('No session found after email confirmation');
+        // Try implicit flow (tokens in hash fragment)
+        const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
+        const access_token = hashParams.get('access_token');
+        const refresh_token = hashParams.get('refresh_token');
+
+        if (access_token && refresh_token) {
+          // Set session from hash tokens
+          const { error: setError } = await supabase.auth.setSession({
+            access_token,
+            refresh_token,
+          });
+          if (setError) throw setError;
+        } else {
+          // Fallback: try code exchange flow
+          const { data, error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+          if (error) throw error;
+          if (!data?.session) {
+            throw new Error('Could not establish session from callback.');
+          }
         }
 
         // Migrate anonymous onboarding data to this user
         setStatus('migrating');
         const sessionId = getSessionId();
+        const { data: sessionData } = await supabase.auth.getSession();
+        const session = sessionData.session;
         
-        try {
-          await supabase.functions.invoke('migrate-onboarding-to-user', {
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-            },
-            body: { session_id: sessionId },
-          });
-        } catch (migrationError) {
-          console.error('Migration error:', migrationError);
-          // Don't block - continue even if migration fails
+        if (session) {
+          try {
+            await supabase.functions.invoke('migrate-onboarding-to-user', {
+              headers: {
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              body: { session_id: sessionId },
+            });
+          } catch (migrationError) {
+            console.error('Migration error:', migrationError);
+            // Don't block - continue even if migration fails
+          }
         }
 
         toast({
@@ -47,14 +62,15 @@ export default function AuthCallback() {
           description: 'Your account is confirmed.',
         });
 
-        const next = searchParams.get('next') || '/onboarding/final';
+        const params = new URLSearchParams(location.search);
+        const next = params.get('next') || '/onboarding/final';
         navigate(next, { replace: true });
       } catch (e: any) {
         console.error('Auth callback error:', e);
         setStatus('error');
         toast({
-          title: 'Sign-in failed',
-          description: e?.message ?? 'Please try signing in again.',
+          title: 'Confirmation failed',
+          description: e?.message || 'Your link may be expired. Please sign in and request a new link.',
           variant: 'destructive',
         });
         
@@ -65,7 +81,7 @@ export default function AuthCallback() {
     };
 
     handleCallback();
-  }, [navigate, searchParams, toast]);
+  }, [navigate, location, toast]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-primary/5 via-background to-secondary/5">
