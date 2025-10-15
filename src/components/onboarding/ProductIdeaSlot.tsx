@@ -60,7 +60,7 @@ export function ProductIdeaSlot({
           <div className="min-w-0 flex-1">
             <h4 className="font-bold text-base sm:text-lg break-words">{idea.title}</h4>
             <Badge variant="secondary" className="mt-1 text-xs">
-              {idea.format || idea.type || 'Product'}
+              {idea.format || 'Product'}
             </Badge>
           </div>
           {isKept && (

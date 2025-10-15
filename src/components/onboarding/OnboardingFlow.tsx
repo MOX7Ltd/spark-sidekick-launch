@@ -8,7 +8,7 @@ import { StepBusinessIdentity } from './StepBusinessIdentity';
 import { StarterPackReveal } from './StarterPackReveal';
 import { StarterPackRevealV2 } from './launch/StarterPackRevealV2';
 import { StarterPackPricingCard } from './launch/StarterPackPricingCard';
-import { ProgressBar } from './ProgressBar';
+import { ProgressJourney, getStepKey } from './ProgressJourney';
 import { RecoveryBanner } from './RecoveryBanner';
 import { useToast } from '@/hooks/use-toast';
 import { useOnboardingState } from '@/hooks/useOnboardingState';
@@ -543,13 +543,9 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
       )}
       
       <div className="min-h-[80vh] py-6 md:py-8 overflow-x-hidden">
-      {/* Progress Bar - Only show for main onboarding steps (1-4) */}
+      {/* Progress Journey - Sticky navbar for main onboarding steps (1-4) */}
       {currentStep <= 4 && (
-        <ProgressBar 
-          currentStep={getDisplayStep(currentStep)} 
-          totalSteps={4} 
-          stepLabel={getStepLabel(currentStep)}
-        />
+        <ProgressJourney current={getStepKey(currentStep)} />
       )}
       
       <div className="max-w-screen-sm mx-auto px-3 sm:px-4 w-full">

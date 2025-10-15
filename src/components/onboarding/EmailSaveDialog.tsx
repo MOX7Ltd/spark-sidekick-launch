@@ -24,14 +24,19 @@ export function EmailSaveDialog({ open, onClose, onSaved }: EmailSaveDialogProps
       const sessionId = getSessionId();
       
       if (email && email.includes('@')) {
-        // Save email to preauth profile
-        const { error: rpcError } = await supabase.rpc('upsert_pre_auth_profile', {
-          p_email: email.toLowerCase(),
-          p_session_id: sessionId,
-        });
+        // Save email to preauth profile using direct insert/upsert
+        const { error: insertError } = await supabase
+          .from('preauth_profiles')
+          .upsert({ 
+            email: email.toLowerCase(), 
+            session_id: sessionId,
+            last_seen_at: new Date().toISOString()
+          }, {
+            onConflict: 'email'
+          });
         
-        if (rpcError) {
-          console.error('Failed to save pre-auth profile:', rpcError);
+        if (insertError) {
+          console.error('Failed to save pre-auth profile:', insertError);
         }
         
         // Update onboarding session hint

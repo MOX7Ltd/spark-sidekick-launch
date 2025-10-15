@@ -3,7 +3,15 @@ import * as React from "react";
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 1;
-const TOAST_REMOVE_DELAY = 1000000;
+const TOAST_REMOVE_DELAY = 2500; // Shorter duration for better UX
+
+// Helper for mobile detection
+const isMobile = () => typeof window !== 'undefined' && window.innerWidth < 768;
+
+// Default toast configuration
+const TOAST_DEFAULTS = {
+  duration: isMobile() ? 2000 : 2500,
+};
 
 type ToasterToast = ToastProps & {
   id: string;
@@ -134,8 +142,11 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">;
 
-function toast({ ...props }: Toast) {
+function toast({ duration, ...props }: Toast & { duration?: number }) {
   const id = genId();
+  
+  // Apply default duration if not specified
+  const finalDuration = duration ?? TOAST_DEFAULTS.duration;
 
   const update = (props: ToasterToast) =>
     dispatch({
@@ -148,6 +159,7 @@ function toast({ ...props }: Toast) {
     type: "ADD_TOAST",
     toast: {
       ...props,
+      duration: finalDuration,
       id,
       open: true,
       onOpenChange: (open) => {

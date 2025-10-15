@@ -1003,6 +1003,33 @@ export type Database = {
           },
         ]
       }
+      preauth_profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          last_seen_at: string | null
+          linked_user_id: string | null
+          session_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          last_seen_at?: string | null
+          linked_user_id?: string | null
+          session_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          last_seen_at?: string | null
+          linked_user_id?: string | null
+          session_id?: string | null
+        }
+        Relationships: []
+      }
       product_assets: {
         Row: {
           created_at: string | null
@@ -1363,6 +1390,10 @@ export type Database = {
       sales_summary: {
         Args: { bid: string }
         Returns: Json
+      }
+      upsert_pre_auth_profile: {
+        Args: { p_email: string; p_session_id: string }
+        Returns: undefined
       }
     }
     Enums: {

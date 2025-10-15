@@ -3,12 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Sparkles, ThumbsUp, ThumbsDown, RefreshCw, CheckCircle, Lightbulb, Mic, Zap, Check } from 'lucide-react';
+import { Sparkles, CheckCircle, Lightbulb, Mic, Zap } from 'lucide-react';
 import { generateProductIdeas, type ProductIdea } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
 import { ProductFamily, BrandContext } from '@/types/brand';
+import { ProductIdeaSlot, IdeaSlot, SlotStatus } from './ProductIdeaSlot';
+import { EmailSaveDialog } from './EmailSaveDialog';
 
 // Helper: Rank product families by frequency
 function rankFamilies(ideas: { category?: string }[]): ProductFamily[] {
@@ -30,38 +31,22 @@ interface StepOneProps {
 
 export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneProps) => {
   const [idea, setIdea] = useState(initialValue);
-  const [products, setProducts] = useState<ProductIdea[]>([]);
+  const [slots, setSlots] = useState<IdeaSlot[]>([
+    { id: 'slot-1', status: 'new', hasRefreshed: false },
+    { id: 'slot-2', status: 'new', hasRefreshed: false },
+    { id: 'slot-3', status: 'new', hasRefreshed: false },
+    { id: 'slot-4', status: 'new', hasRefreshed: false },
+  ]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [ideaSource, setIdeaSource] = useState<'typed' | 'chip'>('typed');
-  const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
-  const [motivationalMessage, setMotivationalMessage] = useState('');
-  const [likedProducts, setLikedProducts] = useState<Set<string>>(new Set());
+  const [regeneratingSlots, setRegeneratingSlots] = useState<Set<string>>(new Set());
   const [fadingOutId, setFadingOutId] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [showSparkAnimation, setShowSparkAnimation] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const motivationalMessages = [
-    "Nice work! 🚀 Here are a few ways your idea could make you money. These are just starting points—you'll unlock more customization after signup.",
-  ];
-
-  useEffect(() => {
-    if (hasGenerated && products.length > 0) {
-      const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
-      setMotivationalMessage(randomMessage);
-    }
-  }, [hasGenerated, products.length]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (idea.trim().length >= 12 && products.length > 0) {
-      onNext(idea.trim(), products);
-    }
-  };
-
-  const isValid = idea.trim().length >= 12;
-  
   const allInspirationIdeas = [
     "Online coaching program for youth soccer players",
     "Digital course on budgeting and saving for first-home buyers",
@@ -75,11 +60,28 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
     "Exclusive video library teaching beginner guitar players step by step"
   ];
 
-  // Randomly select 6 ideas on component mount
   const [inspirationChips] = useState(() => {
     const shuffled = [...allInspirationIdeas].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, 6);
   });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (idea.trim().length >= 12 && hasGenerated) {
+      // Show email save modal before proceeding
+      setEmailDialogOpen(true);
+    }
+  };
+
+  const handleContinue = () => {
+    const keptProducts = slots
+      .filter(s => s.idea && s.status !== 'rejected')
+      .map(s => s.idea!);
+    
+    onNext(idea.trim(), keptProducts);
+  };
+
+  const isValid = idea.trim().length >= 12;
 
   const handleChipClick = (chip: string) => {
     logFrontendEvent({
@@ -91,7 +93,12 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
     setIdea(chip);
     setIdeaSource('chip');
     setHasGenerated(false);
-    setProducts([]);
+    setSlots([
+      { id: 'slot-1', status: 'new', hasRefreshed: false },
+      { id: 'slot-2', status: 'new', hasRefreshed: false },
+      { id: 'slot-3', status: 'new', hasRefreshed: false },
+      { id: 'slot-4', status: 'new', hasRefreshed: false },
+    ]);
   };
 
   const startVoiceInput = () => {
@@ -151,7 +158,12 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
         smart_family_gen: true,
       });
       
-      setProducts(productIdeas);
+      // Assign products to slots
+      const newSlots = slots.map((slot, idx) => ({
+        ...slot,
+        idea: productIdeas[idx] || undefined,
+      }));
+      setSlots(newSlots);
       
       // Compute family rankings and push to BrandContext
       const families_ranked = rankFamilies(productIdeas);
@@ -163,7 +175,6 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
         dominant_family
       });
       
-      // Push Step 1 outputs into BrandContext at the flow level
       if (typeof onUpdateContext === 'function') {
         onUpdateContext((ctx) => ({
           ...ctx,
@@ -186,80 +197,92 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
     }
   };
 
-  const handleRefreshProduct = async (productId: string) => {
-    setRegeneratingIds(prev => new Set(prev).add(productId));
+  const handleThumbUp = (slotId: string) => {
+    logFrontendEvent({
+      eventType: 'user_action',
+      step: 'StepOne',
+      payload: { action: 'thumbs_up', slotId }
+    });
     
-    try {
-      const excludeIds = products.map(p => p.id).filter(Boolean);
-      const newProducts = await generateProductIdeas({
-        idea_text: idea.trim(),
-        idea_source: ideaSource,
-        max_ideas: 1,
-        exclude_ids: excludeIds,
-        smart_family_gen: true,
-      });
-      
-      if (newProducts && newProducts.length > 0 && newProducts[0].id) {
-        setProducts(prev => prev.map(p => 
-          p.id === productId ? { ...newProducts[0], id: newProducts[0].id || productId } : p
-        ));
-        
-        toast({
-          title: "New idea generated",
-          description: "Refreshed with a different product option.",
-        });
-      } else {
-        throw new Error('No valid product returned');
+    setSlots(prev => prev.map(slot => {
+      if (slot.id === slotId) {
+        const isCurrentlyKept = slot.status === 'kept';
+        return {
+          ...slot,
+          status: isCurrentlyKept ? 'new' : 'kept' as SlotStatus
+        };
       }
-    } catch (error) {
-      console.error('Failed to refresh product:', error);
+      return slot;
+    }));
+    
+    const slot = slots.find(s => s.id === slotId);
+    if (slot?.status !== 'kept') {
       toast({
-        title: "Couldn't refresh",
-        description: "Please try again in a moment.",
-        variant: "destructive"
-      });
-    } finally {
-      setRegeneratingIds(prev => {
-        const next = new Set(prev);
-        next.delete(productId);
-        return next;
+        title: "Saved! This one's now in your starter pack.",
       });
     }
   };
 
-  const handleThumbsDown = async (productId: string) => {
+  const handleThumbDown = async (slotId: string) => {
     logFrontendEvent({
       eventType: 'user_action',
       step: 'StepOne',
-      payload: { action: 'thumbs_down', productId }
+      payload: { action: 'thumbs_down', slotId }
     });
     
-    setFadingOutId(productId);
-    setTimeout(async () => {
-      await handleRefreshProduct(productId);
-      setFadingOutId(null);
-    }, 300);
-  };
-
-  const handleThumbsUp = (productId: string) => {
-    logFrontendEvent({
-      eventType: 'user_action',
-      step: 'StepOne',
-      payload: { action: 'thumbs_up', productId }
-    });
+    const slot = slots.find(s => s.id === slotId);
+    if (!slot) return;
     
-    setLikedProducts(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(productId)) {
-        newSet.delete(productId);
-      } else {
-        newSet.add(productId);
-        toast({
-          title: "Saved! This one's now in your starter pack.",
+    if (!slot.hasRefreshed) {
+      // First thumbs down: fetch replacement
+      setFadingOutId(slotId);
+      setRegeneratingSlots(prev => new Set(prev).add(slotId));
+      
+      try {
+        const excludeIds = slots.map(s => s.idea?.id).filter(Boolean) as string[];
+        const [newIdea] = await generateProductIdeas({
+          idea_text: idea.trim(),
+          idea_source: ideaSource,
+          max_ideas: 1,
+          exclude_ids: excludeIds,
+          smart_family_gen: true,
         });
+        
+        if (newIdea) {
+          setSlots(prev => prev.map(s => 
+            s.id === slotId 
+              ? { ...s, idea: newIdea, status: 'refreshed' as SlotStatus, hasRefreshed: true }
+              : s
+          ));
+          
+          toast({
+            title: "New idea generated",
+            description: "Refreshed with a different product option.",
+          });
+        }
+      } catch (error) {
+        console.error('Failed to refresh product:', error);
+        toast({
+          title: "Couldn't refresh",
+          description: "Please try again in a moment.",
+          variant: "destructive"
+        });
+      } finally {
+        setRegeneratingSlots(prev => {
+          const next = new Set(prev);
+          next.delete(slotId);
+          return next;
+        });
+        setFadingOutId(null);
       }
-      return newSet;
-    });
+    } else {
+      // Second thumbs down: reject
+      setSlots(prev => prev.map(s => 
+        s.id === slotId 
+          ? { ...s, status: 'rejected' as SlotStatus }
+          : s
+      ));
+    }
   };
 
   return (
@@ -302,7 +325,6 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
               </Button>
             </div>
 
-            {/* Tour-guide explainer */}
             <p className="text-sm text-muted-foreground text-center px-2">
               In just a moment, we'll show you how your idea could start making money online. Think of this as a preview of what's possible.
             </p>
@@ -316,7 +338,7 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
           </CardContent>
         </Card>
 
-        {/* Inspiration Chips - Auto-hide when user starts typing */}
+        {/* Inspiration Chips */}
         {!hasGenerated && idea.length === 0 && (
           <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             <p className="text-sm font-medium text-muted-foreground text-center">
@@ -387,161 +409,60 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
         {hasGenerated && (
           <div className="space-y-4 animate-fade-in">
             {/* Motivational Message */}
-            {motivationalMessage && products.length > 0 && (
-              <Card className="bg-primary/5 border-2 border-primary/20 animate-bounce-in max-w-full">
-                <CardContent className="p-3 sm:p-4 max-w-full">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-primary animate-pulse shrink-0" />
-                      <p className="font-semibold text-sm sm:text-base break-words">{motivationalMessage}</p>
-                    </div>
-                    <Badge variant="outline" className="flex items-center gap-1 bg-background shrink-0 self-start sm:self-auto">
-                      <CheckCircle className="w-3 h-3 text-primary" />
-                      <span className="whitespace-nowrap">Step 1 done ✨</span>
-                    </Badge>
+            <Card className="bg-primary/5 border-2 border-primary/20 animate-bounce-in max-w-full">
+              <CardContent className="p-3 sm:p-4 max-w-full">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-primary animate-pulse shrink-0" />
+                    <p className="font-semibold text-sm sm:text-base break-words">
+                      Nice work! 🚀 Here are a few ways your idea could make you money. These are just starting points—you'll unlock more customization after signup.
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                  <Badge variant="outline" className="flex items-center gap-1 bg-background shrink-0 self-start sm:self-auto">
+                    <CheckCircle className="w-3 h-3 text-primary" />
+                    <span className="whitespace-nowrap">Step 1 done ✨</span>
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
             
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h3 className="text-sm sm:text-base font-bold break-words">
-                Here are a few ways your idea could make you money
-              </h3>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleGenerateProducts}
-                disabled={isGenerating}
-                className="self-start sm:self-auto whitespace-nowrap"
-              >
-                <RefreshCw className={`w-4 h-4 mr-1 ${isGenerating ? 'animate-spin' : ''}`} />
-                Refresh all
-              </Button>
-            </div>
+            <h3 className="text-sm sm:text-base font-bold break-words">
+              Here are a few ways your idea could make you money
+            </h3>
             
-            <p className="text-sm text-muted-foreground text-center">
-              Tap 👍 to save ideas you like, 👎 to replace, or 🔄 to refresh for new variations
+            <p className="text-sm text-muted-foreground">
+              Tap 👍 to keep an idea (we'll carry it into your brand & social posts).<br />
+              Tap 👎 once to swap it for a new option. If you 👎 again, we'll skip that slot.
             </p>
             
             <div className="space-y-3">
-              {isGenerating && products.length === 0 ? (
-                // Loading skeletons
-                Array.from({ length: 4 }).map((_, idx) => (
-                  <Card key={idx} className="border-primary/20 max-w-full">
-                    <CardContent className="p-3 sm:p-4 space-y-3 max-w-full">
-                      <Skeleton className="h-5 w-3/4" />
-                      <Skeleton className="h-4 w-1/4" />
-                      <Skeleton className="h-12 w-full" />
-                    </CardContent>
-                  </Card>
-                ))
-              ) : (
-                products.map((product, idx) => (
-                  <Card 
-                    key={product.id} 
-                    className={`border-2 transition-all duration-300 hover:shadow-lg max-w-full ${
-                      likedProducts.has(product.id) 
-                        ? 'border-primary bg-primary/5' 
-                        : 'border-primary/20 hover:border-primary/40'
-                    } ${fadingOutId === product.id ? 'animate-fade-out' : 'animate-fade-in-up'}`}
-                    style={{ 
-                      animationDelay: `${idx * 0.1}s`
-                    }}
-                  >
-                    <CardContent className="p-3 sm:p-4 max-w-full">
-                      {regeneratingIds.has(product.id) ? (
-                        <div className="space-y-3">
-                          <Skeleton className="h-5 w-3/4" />
-                          <Skeleton className="h-4 w-1/4" />
-                          <Skeleton className="h-12 w-full" />
-                        </div>
-                      ) : (
-                        <>
-                          <div className="mb-3">
-                            <h4 className="font-semibold text-sm sm:text-base mb-1 break-words">{product.title}</h4>
-                            <div className="flex gap-2">
-                              {product.category && (
-                                <Badge variant="outline" className="text-xs font-medium whitespace-nowrap">
-                                  {product.category}
-                                </Badge>
-                              )}
-                              <Badge variant="secondary" className="text-xs whitespace-nowrap">{product.format}</Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-2 leading-relaxed break-words">
-                              {product.description}
-                            </p>
-                          </div>
-                          
-                          <div className="flex items-center gap-2 pt-2 border-t">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleThumbsUp(product.id)}
-                              className={`flex-1 hover:scale-105 transition-all min-h-[2.25rem] h-auto py-2 ${
-                                likedProducts.has(product.id) 
-                                  ? 'bg-primary/10 text-primary' 
-                                  : 'hover:bg-primary/10'
-                              }`}
-                            >
-                              {likedProducts.has(product.id) ? (
-                                <>
-                                  <Check className="w-4 h-4 mr-1 shrink-0" />
-                                  <span className="text-center">Saved</span>
-                                </>
-                              ) : (
-                                <>
-                                  <ThumbsUp className="w-4 h-4 mr-1 shrink-0" />
-                                  <span className="text-center">Looks good</span>
-                                </>
-                              )}
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleThumbsDown(product.id)}
-                              className="hover:bg-destructive/10 hover:scale-110 transition-all whitespace-nowrap"
-                            >
-                              <ThumbsDown className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRefreshProduct(product.id)}
-                              className="hover:bg-accent/10 hover:scale-110 transition-all whitespace-nowrap"
-                            >
-                              <RefreshCw className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))
-              )}
+              {slots.map((slot, idx) => (
+                <div key={slot.id} style={{ animationDelay: `${idx * 0.1}s` }}>
+                  <ProductIdeaSlot
+                    slot={slot}
+                    onThumbUp={handleThumbUp}
+                    onThumbDown={handleThumbDown}
+                    isRegenerating={regeneratingSlots.has(slot.id)}
+                    fadingOut={fadingOutId === slot.id}
+                  />
+                </div>
+              ))}
             </div>
 
-            {/* Guidance below product ideas */}
             <p className="text-sm text-muted-foreground text-center pt-4">
               Pick the options that feel closest to your vision — we'll refine and expand them in the next steps.
             </p>
           </div>
         )}
 
-        {/* Next step section - Shows after products are generated */}
-        {hasGenerated && products.length > 0 && (
+        {/* Next step section */}
+        {hasGenerated && slots.some(s => s.idea) && (
           <Card className="bg-gradient-to-r from-primary/5 to-accent/5 border-2 border-primary/20 animate-fade-in-up max-w-full">
             <CardContent className="p-4 sm:p-6 space-y-4 max-w-full">
-              {/* Journey Preview */}
               <p className="text-sm text-muted-foreground text-center leading-relaxed">
                 Next, we'll learn a little about you so we can shape your business identity. That's how your idea starts becoming a real shopfront.
               </p>
               
-              {/* CTA Button */}
               <Button 
                 type="submit" 
                 size="lg"
@@ -556,6 +477,16 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
           </Card>
         )}
       </form>
+
+      {/* Email Save Dialog */}
+      <EmailSaveDialog
+        open={emailDialogOpen}
+        onClose={() => {
+          setEmailDialogOpen(false);
+          handleContinue();
+        }}
+        onSaved={handleContinue}
+      />
     </div>
   );
 };
