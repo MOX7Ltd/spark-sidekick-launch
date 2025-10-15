@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Section from '@/components/site/Section';
-import sidehiveLogo from '@/assets/sidehive-logo.jpg';
-import { 
+import sidehiveLogoTight from '@/assets/sidehive-logo-tight.png';
+import {
   Zap, 
   Target, 
   Rocket, 
@@ -45,17 +45,13 @@ const Index = () => {
       {/* Hero Section */}
       {!showOnboarding && !completedData && (
         <Section className="pt-8 md:pt-12">
-          <div className="text-center space-y-8 max-w-4xl mx-auto">
+          <div className="text-center space-y-6 max-w-4xl mx-auto">
             {/* Logo prominence */}
-            <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl shadow-sm ring-1 ring-black/5 bg-white">
-              <img src={sidehiveLogo} alt="SideHive" className="h-12 w-12 rounded-xl" />
+            <div className="inline-block">
+              <img src={sidehiveLogoTight} alt="SideHive" className="h-32 md:h-40 w-auto mx-auto" />
             </div>
 
             <div className="space-y-6">
-              <Badge variant="secondary" className="px-4 py-2 text-sm font-medium">
-                ✨ Got an idea? Let's launch it.
-              </Badge>
-              
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight">
                 Turn your <span className="bg-gradient-hero bg-clip-text text-transparent">idea</span> into a
                 <br className="hidden md:block" />
