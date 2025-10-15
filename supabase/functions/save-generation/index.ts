@@ -53,46 +53,104 @@ serve(async (req) => {
       );
     }
 
-    // No existing generation - call AI
-    console.log('No cached generation found, calling AI...');
+    // No existing generation - route to specialized function
+    console.log('No cached generation found, routing to specialized function...');
     
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
-      return new Response(
-        JSON.stringify({ error: 'LOVABLE_API_KEY not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    let content: any;
+    let usage = { prompt_tokens: 0, completion_tokens: 0 };
+
+    // Route to appropriate specialized function based on stage
+    if (stage === 'business_identity' || stage === 'brand_name') {
+      console.log('Routing to generate-identity function');
+      
+      // Call generate-identity edge function
+      const identityResponse = await supabase.functions.invoke('generate-identity', {
+        body: inputs,
+        headers: {
+          'X-Session-Id': session_id,
+          'X-Trace-Id': crypto.randomUUID(),
+        }
+      });
+
+      if (identityResponse.error) {
+        console.error('generate-identity error:', identityResponse.error);
+        return new Response(
+          JSON.stringify({ error: 'Failed to generate business identity', details: identityResponse.error }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      content = identityResponse.data;
+      console.log('Received identity response with nameOptions:', content?.nameOptions?.length);
+
+    } else if (stage === 'logo') {
+      console.log('Routing to generate-logos function');
+      
+      // Call generate-logos edge function
+      const logoResponse = await supabase.functions.invoke('generate-logos', {
+        body: inputs,
+        headers: {
+          'X-Session-Id': session_id,
+          'X-Trace-Id': crypto.randomUUID(),
+        }
+      });
+
+      if (logoResponse.error) {
+        console.error('generate-logos error:', logoResponse.error);
+        return new Response(
+          JSON.stringify({ error: 'Failed to generate logos', details: logoResponse.error }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      content = logoResponse.data;
+
+    } else {
+      // For other stages, use generic AI call
+      console.log('Using generic AI call for stage:', stage);
+      
+      const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+      if (!lovableApiKey) {
+        return new Response(
+          JSON.stringify({ error: 'LOVABLE_API_KEY not configured' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${lovableApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: 'You are a helpful assistant for SideHive onboarding.' },
+            { role: 'user', content: JSON.stringify(inputs) }
+          ],
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        const errorText = await aiResponse.text();
+        console.error('AI API error:', errorText);
+        return new Response(
+          JSON.stringify({ error: 'AI generation failed', details: errorText }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const aiData = await aiResponse.json();
+      content = aiData.choices?.[0]?.message?.content;
+      usage = aiData.usage;
     }
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: 'You are a helpful assistant for SideHive onboarding.' },
-          { role: 'user', content: JSON.stringify(inputs) }
-        ],
-      }),
-    });
+    // Store generation - for business_identity/brand_name/logo stages, store full structured response
+    const payloadData = (stage === 'business_identity' || stage === 'brand_name' || stage === 'logo') 
+      ? content  // Store the full structured response from specialized functions
+      : { inputs, response: content };  // For generic AI, wrap in inputs/response
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI API error:', errorText);
-      return new Response(
-        JSON.stringify({ error: 'AI generation failed', details: errorText }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const aiData = await aiResponse.json();
-    const content = aiData.choices?.[0]?.message?.content;
-    const usage = aiData.usage;
-
-    // Store generation
     const { data: generation, error: insertError } = await supabase
       .from('ai_generations')
       .insert({
@@ -104,7 +162,7 @@ serve(async (req) => {
         tokens_in: usage?.prompt_tokens || 0,
         tokens_out: usage?.completion_tokens || 0,
         cost_usd: ((usage?.prompt_tokens || 0) * 0.000001 + (usage?.completion_tokens || 0) * 0.000003).toFixed(4),
-        payload: { inputs, response: content },
+        payload: payloadData,
         primary_selection: false,
       })
       .select()
@@ -118,39 +176,102 @@ serve(async (req) => {
       );
     }
 
-    // Parse and store generation items (if content is JSON array)
+    // Parse and store generation items based on stage
     let items = [];
-    try {
-      const parsedContent = JSON.parse(content);
-      if (Array.isArray(parsedContent)) {
-        for (let i = 0; i < parsedContent.length; i++) {
+    
+    if ((stage === 'business_identity' || stage === 'brand_name') && content?.nameOptions) {
+      // For business_identity/brand_name stage, store each nameOption as a separate item
+      console.log('Storing nameOptions as generation items:', content.nameOptions.length);
+      for (let i = 0; i < content.nameOptions.length; i++) {
+        const { data: item } = await supabase
+          .from('ai_generation_items')
+          .insert({
+            generation_id: generation.id,
+            rank: i,
+            content: content.nameOptions[i],
+            selected: false,
+          })
+          .select()
+          .single();
+        if (item) items.push(item);
+      }
+    } else if (typeof content === 'string') {
+      // Try to parse as JSON for backwards compatibility
+      try {
+        const parsedContent = JSON.parse(content);
+        if (Array.isArray(parsedContent)) {
+          for (let i = 0; i < parsedContent.length; i++) {
+            const { data: item } = await supabase
+              .from('ai_generation_items')
+              .insert({
+                generation_id: generation.id,
+                rank: i,
+                content: parsedContent[i],
+                selected: false,
+              })
+              .select()
+              .single();
+            if (item) items.push(item);
+          }
+        } else {
+          // Single JSON object
           const { data: item } = await supabase
             .from('ai_generation_items')
             .insert({
               generation_id: generation.id,
-              rank: i,
-              content: parsedContent[i],
+              rank: 0,
+              content: parsedContent,
               selected: false,
             })
             .select()
             .single();
           if (item) items.push(item);
         }
+      } catch (e) {
+        console.log('Content is not JSON, storing as single text item');
+        const { data: item } = await supabase
+          .from('ai_generation_items')
+          .insert({
+            generation_id: generation.id,
+            rank: 0,
+            content: { text: content },
+            selected: false,
+          })
+          .select()
+          .single();
+        if (item) items.push(item);
       }
-    } catch (e) {
-      console.log('Content is not JSON array, storing as single item');
+    } else if (Array.isArray(content)) {
+      // Already an array
+      for (let i = 0; i < content.length; i++) {
+        const { data: item } = await supabase
+          .from('ai_generation_items')
+          .insert({
+            generation_id: generation.id,
+            rank: i,
+            content: content[i],
+            selected: false,
+          })
+          .select()
+          .single();
+        if (item) items.push(item);
+      }
+    } else {
+      // Store as single object
       const { data: item } = await supabase
         .from('ai_generation_items')
         .insert({
           generation_id: generation.id,
           rank: 0,
-          content: { text: content },
+          content: content || {},
           selected: false,
         })
         .select()
         .single();
       if (item) items.push(item);
     }
+    
+    console.log(`Stored ${items.length} generation items for stage ${stage}`);
 
     return new Response(
       JSON.stringify({
