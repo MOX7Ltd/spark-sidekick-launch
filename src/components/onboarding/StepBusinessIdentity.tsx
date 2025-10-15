@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { 
   Check, Palette, Lightbulb, Sparkles, Zap, Heart, 
   RefreshCw, Loader2, ThumbsUp, ThumbsDown, ArrowLeft, Upload,
-  Circle, Smile, Target, Paintbrush, Clock, TrendingUp, Type
+  Circle, Smile, Target, Paintbrush, Clock, TrendingUp, Type, History
 } from 'lucide-react';
 import {
   Tooltip,
@@ -14,8 +14,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { regenerateBusinessNames, regenerateSingleName, generateLogos, generateBusinessIdentity } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { useOnboardingState } from '@/hooks/useOnboardingState';
 import type { BusinessIdentity, AboutYou } from '@/types/onboarding';
 import type { BrandContext } from '@/types/brand';
 import { inferBusinessType } from '@/lib/aiPrompts';
@@ -160,7 +169,12 @@ export const StepBusinessIdentity = ({
   // Shared states for bio and colors
   const [generatedBio, setGeneratedBio] = useState<string>('');
   const [generatedColors, setGeneratedColors] = useState<string[]>([]);
+  const [currentGenerationId, setCurrentGenerationId] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
   const { toast } = useToast();
+  
+  // Get caching functions from hook
+  const { generateWithCache, selectAIGeneration } = useOnboardingState();
   
   // Context update handlers
   const handleNameSelection = (name: string) => {
@@ -196,34 +210,34 @@ export const StepBusinessIdentity = ({
     }
   };
 
-  // Name: Generate names using unified context
+  // Name: Generate names using unified context with caching
   const generateNames = async () => {
     setIsGeneratingNames(true);
     try {
       const businessType = inferBusinessType(idea);
       
-      // Use the unified generate function if provided, otherwise fall back to direct API
-      if (onGenerateIdentity) {
-        const fullIdentity = await onGenerateIdentity();
-        setGeneratedBio(fullIdentity.bio || '');
-        setGeneratedColors(fullIdentity.colors || []);
-        handlePalettePick(fullIdentity.colors || []);
-        setNameOptions((fullIdentity.nameOptions || []).slice(0, 4));
-      } else {
-        const fullIdentity = await generateBusinessIdentity({
-          idea,
-          audiences,
-          vibes,
-          aboutYou,
-          bannedWords,
-          rejectedNames: [],
-          business_type: businessType
-        });
-        setGeneratedBio(fullIdentity.bio || '');
-        setGeneratedColors(fullIdentity.colors || []);
-        handlePalettePick(fullIdentity.colors || []);
-        setNameOptions((fullIdentity.nameOptions || []).slice(0, 4));
+      const inputs = {
+        idea,
+        audiences,
+        vibes,
+        aboutYou,
+        bannedWords,
+        rejectedNames: [],
+        business_type: businessType
+      };
+      
+      // Use cached generation
+      const result = await generateWithCache('brand_name', inputs);
+      
+      if (result.cached) {
+        console.log('✨ Using cached name generation');
       }
+      
+      setCurrentGenerationId(result.generation?.id || null);
+      setGeneratedBio(result.generation?.bio || '');
+      setGeneratedColors(result.generation?.colors || []);
+      handlePalettePick(result.generation?.colors || []);
+      setNameOptions((result.generation?.nameOptions || []).slice(0, 4));
       setNameSection('select');
     } catch (error: any) {
       toast({
@@ -378,8 +392,16 @@ export const StepBusinessIdentity = ({
   };
 
   // Name: Confirm selection and show logo section
-  const handleNameConfirm = () => {
+  const handleNameConfirm = async () => {
     if (!selectedName) return;
+    
+    // Mark this generation as selected
+    if (currentGenerationId) {
+      const selectedOption = nameOptions.find(opt => opt.name === selectedName);
+      const itemId = selectedOption ? `name_${selectedName}` : undefined;
+      await selectAIGeneration(currentGenerationId, itemId);
+    }
+    
     toast({
       title: "🎉 That's a strong brand name!",
       description: "Let's design the perfect logo to match."
@@ -430,7 +452,7 @@ export const StepBusinessIdentity = ({
     });
   };
 
-  // Logo: Generate logos with selected style using unified context
+  // Logo: Generate logos with selected style using cached generation
   const handleLogoStyleSelect = async (styleId: string) => {
     if (isGeneratingLogos) return; // Prevent duplicate requests
     
@@ -438,22 +460,23 @@ export const StepBusinessIdentity = ({
     setIsGeneratingLogos(true);
     
     try {
-      let logos: string[];
+      const inputs = {
+        businessName: selectedName,
+        style: styleId,
+        vibes,
+        idea,
+        context
+      };
       
-      // Use the unified generate function if provided
-      if (onGenerateLogos) {
-        logos = await onGenerateLogos(selectedName, styleId);
-      } else {
-        logos = await generateLogos(
-          selectedName, 
-          styleId, 
-          vibes,
-          idea,
-          context
-        );
+      // Use cached generation
+      const result = await generateWithCache('logo', inputs);
+      
+      if (result.cached) {
+        console.log('✨ Using cached logo generation');
       }
       
-      setGeneratedLogos(logos);
+      setCurrentGenerationId(result.generation?.id || null);
+      setGeneratedLogos(result.generation?.logos || []);
       setSelectedLogoIndex(null);
       setLikedLogos(new Set());
       setLogoSection('select');
@@ -578,8 +601,14 @@ export const StepBusinessIdentity = ({
   };
 
   // Logo: Confirm selection and complete
-  const handleLogoConfirm = () => {
+  const handleLogoConfirm = async () => {
     if (selectedLogoIndex === null) return;
+    
+    // Mark this generation as selected
+    if (currentGenerationId) {
+      const itemId = `logo_${selectedLogoIndex}`;
+      await selectAIGeneration(currentGenerationId, itemId);
+    }
     
     toast({
       title: "💪 Your logo choice screams confidence!",
@@ -606,11 +635,37 @@ export const StepBusinessIdentity = ({
       <div className="w-full max-w-4xl mx-auto px-3 sm:px-4 py-6 space-y-6 animate-fade-in">
       {/* Top Guidance Banner */}
       <div className="text-center space-y-3 pb-6">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20">
-          <Sparkles className="h-4 w-4 text-primary animate-pulse" />
-          <span className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Your brand is taking shape! ✨
-          </span>
+        <div className="flex items-center justify-between max-w-2xl mx-auto">
+          <div className="flex-1"></div>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20">
+            <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+            <span className="text-sm font-medium bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Your brand is taking shape! ✨
+            </span>
+          </div>
+          <div className="flex-1 flex justify-end">
+            <Sheet open={showHistory} onOpenChange={setShowHistory}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-xs">
+                  <History className="h-4 w-4 mr-1" />
+                  History
+                </Button>
+              </SheetTrigger>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Generation History</SheetTitle>
+                  <SheetDescription>
+                    Your previous AI generations are cached here. Reuse them anytime!
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="mt-6 space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    All your AI generations are automatically cached and available through your normal workflow.
+                  </p>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
         <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
           This is where your business comes to life. Your name and logo are the first things people will see, so let's make them shine.
