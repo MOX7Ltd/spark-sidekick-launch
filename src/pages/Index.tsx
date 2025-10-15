@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Header } from '@/components/layout/Header';
+import { Link } from 'react-router-dom';
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import Section from '@/components/site/Section';
+import sidehiveLogo from '@/assets/sidehive-logo.jpg';
 import { 
   Zap, 
   Target, 
@@ -12,7 +14,6 @@ import {
   CheckCircle,
   ArrowRight,
   Brain,
-  Heart,
   Sparkles,
   Users,
   TrendingUp,
@@ -41,63 +42,58 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
-      <Header />
-      
       {/* Hero Section */}
       {!showOnboarding && !completedData && (
-        <section className="py-16 md:py-24">
-          <div className="container mx-auto px-4 text-center space-y-12">
-            <div className="space-y-6 max-w-4xl mx-auto">
-              <Badge variant="secondary" className="px-4 py-2 text-sm font-medium animate-bounce-in">
+        <Section className="pt-8 md:pt-12">
+          <div className="text-center space-y-8 max-w-4xl mx-auto">
+            {/* Logo prominence */}
+            <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl shadow-sm ring-1 ring-black/5 bg-white">
+              <img src={sidehiveLogo} alt="SideHive" className="h-12 w-12 rounded-xl" />
+            </div>
+
+            <div className="space-y-6">
+              <Badge variant="secondary" className="px-4 py-2 text-sm font-medium">
                 ✨ Got an idea? Let's launch it.
               </Badge>
               
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight animate-fade-in">
-                Turn your 
-                <span className="bg-gradient-hero bg-clip-text text-transparent">idea</span> into a
-                <br />
-                <span className="bg-gradient-accent bg-clip-text text-transparent">business in minutes</span>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight">
+                Turn your <span className="bg-gradient-hero bg-clip-text text-transparent">idea</span> into a
+                <br className="hidden md:block" />
+                business in minutes
               </h1>
               
-              <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed animate-slide-up">
-                SideHive gives you a shopfront, products, and campaigns — ready to launch.
-                <strong className="text-foreground"> Perfect for dreamers, doers, and side-hustlers</strong> who want to bring their ideas to life.
+              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                Generate your shopfront, products, and launch campaigns in one flow. Pay once to go live, then start selling.
               </p>
 
-              <div className="pt-8 animate-slide-up">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                 <Button 
                   variant="hero" 
-                  size="xl"
+                  size="lg"
                   onClick={handleStartOnboarding}
-                  className="text-xl px-12 py-6 h-auto animate-pulse hover:animate-none"
                 >
-                  <Sparkles className="mr-3 h-6 w-6" />
+                  <Sparkles className="mr-2 h-5 w-5" />
                   Start My Business
-                  <ArrowRight className="ml-3 h-6 w-6" />
                 </Button>
-                <p className="text-sm text-muted-foreground mt-4">
-                  See instant preview • Launch today • Only $10
-                </p>
+                <Button 
+                  variant="ghost" 
+                  size="lg"
+                  asChild
+                >
+                  <a href="#pricing">See pricing</a>
+                </Button>
               </div>
-            </div>
 
-            {/* Quick Stats */}
-            <div className="flex flex-wrap justify-center gap-8 text-center animate-fade-in">
-              <div className="space-y-2">
-                <div className="text-2xl font-bold text-primary">2 mins</div>
-                <div className="text-sm text-muted-foreground">Setup time</div>
-              </div>
-              <div className="space-y-2">
-                <div className="text-2xl font-bold text-accent">$10</div>
-                <div className="text-sm text-muted-foreground">To launch</div>
-              </div>
-              <div className="space-y-2">
-                <div className="text-2xl font-bold text-brand-teal">15%</div>
-                <div className="text-sm text-muted-foreground">Platform fee</div>
+              <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground pt-2">
+                <span>2 mins setup</span>
+                <span>•</span>
+                <span>$10 to launch</span>
+                <span>•</span>
+                <span>15% platform fee</span>
               </div>
             </div>
           </div>
-        </section>
+        </Section>
       )}
 
       {/* Onboarding Flow */}
@@ -107,42 +103,38 @@ const Index = () => {
 
       {/* Success State */}
       {completedData && (
-        <section className="py-16">
-          <div className="container mx-auto px-4 text-center space-y-8">
-            <div className="animate-bounce-in">
-              <h2 className="text-4xl font-bold mb-4">Welcome to your business! 🎉</h2>
-              <p className="text-xl text-muted-foreground mb-8">
-                You're all set up and ready to start earning. Check your email for next steps.
-              </p>
-              <Button 
-                variant="hero" 
-                size="xl"
-                onClick={resetOnboarding}
-              >
-                Start Another Business
-              </Button>
-            </div>
+        <Section className="text-center">
+          <div className="space-y-6 max-w-2xl mx-auto">
+            <h2 className="text-3xl md:text-4xl font-bold">Welcome to your business! 🎉</h2>
+            <p className="text-lg text-muted-foreground">
+              You're all set up and ready to start earning. Check your email for next steps.
+            </p>
+            <Button 
+              variant="hero" 
+              size="lg"
+              onClick={resetOnboarding}
+            >
+              Start Another Business
+            </Button>
           </div>
-        </section>
+        </Section>
       )}
 
       {/* Features Section - Only show when not in onboarding */}
       {!showOnboarding && !completedData && (
-        <section id="features" className="py-16 md:py-24 bg-background">
-          <div className="container mx-auto px-4">
-            <div className="text-center space-y-6 mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold">
-                Built for socials, made for results ⚡
-              </h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Create campaigns, schedule posts, and track results — all in one place.
-                No complicated dashboards, just simple steps that work.
-              </p>
-            </div>
+        <Section id="features" className="bg-background">
+          <div className="text-center space-y-4 mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold">
+              Built for socials, made for results ⚡
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Create campaigns, schedule posts, and track results — all in one place.
+            </p>
+          </div>
 
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              <Card className="text-center hover:shadow-brand-md transition-smooth">
-                <CardContent className="p-6 space-y-4">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <Card className="text-center hover:shadow-lg transition-all">
+                <CardContent className="p-6 space-y-3">
                   <div className="w-12 h-12 mx-auto bg-gradient-primary rounded-full flex items-center justify-center">
                     <Zap className="h-6 w-6 text-white" />
                   </div>
@@ -153,8 +145,8 @@ const Index = () => {
                 </CardContent>
               </Card>
 
-              <Card className="text-center hover:shadow-brand-md transition-smooth">
-                <CardContent className="p-6 space-y-4">
+              <Card className="text-center hover:shadow-lg transition-all">
+                <CardContent className="p-6 space-y-3">
                   <div className="w-12 h-12 mx-auto bg-gradient-accent rounded-full flex items-center justify-center">
                     <Target className="h-6 w-6 text-white" />
                   </div>
@@ -165,8 +157,8 @@ const Index = () => {
                 </CardContent>
               </Card>
 
-              <Card className="text-center hover:shadow-brand-md transition-smooth">
-                <CardContent className="p-6 space-y-4">
+              <Card className="text-center hover:shadow-lg transition-all">
+                <CardContent className="p-6 space-y-3">
                   <div className="w-12 h-12 mx-auto bg-brand-orange rounded-full flex items-center justify-center">
                     <Rocket className="h-6 w-6 text-white" />
                   </div>
@@ -177,8 +169,8 @@ const Index = () => {
                 </CardContent>
               </Card>
 
-              <Card className="text-center hover:shadow-brand-md transition-smooth">
-                <CardContent className="p-6 space-y-4">
+              <Card className="text-center hover:shadow-lg transition-all">
+                <CardContent className="p-6 space-y-3">
                   <div className="w-12 h-12 mx-auto bg-brand-teal rounded-full flex items-center justify-center">
                     <Sparkles className="h-6 w-6 text-white" />
                   </div>
@@ -189,8 +181,8 @@ const Index = () => {
                 </CardContent>
               </Card>
 
-              <Card className="text-center hover:shadow-brand-md transition-smooth">
-                <CardContent className="p-6 space-y-4">
+              <Card className="text-center hover:shadow-lg transition-all">
+                <CardContent className="p-6 space-y-3">
                   <div className="w-12 h-12 mx-auto bg-brand-navy rounded-full flex items-center justify-center">
                     <TrendingUp className="h-6 w-6 text-white" />
                   </div>
@@ -201,8 +193,8 @@ const Index = () => {
                 </CardContent>
               </Card>
 
-              <Card className="text-center hover:shadow-brand-md transition-smooth">
-                <CardContent className="p-6 space-y-4">
+              <Card className="text-center hover:shadow-lg transition-all">
+                <CardContent className="p-6 space-y-3">
                   <div className="w-12 h-12 mx-auto bg-gradient-hero rounded-full flex items-center justify-center">
                     <DollarSign className="h-6 w-6 text-white" />
                   </div>
@@ -213,28 +205,26 @@ const Index = () => {
                 </CardContent>
               </Card>
             </div>
-          </div>
-        </section>
+          </Section>
       )}
 
       {/* Who is SideHive for? Section */}
       {!showOnboarding && !completedData && (
-        <section className="py-16 md:py-24 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <div className="text-center space-y-6 mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold">
-                Who SideHive is for
-              </h2>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Perfect for dreamers, doers, and serial builders who want to launch fast.
-              </p>
-            </div>
+        <Section className="bg-muted/30">
+          <div className="text-center space-y-4 mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold">
+              Who SideHive is for
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Perfect for dreamers, doers, and serial builders who want to launch fast.
+            </p>
+          </div>
 
-            <div className="grid gap-8 md:grid-cols-3 max-w-4xl mx-auto">
-              <Card className="text-center hover:shadow-brand-md transition-smooth">
-                <CardContent className="p-8 space-y-4">
-                  <div className="w-16 h-16 mx-auto bg-gradient-primary rounded-full flex items-center justify-center">
-                    <Brain className="h-8 w-8 text-white" />
+          <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
+            <Card className="text-center hover:shadow-lg transition-all">
+              <CardContent className="p-6 space-y-3">
+                  <div className="w-12 h-12 mx-auto bg-gradient-primary rounded-full flex items-center justify-center">
+                    <Brain className="h-6 w-6 text-white" />
                   </div>
                   <h3 className="text-xl font-semibold">Dreamers</h3>
                   <p className="text-muted-foreground">
@@ -243,10 +233,10 @@ const Index = () => {
                 </CardContent>
               </Card>
 
-              <Card className="text-center hover:shadow-brand-md transition-smooth">
-                <CardContent className="p-8 space-y-4">
-                  <div className="w-16 h-16 mx-auto bg-gradient-accent rounded-full flex items-center justify-center">
-                    <Clock className="h-8 w-8 text-white" />
+              <Card className="text-center hover:shadow-lg transition-all">
+                <CardContent className="p-6 space-y-3">
+                  <div className="w-12 h-12 mx-auto bg-gradient-accent rounded-full flex items-center justify-center">
+                    <Clock className="h-6 w-6 text-white" />
                   </div>
                   <h3 className="text-xl font-semibold">Side-Hustlers</h3>
                   <p className="text-muted-foreground">
@@ -255,10 +245,10 @@ const Index = () => {
                 </CardContent>
               </Card>
 
-              <Card className="text-center hover:shadow-brand-md transition-smooth">
-                <CardContent className="p-8 space-y-4">
-                  <div className="w-16 h-16 mx-auto bg-brand-orange rounded-full flex items-center justify-center">
-                    <Users className="h-8 w-8 text-white" />
+              <Card className="text-center hover:shadow-lg transition-all">
+                <CardContent className="p-6 space-y-3">
+                  <div className="w-12 h-12 mx-auto bg-brand-orange rounded-full flex items-center justify-center">
+                    <Users className="h-6 w-6 text-white" />
                   </div>
                   <h3 className="text-xl font-semibold">Entrepreneurs</h3>
                   <p className="text-muted-foreground">
@@ -267,35 +257,33 @@ const Index = () => {
                 </CardContent>
               </Card>
             </div>
-          </div>
-        </section>
+          </Section>
       )}
 
       {/* Pricing Section */}
       {!showOnboarding && !completedData && (
-        <section id="pricing" className="py-16 md:py-24">
-          <div className="container mx-auto px-4">
-            <div className="text-center space-y-6 mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold">
-                Simple, outcome-driven pricing
-              </h2>
-              <p className="text-xl text-muted-foreground">
-                Pay once to launch, upgrade when you're ready to scale. Results guaranteed.
-              </p>
-            </div>
+        <Section id="pricing">
+          <div className="text-center space-y-4 mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold">
+              Simple, outcome-driven pricing
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Pay once to launch. We only succeed when you do.
+            </p>
+          </div>
 
-            <div className="grid gap-8 md:gap-12 lg:grid-cols-3 max-w-5xl mx-auto">
-              {/* Free */}
-              <Card className="relative">
-                <CardContent className="p-8 space-y-6">
+          <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
+              {/* Free Preview */}
+              <Card className="relative hover:shadow-lg transition-all">
+                <CardContent className="p-6 space-y-4">
                   <div>
-                    <h3 className="text-2xl font-bold">Preview</h3>
-                    <p className="text-muted-foreground">Test your idea</p>
+                    <h3 className="text-xl font-bold">Preview</h3>
+                    <p className="text-sm text-muted-foreground">Test your idea</p>
                   </div>
                   <div>
-                    <span className="text-4xl font-bold">Free</span>
+                    <span className="text-3xl font-bold">Free</span>
                   </div>
-                  <ul className="space-y-3">
+                  <ul className="space-y-2 text-sm">
                     <li className="flex items-center space-x-3">
                       <CheckCircle className="h-5 w-5 text-primary" />
                       <span>Business name ideas</span>
@@ -313,32 +301,32 @@ const Index = () => {
                       <span>Positioning statement</span>
                     </li>
                   </ul>
-                  <Button variant="outline" className="w-full" size="lg" onClick={handleStartOnboarding}>
+                  <Button variant="outline" className="w-full" onClick={handleStartOnboarding}>
                     Start My Business
                   </Button>
                 </CardContent>
               </Card>
 
               {/* Starter Pack */}
-              <Card className="relative border-primary shadow-brand-md">
+              <Card className="relative border-2 border-primary hover:shadow-xl transition-all">
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <Badge className="bg-gradient-accent text-white px-4 py-1">
+                  <Badge className="bg-gradient-accent text-white px-3 py-1 text-xs font-medium">
                     Most Popular
                   </Badge>
                 </div>
-                <CardContent className="p-8 space-y-6">
+                <CardContent className="p-6 space-y-4">
                   <div>
-                    <h3 className="text-2xl font-bold">Starter Pack</h3>
-                    <p className="text-muted-foreground">Business live today</p>
+                    <h3 className="text-xl font-bold">Starter Pack</h3>
+                    <p className="text-sm text-muted-foreground">Business live today</p>
                   </div>
                   <div>
-                    <span className="text-4xl font-bold text-brand-orange">$10</span>
-                    <span className="text-muted-foreground"> one-time</span>
+                    <span className="text-3xl font-bold text-brand-orange">$10</span>
+                    <span className="text-sm text-muted-foreground"> one-time</span>
                   </div>
-                  <div className="text-sm text-brand-orange font-medium mb-4">
-                    = Shopfront + 3 campaigns + 2 products
-                  </div>
-                  <ul className="space-y-3">
+                  <p className="text-xs text-brand-orange font-medium">
+                    Shopfront + 3 campaigns + 2 products
+                  </p>
+                  <ul className="space-y-2 text-sm">
                     <li className="flex items-center space-x-3">
                       <CheckCircle className="h-5 w-5 text-primary" />
                       <span>Professional storefront</span>
@@ -360,94 +348,24 @@ const Index = () => {
                       <span>Payment processing</span>
                     </li>
                   </ul>
-                  <Button variant="starter" className="w-full" size="lg">
-                    Start My Business
+                  <Button variant="hero" className="w-full" asChild>
+                    <Link to="/onboarding/final">Start My Business</Link>
                   </Button>
-                </CardContent>
-              </Card>
-
-              {/* Premium */}
-              <Card className="relative">
-                <CardContent className="p-8 space-y-6">
-                  <div>
-                    <h3 className="text-2xl font-bold">Premium</h3>
-                    <p className="text-muted-foreground">Scale faster</p>
-                  </div>
-                  <div>
-                    <span className="text-4xl font-bold">$10</span>
-                    <span className="text-muted-foreground">/week</span>
-                  </div>
-                  <div className="text-sm text-foreground font-medium mb-4">
-                    = AI tools + Analytics + Growth features
-                  </div>
-                  <ul className="space-y-3">
-                    <li className="flex items-center space-x-3">
-                      <CheckCircle className="h-5 w-5 text-primary" />
-                      <span>Everything in Starter</span>
-                    </li>
-                    <li className="flex items-center space-x-3">
-                      <CheckCircle className="h-5 w-5 text-primary" />
-                      <span>AI image generation</span>
-                    </li>
-                    <li className="flex items-center space-x-3">
-                      <CheckCircle className="h-5 w-5 text-primary" />
-                      <span>A/B test captions</span>
-                    </li>
-                    <li className="flex items-center space-x-3">
-                      <CheckCircle className="h-5 w-5 text-primary" />
-                      <span>Advanced analytics</span>
-                    </li>
-                    <li className="flex items-center space-x-3">
-                      <CheckCircle className="h-5 w-5 text-primary" />
-                      <span>Unlimited campaigns</span>
-                    </li>
-                  </ul>
-                  <Button variant="premium" className="w-full" size="lg">
-                    Upgrade to Premium
-                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Platform fee: 15% per sale
+                  </p>
                 </CardContent>
               </Card>
             </div>
 
-            <div className="text-center mt-12 p-6 bg-muted/50 rounded-lg max-w-2xl mx-auto">
-              <p className="text-muted-foreground">
+            <div className="text-center mt-8 p-4 bg-muted/50 rounded-xl max-w-2xl mx-auto">
+              <p className="text-sm text-muted-foreground">
                 <strong className="text-foreground">Platform fee:</strong> We take 15% of your sales (only when you earn). 
                 The rest goes directly to your connected Stripe account.
               </p>
             </div>
-          </div>
-        </section>
+          </Section>
       )}
-
-      {/* Footer */}
-      <footer className="bg-background border-t py-12">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div className="flex items-center space-x-3">
-              <span className="font-bold text-lg bg-gradient-hero bg-clip-text text-transparent">
-                SideHive
-              </span>
-              <span className="text-muted-foreground">Turn ideas into businesses</span>
-            </div>
-            
-            <div className="flex space-x-6">
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-smooth">
-                Privacy
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-smooth">
-                Terms
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-foreground transition-smooth">
-                Support
-              </a>
-            </div>
-          </div>
-          
-          <div className="mt-8 pt-8 border-t text-center text-muted-foreground">
-            <p>© 2024 SideHive. Built for dreamers with big ideas. ✨</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

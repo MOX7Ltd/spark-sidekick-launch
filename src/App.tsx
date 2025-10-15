@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import AppShell from "@/layouts/AppShell";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AuthSignup from "./pages/AuthSignup";
@@ -47,8 +48,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <ScrollToTop />
-        <Routes>
-          <Route path="/" element={<Index />} />
+        <AppShell>
+          <Routes>
+            <Route path="/" element={<Index />} />
           <Route path="/auth/signup" element={<AuthSignup />} />
           <Route path="/auth/signin" element={<AuthSignin />} />
           <Route path="/auth/check-email" element={<CheckEmail />} />
@@ -81,7 +83,8 @@ const App = () => (
           {FLAGS.SHOPFRONT_V1 && <Route path="/s/:handle" element={<PublicShopfront />} />}
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
-        </Routes>
+          </Routes>
+        </AppShell>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
