@@ -75,6 +75,7 @@ export function ProductIdeaSlot({
         {!isRejected ? (
           <div className="flex gap-2 pt-2">
             <Button
+              type="button"
               variant={isKept ? "default" : "outline"}
               size="sm"
               onClick={() => onThumbUp(id)}
@@ -85,6 +86,7 @@ export function ProductIdeaSlot({
               {isKept ? 'Kept' : 'Keep'}
             </Button>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               onClick={() => onThumbDown(id)}

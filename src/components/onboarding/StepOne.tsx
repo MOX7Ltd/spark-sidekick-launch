@@ -73,12 +73,18 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
     }
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    await saveProgress();
     const keptProducts = slots
       .filter(s => s.idea && s.status !== 'rejected')
       .map(s => s.idea!);
     
     onNext(idea.trim(), keptProducts);
+  };
+
+  const handleSkipEmail = () => {
+    setEmailDialogOpen(false);
+    handleContinue();
   };
 
   const isValid = idea.trim().length >= 12;
@@ -197,7 +203,38 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
     }
   };
 
-  const handleThumbUp = (slotId: string) => {
+  const saveProgress = async () => {
+    try {
+      const { getSessionId } = await import('@/lib/telemetry');
+      const sessionId = getSessionId();
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      const productsPayload = slots.reduce((acc, slot) => {
+        acc[slot.id] = {
+          initial: slot.idea || null,
+          status: slot.status,
+          hasRefreshed: slot.hasRefreshed,
+        };
+        return acc;
+      }, {} as Record<string, any>);
+
+      await supabase
+        .from('onboarding_sessions')
+        .upsert({
+          session_id: sessionId,
+          payload: {
+            idea: idea.trim(),
+            products: productsPayload,
+          }
+        }, {
+          onConflict: 'session_id'
+        });
+    } catch (error) {
+      console.error('Failed to save progress:', error);
+    }
+  };
+
+  const handleThumbUp = async (slotId: string) => {
     logFrontendEvent({
       eventType: 'user_action',
       step: 'StepOne',
@@ -221,6 +258,8 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
         title: "Saved! This one's now in your starter pack.",
       });
     }
+    
+    await saveProgress();
   };
 
   const handleThumbDown = async (slotId: string) => {
@@ -274,6 +313,7 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
           return next;
         });
         setFadingOutId(null);
+        await saveProgress();
       }
     } else {
       // Second thumbs down: reject
@@ -282,6 +322,7 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
           ? { ...s, status: 'rejected' as SlotStatus }
           : s
       ));
+      await saveProgress();
     }
   };
 
@@ -481,11 +522,9 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
       {/* Email Save Dialog */}
       <EmailSaveDialog
         open={emailDialogOpen}
-        onClose={() => {
-          setEmailDialogOpen(false);
-          handleContinue();
-        }}
+        onClose={() => setEmailDialogOpen(false)}
         onSaved={handleContinue}
+        onSkip={handleContinue}
       />
     </div>
   );

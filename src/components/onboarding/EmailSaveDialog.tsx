@@ -11,9 +11,10 @@ interface EmailSaveDialogProps {
   open: boolean;
   onClose: () => void;
   onSaved?: (email: string) => void;
+  onSkip?: () => void;
 }
 
-export function EmailSaveDialog({ open, onClose, onSaved }: EmailSaveDialogProps) {
+export function EmailSaveDialog({ open, onClose, onSaved, onSkip }: EmailSaveDialogProps) {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -71,6 +72,7 @@ export function EmailSaveDialog({ open, onClose, onSaved }: EmailSaveDialogProps
   };
 
   const handleSkip = () => {
+    onSkip?.();
     onClose();
   };
 
