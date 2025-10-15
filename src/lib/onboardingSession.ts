@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
-import { getSessionId } from './telemetry';
+import { getSessionId, saveFormState, getFormState, OnboardingFormState } from './telemetry';
+import { saveOnboardingSession as syncSession } from './onboardingSync';
 
 export interface OnboardingSessionData {
   formData: any;
@@ -7,31 +8,31 @@ export interface OnboardingSessionData {
   generatedPosts?: any[];
 }
 
-const SESSION_KEY = 'onboarding_session_id';
-
 /**
- * Get the current onboarding session ID from localStorage
+ * @deprecated Use getSessionId from telemetry.ts instead
  */
 export function getOnboardingSessionId(): string | null {
-  return localStorage.getItem(SESSION_KEY);
+  return getSessionId();
 }
 
 /**
- * Set the onboarding session ID in localStorage
+ * @deprecated Use saveFormState from telemetry.ts instead
  */
 export function setOnboardingSessionId(sessionId: string): void {
-  localStorage.setItem(SESSION_KEY, sessionId);
+  localStorage.setItem('sidehive_session_id', sessionId);
 }
 
 /**
- * Clear the onboarding session ID from localStorage
+ * @deprecated Use clearOnboardingState from telemetry.ts instead
  */
 export function clearOnboardingSession(): void {
-  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem('sidehive_session_id');
+  localStorage.removeItem('sidehive_form_state');
 }
 
 /**
  * Save onboarding session data to Supabase
+ * @deprecated Use saveOnboardingSession from onboardingSync.ts instead
  */
 export async function saveOnboardingSession(
   data: OnboardingSessionData,
@@ -40,21 +41,13 @@ export async function saveOnboardingSession(
   try {
     const sessionId = getSessionId();
     
-    const { error } = await supabase
-      .from('onboarding_sessions')
-      .insert({
-        session_id: sessionId,
-        payload: data as any,
-        user_hint_email: userHintEmail,
-      });
-
-    if (error) {
-      console.error('Failed to save onboarding session:', error);
-      return { success: false, error: error.message };
-    }
-
-    setOnboardingSessionId(sessionId);
-    return { success: true };
+    // Use new sync function
+    return await syncSession(
+      data.formData as OnboardingFormState,
+      'legacy',
+      data.context,
+      undefined
+    );
   } catch (error) {
     console.error('Failed to save onboarding session:', error);
     return { success: false, error: String(error) };
