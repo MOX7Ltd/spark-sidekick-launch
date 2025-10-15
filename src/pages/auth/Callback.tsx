@@ -43,14 +43,18 @@ export default function AuthCallback() {
         const { data: sessionData } = await supabase.auth.getSession();
         const session = sessionData.session;
         
-        if (session) {
+        if (session && sessionId) {
           try {
-            await supabase.functions.invoke('migrate-onboarding-to-user', {
+            const { error: migrationError } = await supabase.functions.invoke('migrate-onboarding-to-user', {
               headers: {
                 Authorization: `Bearer ${session.access_token}`,
               },
               body: { session_id: sessionId },
             });
+            
+            if (migrationError) {
+              console.error('Migration failed:', migrationError);
+            }
           } catch (migrationError) {
             console.error('Migration error:', migrationError);
             // Don't block - continue even if migration fails
