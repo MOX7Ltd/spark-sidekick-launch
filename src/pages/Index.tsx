@@ -6,45 +6,26 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Section from '@/components/site/Section';
 import sidehiveLogoTight from '@/assets/sidehive-logo-tight.png';
-import {
-  Zap, 
-  Target, 
-  Rocket, 
-  DollarSign,
-  CheckCircle,
-  ArrowRight,
-  Brain,
-  Sparkles,
-  Users,
-  TrendingUp,
-  Clock
-} from 'lucide-react';
+import { Zap, Target, Rocket, DollarSign, CheckCircle, ArrowRight, Brain, Sparkles, Users, TrendingUp, Clock } from 'lucide-react';
 import type { OnboardingData } from '@/types/onboarding';
-
 const Index = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [completedData, setCompletedData] = useState<OnboardingData | null>(null);
-
   const handleStartOnboarding = () => {
     setShowOnboarding(true);
   };
-
   const handleOnboardingComplete = (data: OnboardingData) => {
     setCompletedData(data);
     // In a real app, this would redirect to dashboard or show success
     console.log('Onboarding completed:', data);
   };
-
   const resetOnboarding = () => {
     setShowOnboarding(false);
     setCompletedData(null);
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-subtle">
+  return <div className="min-h-screen bg-gradient-subtle">
       {/* Hero Section */}
-      {!showOnboarding && !completedData && (
-        <Section className="pt-8 md:pt-12">
+      {!showOnboarding && !completedData && <Section className="pt-8 md:pt-12">
           <div className="text-center space-y-6 max-w-4xl mx-auto">
             {/* Logo prominence */}
             <div className="inline-block">
@@ -58,24 +39,14 @@ const Index = () => {
                 business in minutes
               </h1>
               
-              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                Generate your shopfront, products, and launch campaigns in one flow. Pay once to go live, then start selling.
-              </p>
+              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">SideHive gives you a shopfront, products, and campaigns — ready to launch. Perfect for dreamers, doers, and side-hustlers who want to bring their ideas to life.</p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                <Button 
-                  variant="hero" 
-                  size="lg"
-                  onClick={handleStartOnboarding}
-                >
+                <Button variant="hero" size="lg" onClick={handleStartOnboarding}>
                   <Sparkles className="mr-2 h-5 w-5" />
                   Start My Business
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="lg"
-                  asChild
-                >
+                <Button variant="ghost" size="lg" asChild>
                   <a href="#pricing">See pricing</a>
                 </Button>
               </div>
@@ -89,36 +60,26 @@ const Index = () => {
               </div>
             </div>
           </div>
-        </Section>
-      )}
+        </Section>}
 
       {/* Onboarding Flow */}
-      {showOnboarding && (
-        <OnboardingFlow onComplete={handleOnboardingComplete} />
-      )}
+      {showOnboarding && <OnboardingFlow onComplete={handleOnboardingComplete} />}
 
       {/* Success State */}
-      {completedData && (
-        <Section className="text-center">
+      {completedData && <Section className="text-center">
           <div className="space-y-6 max-w-2xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold">Welcome to your business! 🎉</h2>
             <p className="text-lg text-muted-foreground">
               You're all set up and ready to start earning. Check your email for next steps.
             </p>
-            <Button 
-              variant="hero" 
-              size="lg"
-              onClick={resetOnboarding}
-            >
+            <Button variant="hero" size="lg" onClick={resetOnboarding}>
               Start Another Business
             </Button>
           </div>
-        </Section>
-      )}
+        </Section>}
 
       {/* Features Section - Only show when not in onboarding */}
-      {!showOnboarding && !completedData && (
-        <Section id="features" className="bg-background">
+      {!showOnboarding && !completedData && <Section id="features" className="bg-background">
           <div className="text-center space-y-4 mb-12">
             <h2 className="text-2xl md:text-3xl font-bold">
               Built for socials, made for results ⚡
@@ -201,12 +162,10 @@ const Index = () => {
                 </CardContent>
               </Card>
             </div>
-          </Section>
-      )}
+          </Section>}
 
       {/* Who is SideHive for? Section */}
-      {!showOnboarding && !completedData && (
-        <Section className="bg-muted/30">
+      {!showOnboarding && !completedData && <Section className="bg-muted/30">
           <div className="text-center space-y-4 mb-12">
             <h2 className="text-2xl md:text-3xl font-bold">
               Who SideHive is for
@@ -253,12 +212,10 @@ const Index = () => {
                 </CardContent>
               </Card>
             </div>
-          </Section>
-      )}
+          </Section>}
 
       {/* Pricing Section */}
-      {!showOnboarding && !completedData && (
-        <Section id="pricing">
+      {!showOnboarding && !completedData && <Section id="pricing">
           <div className="text-center space-y-4 mb-12">
             <h2 className="text-2xl md:text-3xl font-bold">
               Simple, outcome-driven pricing
@@ -360,10 +317,7 @@ const Index = () => {
                 The rest goes directly to your connected Stripe account.
               </p>
             </div>
-          </Section>
-      )}
-    </div>
-  );
+          </Section>}
+    </div>;
 };
-
 export default Index;
