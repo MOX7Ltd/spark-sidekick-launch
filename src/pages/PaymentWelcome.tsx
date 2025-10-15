@@ -53,13 +53,57 @@ export default function PaymentWelcome() {
       const paid = businesses?.[0]?.starter_paid || false;
       setHasStarterPaid(paid);
 
-      // If not paid and we're on this page, show abandoned checkout state
-      if (!paid && type === 'starter' && !csId) {
-        // Show abandoned checkout UI
+      // If checkout session present but not yet paid, start polling for webhook
+      if (!paid && type === 'starter' && csId) {
+        startPollingPaymentStatus();
       }
     } catch (error) {
       console.error('Error checking payment status:', error);
     }
+  };
+
+  const startPollingPaymentStatus = async () => {
+    const maxAttempts = 20; // 2 minutes total
+    let attempts = 0;
+
+    const pollInterval = setInterval(async () => {
+      attempts++;
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          clearInterval(pollInterval);
+          return;
+        }
+
+        const { data: businesses } = await supabase
+          .from('businesses')
+          .select('starter_paid')
+          .eq('owner_id', session.user.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        const paid = businesses?.[0]?.starter_paid || false;
+
+        if (paid) {
+          clearInterval(pollInterval);
+          setHasStarterPaid(true);
+          toast({
+            title: "Payment confirmed!",
+            description: "Your Starter Pack is now active.",
+          });
+        } else if (attempts >= maxAttempts) {
+          clearInterval(pollInterval);
+          toast({
+            title: "Payment processing",
+            description: "This is taking longer than expected. Please refresh the page.",
+          });
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+        clearInterval(pollInterval);
+      }
+    }, 6000); // Poll every 6 seconds
   };
 
   const initiateConnectOnboarding = async () => {
@@ -234,6 +278,26 @@ export default function PaymentWelcome() {
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-2xl w-full">
           <div className="p-8 space-y-6">
+            {/* Payment Processing State */}
+            {type === 'starter' && hasStarterPaid === false && csId && (
+              <>
+                <div className="text-center space-y-3">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                  </div>
+                  <h1 className="text-3xl md:text-4xl font-bold">
+                    Checking payment status...
+                  </h1>
+                  <p className="text-lg text-muted-foreground">
+                    Please wait while we confirm your payment.
+                  </p>
+                </div>
+                <p className="text-sm text-center text-muted-foreground">
+                  This usually takes a few seconds. Please don't close this page.
+                </p>
+              </>
+            )}
+
             {/* Abandoned Checkout State */}
             {type === 'starter' && hasStarterPaid === false && !csId && (
               <>
