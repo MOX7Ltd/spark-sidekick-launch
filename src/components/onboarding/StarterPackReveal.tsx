@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Sparkles } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import type { BusinessIdentity, ProductIdea } from '@/types/onboarding';
 
 interface StarterPackRevealProps {
@@ -12,7 +14,9 @@ interface StarterPackRevealProps {
 }
 
 export const StarterPackReveal = ({ businessIdentity, products, onContinue, onBack }: StarterPackRevealProps) => {
+  const navigate = useNavigate();
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   // Use brand colors for confetti if available
   const confettiColors = businessIdentity.colors && businessIdentity.colors.length > 0
@@ -20,11 +24,28 @@ export const StarterPackReveal = ({ businessIdentity, products, onContinue, onBa
     : ['#2DD4BF', '#F59E0B', '#1E40AF', '#F97316'];
 
   useEffect(() => {
+    // Check authentication status
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+    checkAuth();
+
     // Trigger confetti animation on mount
     setShowConfetti(true);
     const timer = setTimeout(() => setShowConfetti(false), 3000);
     return () => clearTimeout(timer);
   }, []);
+
+  const handleContinue = () => {
+    if (isAuthenticated === false) {
+      // Redirect to signup with return URL
+      navigate('/auth/signup?next=/onboarding/final');
+    } else {
+      // Proceed to next step (payment)
+      onContinue();
+    }
+  };
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 md:py-8 animate-fade-in">
@@ -122,10 +143,11 @@ export const StarterPackReveal = ({ businessIdentity, products, onContinue, onBa
         <Button 
           size="lg"
           variant="hero"
-          onClick={onContinue}
+          onClick={handleContinue}
+          disabled={isAuthenticated === null}
           className="w-full md:w-auto h-12 md:h-14 px-6 md:px-8 text-base md:text-lg font-semibold"
         >
-          📣 Create My Launch Posts
+          {isAuthenticated === false ? '💾 Create Account to Continue' : '📣 Create My Launch Posts'}
         </Button>
         
         <div>
