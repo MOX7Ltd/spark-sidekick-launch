@@ -9,7 +9,9 @@ import { StarterPackReveal } from './StarterPackReveal';
 import { StarterPackRevealV2 } from './launch/StarterPackRevealV2';
 import { StarterPackPricingCard } from './launch/StarterPackPricingCard';
 import { ProgressBar } from './ProgressBar';
+import { RecoveryBanner } from './RecoveryBanner';
 import { useToast } from '@/hooks/use-toast';
+import { useOnboardingState } from '@/hooks/useOnboardingState';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
 import { DebugPanel } from '@/components/debug/DebugPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +19,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { getSessionId } from '@/lib/telemetry';
 import type { OnboardingData } from '@/types/onboarding';
 import type { BrandContext } from '@/types/brand';
 import { generateBusinessIdentity, generateLogos, generateCampaign } from '@/lib/api';
@@ -28,8 +29,26 @@ interface OnboardingFlowProps {
 }
 
 export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowProps) => {
-  const [currentStep, setCurrentStep] = useState(initialStep);
-  const [formData, setFormData] = useState<Partial<OnboardingData>>({});
+  // Use new persistent state hook
+  const {
+    sessionId,
+    formData,
+    currentStep,
+    businessId,
+    context: savedContext,
+    isRestoring,
+    isSyncing,
+    updateFormData,
+    setCurrentStep: setStep,
+    setBusinessId,
+    updateContext: updateSavedContext,
+    syncToServer,
+    restoreState,
+    generateWithCache,
+    selectAIGeneration,
+  } = useOnboardingState(initialStep);
+
+  // Local state for BrandContext (merged with saved)
   const [context, setContext] = useState<BrandContext>({
     idea_text: '',
     families_ranked: [],
@@ -40,24 +59,80 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
     palette: [],
     business_name: undefined,
     logo_style: undefined,
+    ...savedContext,
   });
+  
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showRecoveryBanner, setShowRecoveryBanner] = useState(false);
+  const [hasCheckedForRecovery, setHasCheckedForRecovery] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  // Context updater callback
+  // Check for existing session on mount
+  useEffect(() => {
+    const checkForRecovery = async () => {
+      if (!hasCheckedForRecovery) {
+        setHasCheckedForRecovery(true);
+        
+        // Check if we have saved state
+        const restored = await restoreState();
+        
+        if (restored && currentStep > 1) {
+          setShowRecoveryBanner(true);
+          
+          // Merge restored context into local context
+          if (savedContext) {
+            setContext(prev => ({ ...prev, ...savedContext }));
+          }
+        }
+      }
+    };
+    
+    checkForRecovery();
+  }, [hasCheckedForRecovery, restoreState, currentStep, savedContext]);
+
+  // Context updater callback - now also syncs to persistent storage
   const onUpdateContext = useCallback(
     (updater: (ctx: BrandContext) => BrandContext) => {
       setContext((prev) => {
         const updated = updater(prev);
         console.log('BrandContext updated:', updated);
+        
+        // Also update persistent context
+        updateSavedContext(updated);
+        
         return updated;
       });
     },
-    []
+    [updateSavedContext]
   );
+
+  // Handle recovery banner actions
+  const handleRestoreProgress = useCallback(() => {
+    setShowRecoveryBanner(false);
+    toast({
+      title: 'Progress restored',
+      description: `Continuing from step ${currentStep}`,
+    });
+  }, [currentStep, toast]);
+
+  const handleStartFresh = useCallback(() => {
+    setShowRecoveryBanner(false);
+    setStep(1);
+    setContext({
+      idea_text: '',
+      families_ranked: [],
+      dominant_family: 'Digital',
+      tone_adjectives: [],
+      audience: [],
+      personal_brand: false,
+      palette: [],
+      business_name: undefined,
+      logo_style: undefined,
+    });
+  }, [setStep]);
   
-  // Wrapped generate functions that use unified context
+  // Wrapped generate functions that use unified context + caching
   const handleGenerateIdentity = useCallback(async () => {
     try {
       // Build request from context
@@ -75,6 +150,26 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
         },
       };
       
+      // Use cached generation
+      const cached = await generateWithCache('business_identity', request);
+      
+      if (cached) {
+        // Use cached result
+        const res = cached.payload?.response || cached.payload;
+        
+        // Merge response into context
+        onUpdateContext((ctx) => ({
+          ...ctx,
+          bio: res.bio,
+          palette: res.colors,
+          tone_adjectives: ctx.tone_adjectives || [],
+          audience: ctx.audience || [],
+        }));
+        
+        return res;
+      }
+      
+      // Fallback to direct API call if cache fails
       const res = await generateBusinessIdentity(request);
       
       // Merge response into context
@@ -91,7 +186,7 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
       console.error('Failed to generate identity:', error);
       throw error;
     }
-  }, [context, onUpdateContext]);
+  }, [context, onUpdateContext, generateWithCache]);
   
   const handleGenerateLogos = useCallback(async (businessName: string, style: string) => {
     try {
@@ -141,8 +236,17 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
       step: 'StepOne',
       payload: { action: 'submit_idea', productCount: products.length }
     });
-    setFormData(prev => ({ ...prev, idea, products }));
-    setCurrentStep(2);
+    
+    // Update persistent form data
+    updateFormData({ idea, products });
+    
+    // Update context
+    onUpdateContext((ctx) => ({
+      ...ctx,
+      idea_text: idea,
+    }));
+    
+    setStep(2);
   };
 
   // Stage 2: About You (Name, Why, Story)
@@ -176,8 +280,10 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
       personal_brand: aboutYou.includeFirstName || aboutYou.includeLastName,
     }));
     
-    setFormData(prev => ({ ...prev, aboutYou }));
-    setCurrentStep(3); // Go to business info (vibes + audiences)
+    // Update persistent form data
+    updateFormData({ aboutYou });
+    
+    setStep(3); // Go to business info (vibes + audiences)
   };
 
   // Stage 3: About Your Business (Vibe & Style + Target Audience)
@@ -211,8 +317,10 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
       };
     }
     
-    setFormData(prev => ({ ...prev, ...updates }));
-    setCurrentStep(4); // Go to business identity (name + logo)
+    // Update persistent form data
+    updateFormData(updates);
+    
+    setStep(4); // Go to business identity (name + logo)
   };
 
   // Stage 4: Business Identity (Name + Logo)
@@ -235,8 +343,10 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
       palette: businessIdentity.colors || ctx.palette,
     }));
     
-    setFormData(prev => ({ ...prev, businessIdentity }));
-    setCurrentStep(5); // Go to shopfront preview
+    // Update persistent form data
+    updateFormData({ businessIdentity });
+    
+    setStep(5); // Go to shopfront preview
   };
 
   // Stage 5: Shopfront Preview (Celebration)
@@ -246,7 +356,7 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
       step: 'StarterPackReveal',
       payload: { action: 'view_shopfront_preview' }
     });
-    setCurrentStep(6); // Go to social media posts
+    setStep(6); // Go to social media posts
   };
 
   // Stage 6: Social Media Posts
@@ -256,7 +366,7 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
       step: 'SocialPostPreview',
       payload: { action: 'complete_social_posts' }
     });
-    setCurrentStep(7); // Go to checkout
+    setStep(7); // Go to checkout
   };
 
   // Checkout: Starter Pack (Final Step - not counted in onboarding)
@@ -274,13 +384,14 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
         step: stepNames[currentStep] || 'Unknown',
         payload: { action: 'go_back', fromStep: currentStep, toStep: currentStep - 1 }
       });
-      setCurrentStep(currentStep - 1);
+      setStep(currentStep - 1);
     }
   };
 
   // Composite component for Step 7: Launch Experience
-  const FinaliseLaunchStep = ({ formData, onCheckoutComplete }: { 
-    formData: Partial<OnboardingData>; 
+  const FinaliseLaunchStep = ({ formData, sessionId, onCheckoutComplete }: { 
+    formData: Partial<OnboardingData>;
+    sessionId: string;
     onCheckoutComplete: () => void;
   }) => {
     const [stage, setStage] = useState<'reveal' | 'pricing'>('reveal');
@@ -313,7 +424,7 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
       }
 
       try {
-        const deviceId = getSessionId();
+        const deviceId = sessionId;
         const response = await supabase.functions.invoke('create-starter-session', {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
@@ -421,7 +532,17 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
   };
 
   return (
-    <div className="min-h-[80vh] py-6 md:py-8 overflow-x-hidden">
+    <>
+      {/* Recovery Banner */}
+      {showRecoveryBanner && (
+        <RecoveryBanner
+          lastStep={currentStep}
+          onRestore={handleRestoreProgress}
+          onDismiss={handleStartFresh}
+        />
+      )}
+      
+      <div className="min-h-[80vh] py-6 md:py-8 overflow-x-hidden">
       {/* Progress Bar - Only show for main onboarding steps (1-4) */}
       {currentStep <= 4 && (
         <ProgressBar 
@@ -516,6 +637,7 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
           {currentStep === 7 && (
             <FinaliseLaunchStep
               formData={formData}
+              sessionId={sessionId}
               onCheckoutComplete={handleCheckoutComplete}
             />
           )}
@@ -527,5 +649,6 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
         brandContext: context
       }} />
     </div>
+    </>
   );
 };
