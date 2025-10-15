@@ -14,6 +14,94 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_generation_items: {
+        Row: {
+          content: Json
+          created_at: string
+          generation_id: string
+          id: string
+          rank: number
+          selected: boolean | null
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          generation_id: string
+          id?: string
+          rank?: number
+          selected?: boolean | null
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          generation_id?: string
+          id?: string
+          rank?: number
+          selected?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_generation_items_generation_id_fkey"
+            columns: ["generation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_generations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_generations: {
+        Row: {
+          cost_usd: number | null
+          created_at: string
+          id: string
+          model: string | null
+          payload: Json
+          primary_selection: boolean | null
+          prompt_hash: string
+          session_id: string | null
+          stage: string
+          tokens_in: number | null
+          tokens_out: number | null
+          user_id: string | null
+        }
+        Insert: {
+          cost_usd?: number | null
+          created_at?: string
+          id?: string
+          model?: string | null
+          payload?: Json
+          primary_selection?: boolean | null
+          prompt_hash: string
+          session_id?: string | null
+          stage: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          cost_usd?: number | null
+          created_at?: string
+          id?: string
+          model?: string | null
+          payload?: Json
+          primary_selection?: boolean | null
+          prompt_hash?: string
+          session_id?: string | null
+          stage?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_generations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       ai_usage: {
         Row: {
           created_at: string | null
@@ -164,6 +252,7 @@ export type Database = {
           logo_url: string | null
           naming_preference: string | null
           owner_id: string | null
+          selected_generation_ids: string[] | null
           session_id: string | null
           starter_paid: boolean | null
           status: string | null
@@ -187,6 +276,7 @@ export type Database = {
           logo_url?: string | null
           naming_preference?: string | null
           owner_id?: string | null
+          selected_generation_ids?: string[] | null
           session_id?: string | null
           starter_paid?: boolean | null
           status?: string | null
@@ -210,6 +300,7 @@ export type Database = {
           logo_url?: string | null
           naming_preference?: string | null
           owner_id?: string | null
+          selected_generation_ids?: string[] | null
           session_id?: string | null
           starter_paid?: boolean | null
           status?: string | null
@@ -746,6 +837,41 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          migrated_to_user: string | null
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          migrated_to_user?: string | null
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          migrated_to_user?: string | null
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_profiles_migrated_to_user_fkey"
+            columns: ["migrated_to_user"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       onboarding_sessions: {
         Row: {
           created_at: string
@@ -775,6 +901,41 @@ export type Database = {
           user_hint_email?: string | null
         }
         Relationships: []
+      }
+      onboarding_state: {
+        Row: {
+          business_draft_id: string | null
+          context: Json
+          created_at: string
+          session_id: string
+          step: string
+          updated_at: string
+        }
+        Insert: {
+          business_draft_id?: string | null
+          context?: Json
+          created_at?: string
+          session_id: string
+          step: string
+          updated_at?: string
+        }
+        Update: {
+          business_draft_id?: string | null
+          context?: Json
+          created_at?: string
+          session_id?: string
+          step?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_state_business_draft_id_fkey"
+            columns: ["business_draft_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       orders: {
         Row: {
