@@ -261,7 +261,7 @@ serve(async (req) => {
     if (businessName) {
       const { data: existing } = await supabase
         .from('businesses')
-        .select('id')
+        .select('*')
         .eq('owner_id', user_id)
         .neq('status', 'deleted')
         .maybeSingle();
@@ -460,7 +460,43 @@ serve(async (req) => {
       }
     }
 
-    // 6. Mark session as migrated
+    // 6. Migrate AI generations to user
+    const { error: genError } = await supabase
+      .from('ai_generations')
+      .update({ user_id })
+      .eq('session_id', session_id)
+      .is('user_id', null);
+
+    if (genError) {
+      console.error('[migrate-onboarding] AI generations migration failed:', genError);
+    } else {
+      console.log('[migrate-onboarding] AI generations migrated to user');
+    }
+
+    // 7. Mark onboarding profile as migrated
+    const { error: profileMigError } = await supabase
+      .from('onboarding_profiles')
+      .update({ 
+        migrated_to_user: user_id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('session_id', session_id);
+
+    if (profileMigError) {
+      console.error('[migrate-onboarding] Onboarding profile migration failed:', profileMigError);
+    }
+
+    // 8. Update onboarding state
+    const { error: stateError } = await supabase
+      .from('onboarding_state')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('session_id', session_id);
+
+    if (stateError) {
+      console.error('[migrate-onboarding] Onboarding state update failed:', stateError);
+    }
+
+    // 9. Mark session as migrated (existing table)
     await supabase
       .from('onboarding_sessions')
       .update({

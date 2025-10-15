@@ -1,5 +1,17 @@
 project_id = "hfrsaqfflwvdbywgixxv"
 
+[functions.save-generation]
+verify_jwt = false
+
+[functions.select-generation]
+verify_jwt = false
+
+[functions.get-onboarding-state]
+verify_jwt = false
+
+[functions.save-onboarding-session]
+verify_jwt = false
+
 [functions.generate-identity]
 verify_jwt = false
 
