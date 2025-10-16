@@ -27,9 +27,11 @@ interface StepOneProps {
   onNext: (idea: string, products: ProductIdea[]) => void;
   onUpdateContext?: (updater: (ctx: BrandContext) => BrandContext) => void;
   initialValue?: string;
+  formData?: any;
+  updateFormData?: (data: any) => void;
 }
 
-export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneProps) => {
+export const StepOne = ({ onNext, onUpdateContext, initialValue = '', formData, updateFormData }: StepOneProps) => {
   const [idea, setIdea] = useState(initialValue);
   const [slots, setSlots] = useState<IdeaSlot[]>([
     { id: 'slot-1', status: 'new', hasRefreshed: false },
@@ -205,32 +207,36 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
 
   const saveProgress = async () => {
     try {
-      const { getSessionId } = await import('@/lib/telemetry');
-      const sessionId = getSessionId();
-      const { supabase } = await import('@/integrations/supabase/client');
+      const { saveOnboardingSession } = await import('@/lib/onboardingSync');
       
-      const productsPayload = slots.reduce((acc, slot) => {
-        acc[slot.id] = {
-          initial: slot.idea || null,
-          original: slot.originalIdea || null,
-          status: slot.status,
-          hasRefreshed: slot.hasRefreshed,
-          hasUndone: slot.hasUndone || false,
-        };
-        return acc;
-      }, {} as Record<string, any>);
-
-      await supabase
-        .from('onboarding_sessions')
-        .upsert({
-          session_id: sessionId,
-          payload: {
-            idea: idea.trim(),
-            products: productsPayload,
-          }
-        }, {
-          onConflict: 'session_id'
-        });
+      // Build products array from slots
+      const products = slots
+        .filter(s => s.idea)
+        .map(s => ({
+          id: s.id,
+          title: s.idea?.title || '',
+          description: s.idea?.description || '',
+          category: s.idea?.category || '',
+          status: s.status,
+          hasRefreshed: s.hasRefreshed,
+          hasUndone: s.hasUndone || false,
+          original: s.originalIdea?.title || null,
+        }));
+      
+      // Prepare context with all Step 1 data
+      const context = {
+        idea: idea.trim(),
+        products,
+        ideaSource,
+      };
+      
+      // Call the proper edge function via sync helper
+      await saveOnboardingSession(
+        formData || {}, // Use formData from props if available
+        'step-1', // current step
+        context, // context with products
+        undefined // no business draft yet
+      );
     } catch (error) {
       console.error('Failed to save progress:', error);
     }
@@ -559,6 +565,7 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
         onClose={() => setEmailDialogOpen(false)}
         onSaved={handleContinue}
         onSkip={handleContinue}
+        onFormDataUpdate={updateFormData}
       />
     </div>
   );

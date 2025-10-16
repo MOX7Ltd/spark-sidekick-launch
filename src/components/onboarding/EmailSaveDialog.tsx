@@ -12,9 +12,10 @@ interface EmailSaveDialogProps {
   onClose: () => void;
   onSaved?: (email: string) => void;
   onSkip?: () => void;
+  onFormDataUpdate?: (data: { aboutYou: { email: string } }) => void;
 }
 
-export function EmailSaveDialog({ open, onClose, onSaved, onSkip }: EmailSaveDialogProps) {
+export function EmailSaveDialog({ open, onClose, onSaved, onSkip, onFormDataUpdate }: EmailSaveDialogProps) {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -49,6 +50,11 @@ export function EmailSaveDialog({ open, onClose, onSaved, onSkip }: EmailSaveDia
         if (sessionError) {
           console.error('Failed to update session email:', sessionError);
         }
+        
+        // Update form data with email
+        onFormDataUpdate?.({ 
+          aboutYou: { email: email.toLowerCase() } 
+        });
         
         toast({
           title: 'Progress saved',

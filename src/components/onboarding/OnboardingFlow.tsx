@@ -512,6 +512,8 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
               onNext={handleStepOne}
               onUpdateContext={onUpdateContext}
               initialValue={formData.idea}
+              formData={formData}
+              updateFormData={updateFormData}
             />
           )}
           
