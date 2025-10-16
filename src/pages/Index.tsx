@@ -35,8 +35,8 @@ const Index = () => {
     setShowOnboarding(true);
   };
 
-  const handleProgressFresh = () => {
-    const { clearOnboardingState } = require('@/lib/telemetry');
+  const handleProgressFresh = async () => {
+    const { clearOnboardingState } = await import('@/lib/telemetry');
     clearOnboardingState();
     setShowProgressCheck(false);
     setShowOnboarding(true);
