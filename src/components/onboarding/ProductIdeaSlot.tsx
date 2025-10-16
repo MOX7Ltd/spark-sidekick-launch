@@ -89,7 +89,7 @@ export function ProductIdeaSlot({
               <ThumbsUp className="w-4 h-4 mr-1" />
               {isKept ? 'Kept' : 'Keep'}
             </Button>
-            {hasRefreshed && onUndoSwap ? (
+            {hasRefreshed && onUndoSwap && !hasUndone ? (
               <Button
                 type="button"
                 variant="outline"
@@ -101,20 +101,18 @@ export function ProductIdeaSlot({
                 Undo
               </Button>
             ) : null}
-            {!hasUndone && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => onThumbDown(id)}
-                disabled={isRegenerating}
-                className="flex-1"
-                title={hasRefreshed ? "Reject this idea" : "Try a different one"}
-              >
-                <ThumbsDown className="w-4 h-4 mr-1" />
-                {hasRefreshed ? 'Reject' : 'Swap'}
-              </Button>
-            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onThumbDown(id)}
+              disabled={isRegenerating}
+              className="flex-1"
+              title={hasUndone ? "Reject this idea" : (hasRefreshed ? "Reject this idea" : "Try a different one")}
+            >
+              <ThumbsDown className="w-4 h-4 mr-1" />
+              {hasUndone || hasRefreshed ? 'Reject' : 'Swap'}
+            </Button>
           </div>
         ) : (
           <div className="pt-2">
