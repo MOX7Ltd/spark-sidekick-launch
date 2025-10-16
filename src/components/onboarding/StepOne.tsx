@@ -294,6 +294,17 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
     const slot = slots.find(s => s.id === slotId);
     if (!slot) return;
     
+    // If user has undone, just reject without swapping
+    if (slot.hasUndone) {
+      setSlots(prev => prev.map(s => 
+        s.id === slotId 
+          ? { ...s, status: 'rejected' as SlotStatus }
+          : s
+      ));
+      await saveProgress();
+      return;
+    }
+    
     if (!slot.hasRefreshed) {
       // First thumbs down: fetch replacement
       setFadingOutId(slotId);
