@@ -566,6 +566,7 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '', formData, 
         onSaved={handleContinue}
         onSkip={handleContinue}
         onFormDataUpdate={updateFormData}
+        currentIdea={idea}
       />
     </div>
   );
