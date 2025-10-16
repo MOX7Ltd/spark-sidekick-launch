@@ -11,12 +11,14 @@ export interface IdeaSlot {
   idea?: ProductIdea;
   status: SlotStatus;
   hasRefreshed: boolean;
+  originalIdea?: ProductIdea;
 }
 
 interface ProductIdeaSlotProps {
   slot: IdeaSlot;
   onThumbUp: (slotId: string) => void;
   onThumbDown: (slotId: string) => void;
+  onUndoSwap?: (slotId: string) => void;
   isRegenerating?: boolean;
   fadingOut?: boolean;
 }
@@ -25,6 +27,7 @@ export function ProductIdeaSlot({
   slot, 
   onThumbUp, 
   onThumbDown,
+  onUndoSwap,
   isRegenerating = false,
   fadingOut = false,
 }: ProductIdeaSlotProps) {
@@ -85,6 +88,18 @@ export function ProductIdeaSlot({
               <ThumbsUp className="w-4 h-4 mr-1" />
               {isKept ? 'Kept' : 'Keep'}
             </Button>
+            {hasRefreshed && onUndoSwap ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => onUndoSwap(id)}
+                className="flex-1"
+                title="Bring back the original"
+              >
+                Undo
+              </Button>
+            ) : null}
             <Button
               type="button"
               variant="outline"

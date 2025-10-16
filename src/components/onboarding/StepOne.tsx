@@ -212,6 +212,7 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
       const productsPayload = slots.reduce((acc, slot) => {
         acc[slot.id] = {
           initial: slot.idea || null,
+          original: slot.originalIdea || null,
           status: slot.status,
           hasRefreshed: slot.hasRefreshed,
         };
@@ -262,6 +263,26 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
     await saveProgress();
   };
 
+  const handleUndoSwap = async (slotId: string) => {
+    logFrontendEvent({
+      eventType: 'user_action',
+      step: 'StepOne',
+      payload: { action: 'undo_swap', slotId }
+    });
+    
+    setSlots(prev => prev.map(s => 
+      s.id === slotId && s.originalIdea
+        ? { ...s, idea: s.originalIdea, originalIdea: undefined, status: 'new' as SlotStatus, hasRefreshed: false }
+        : s
+    ));
+    
+    toast({
+      title: "Original idea restored",
+    });
+    
+    await saveProgress();
+  };
+
   const handleThumbDown = async (slotId: string) => {
     logFrontendEvent({
       eventType: 'user_action',
@@ -290,7 +311,7 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
         if (newIdea) {
           setSlots(prev => prev.map(s => 
             s.id === slotId 
-              ? { ...s, idea: newIdea, status: 'refreshed' as SlotStatus, hasRefreshed: true }
+              ? { ...s, originalIdea: s.idea, idea: newIdea, status: 'refreshed' as SlotStatus, hasRefreshed: true }
               : s
           ));
           
@@ -483,6 +504,7 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
                     slot={slot}
                     onThumbUp={handleThumbUp}
                     onThumbDown={handleThumbDown}
+                    onUndoSwap={handleUndoSwap}
                     isRegenerating={regeneratingSlots.has(slot.id)}
                     fadingOut={fadingOutId === slot.id}
                   />
