@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
+import { ProgressCheckDialog } from '@/components/onboarding/ProgressCheckDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,10 +9,36 @@ import Section from '@/components/site/Section';
 import sidehiveLogoTight from '@/assets/sidehive-logo-tight.png';
 import { Zap, Target, Rocket, DollarSign, CheckCircle, ArrowRight, Brain, Sparkles, Users, TrendingUp, Clock } from 'lucide-react';
 import type { OnboardingData } from '@/types/onboarding';
+import type { ProgressInfo } from '@/lib/progressDetector';
 const Index = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [completedData, setCompletedData] = useState<OnboardingData | null>(null);
-  const handleStartOnboarding = () => {
+  const [showProgressCheck, setShowProgressCheck] = useState(false);
+  const [progressInfo, setProgressInfo] = useState<ProgressInfo | null>(null);
+
+  const handleStartOnboarding = async () => {
+    const { detectSavedProgress } = await import('@/lib/progressDetector');
+    const progress = await detectSavedProgress();
+    
+    if (progress.tier === 'none') {
+      // No progress found - start fresh immediately
+      setShowOnboarding(true);
+    } else {
+      // Show progress check dialog
+      setProgressInfo(progress);
+      setShowProgressCheck(true);
+    }
+  };
+
+  const handleProgressRestored = () => {
+    setShowProgressCheck(false);
+    setShowOnboarding(true);
+  };
+
+  const handleProgressFresh = () => {
+    const { clearOnboardingState } = require('@/lib/telemetry');
+    clearOnboardingState();
+    setShowProgressCheck(false);
     setShowOnboarding(true);
   };
   const handleOnboardingComplete = (data: OnboardingData) => {
@@ -61,6 +88,16 @@ const Index = () => {
             </div>
           </div>
         </Section>}
+
+      {/* Progress Check Dialog */}
+      {showProgressCheck && progressInfo && (
+        <ProgressCheckDialog
+          open={showProgressCheck}
+          progressInfo={progressInfo}
+          onRestore={handleProgressRestored}
+          onFresh={handleProgressFresh}
+        />
+      )}
 
       {/* Onboarding Flow */}
       {showOnboarding && <OnboardingFlow onComplete={handleOnboardingComplete} />}

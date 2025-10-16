@@ -9,7 +9,6 @@ import { StarterPackReveal } from './StarterPackReveal';
 import { StarterPackRevealV2 } from './launch/StarterPackRevealV2';
 import { StarterPackPricingCard } from './launch/StarterPackPricingCard';
 import { ProgressJourney, getStepKey } from './ProgressJourney';
-import { RecoveryBanner } from './RecoveryBanner';
 import { useToast } from '@/hooks/use-toast';
 import { useOnboardingState } from '@/hooks/useOnboardingState';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
@@ -63,33 +62,24 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
   });
   
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showRecoveryBanner, setShowRecoveryBanner] = useState(false);
   const [hasCheckedForRecovery, setHasCheckedForRecovery] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  // Check for existing session on mount
+  // Only auto-restore if we're past Step 1 (user is committed to this session)
   useEffect(() => {
-    const checkForRecovery = async () => {
-      if (!hasCheckedForRecovery) {
+    const autoRestoreIfCommitted = async () => {
+      if (currentStep > 0 && !hasCheckedForRecovery) {
         setHasCheckedForRecovery(true);
-        
-        // Check if we have saved state
         const restored = await restoreState();
-        
-        if (restored && currentStep > 1) {
-          setShowRecoveryBanner(true);
-          
-          // Merge restored context into local context
-          if (savedContext) {
-            setContext(prev => ({ ...prev, ...savedContext }));
-          }
+        if (restored && savedContext) {
+          setContext(prev => ({ ...prev, ...savedContext }));
         }
       }
     };
     
-    checkForRecovery();
-  }, [hasCheckedForRecovery, restoreState, currentStep, savedContext]);
+    autoRestoreIfCommitted();
+  }, [currentStep, hasCheckedForRecovery, restoreState, savedContext]);
 
   // Context updater callback - now also syncs to persistent storage
   const onUpdateContext = useCallback(
@@ -107,31 +97,6 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
     [updateSavedContext]
   );
 
-  // Handle recovery banner actions
-  const handleRestoreProgress = useCallback(() => {
-    setShowRecoveryBanner(false);
-    toast({
-      title: 'Progress restored',
-      description: `Continuing from step ${currentStep}`,
-    });
-  }, [currentStep, toast]);
-
-  const handleStartFresh = useCallback(() => {
-    setShowRecoveryBanner(false);
-    setStep(1);
-    setContext({
-      idea_text: '',
-      families_ranked: [],
-      dominant_family: 'Digital',
-      tone_adjectives: [],
-      audience: [],
-      personal_brand: false,
-      palette: [],
-      business_name: undefined,
-      logo_style: undefined,
-    });
-  }, [setStep]);
-  
   // Wrapped generate functions that use unified context + caching
   const handleGenerateIdentity = useCallback(async () => {
     try {
@@ -532,16 +497,7 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
   };
 
   return (
-    <>
-      {/* Recovery Banner */}
-      {showRecoveryBanner && (
-        <RecoveryBanner
-          lastStep={currentStep}
-          onRestore={handleRestoreProgress}
-          onDismiss={handleStartFresh}
-        />
-      )}
-      
+    <>      
       <div className="min-h-[80vh] py-6 md:py-8 overflow-x-hidden">
       {/* Progress Journey - Sticky navbar for main onboarding steps (1-4) */}
       {currentStep <= 4 && (
