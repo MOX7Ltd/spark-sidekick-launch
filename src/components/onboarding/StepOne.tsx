@@ -215,6 +215,7 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
           original: slot.originalIdea || null,
           status: slot.status,
           hasRefreshed: slot.hasRefreshed,
+          hasUndone: slot.hasUndone || false,
         };
         return acc;
       }, {} as Record<string, any>);
@@ -272,7 +273,7 @@ export const StepOne = ({ onNext, onUpdateContext, initialValue = '' }: StepOneP
     
     setSlots(prev => prev.map(s => 
       s.id === slotId && s.originalIdea
-        ? { ...s, idea: s.originalIdea, originalIdea: undefined, status: 'new' as SlotStatus, hasRefreshed: false }
+        ? { ...s, idea: s.originalIdea, originalIdea: undefined, status: 'new' as SlotStatus, hasRefreshed: false, hasUndone: true }
         : s
     ));
     

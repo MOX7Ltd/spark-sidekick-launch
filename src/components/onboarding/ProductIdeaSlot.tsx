@@ -12,6 +12,7 @@ export interface IdeaSlot {
   status: SlotStatus;
   hasRefreshed: boolean;
   originalIdea?: ProductIdea;
+  hasUndone?: boolean;
 }
 
 interface ProductIdeaSlotProps {
@@ -31,7 +32,7 @@ export function ProductIdeaSlot({
   isRegenerating = false,
   fadingOut = false,
 }: ProductIdeaSlotProps) {
-  const { id, idea, status, hasRefreshed } = slot;
+  const { id, idea, status, hasRefreshed, hasUndone } = slot;
   
   if (!idea) {
     return (
@@ -100,18 +101,20 @@ export function ProductIdeaSlot({
                 Undo
               </Button>
             ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onThumbDown(id)}
-              disabled={isRegenerating}
-              className="flex-1"
-              title={hasRefreshed ? "Reject this idea" : "Try a different one"}
-            >
-              <ThumbsDown className="w-4 h-4 mr-1" />
-              {hasRefreshed ? 'Reject' : 'Swap'}
-            </Button>
+            {!hasUndone && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => onThumbDown(id)}
+                disabled={isRegenerating}
+                className="flex-1"
+                title={hasRefreshed ? "Reject this idea" : "Try a different one"}
+              >
+                <ThumbsDown className="w-4 h-4 mr-1" />
+                {hasRefreshed ? 'Reject' : 'Swap'}
+              </Button>
+            )}
           </div>
         ) : (
           <div className="pt-2">
