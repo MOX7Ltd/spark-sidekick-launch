@@ -41,15 +41,7 @@ export function EmailSaveDialog({ open, onClose, onSaved, onSkip, onFormDataUpda
           console.error('Failed to save pre-auth profile:', insertError);
         }
         
-        // Update onboarding session hint
-        const { error: sessionError } = await supabase
-          .from('onboarding_sessions')
-          .update({ user_hint_email: email.toLowerCase() })
-          .eq('session_id', sessionId);
-        
-        if (sessionError) {
-          console.error('Failed to update session email:', sessionError);
-        }
+        // Email hint will be saved by the edge function on next sync
         
         // Update form data with email
         onFormDataUpdate?.({ 

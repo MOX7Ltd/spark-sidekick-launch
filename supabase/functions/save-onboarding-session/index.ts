@@ -66,6 +66,22 @@ serve(async (req) => {
       );
     }
 
+    // Upsert onboarding_sessions with full payload snapshot
+    const { error: sessionsError } = await supabase
+      .from('onboarding_sessions')
+      .upsert({
+        session_id,
+        payload: context || {},
+        user_hint_email: email ? email.toLowerCase() : null,
+      }, {
+        onConflict: 'session_id'
+      });
+
+    if (sessionsError) {
+      console.error('Error upserting onboarding_sessions:', sessionsError);
+      // Don't fail the whole request - this is a nice-to-have backup
+    }
+
     return new Response(
       JSON.stringify({ success: true, session_id, step }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
