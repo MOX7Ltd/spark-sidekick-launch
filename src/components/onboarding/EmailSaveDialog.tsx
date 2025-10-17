@@ -110,9 +110,18 @@ export function EmailSaveDialog({ open, onClose, onSaved, onSkip, onFormDataUpda
           console.error('[EmailSaveDialog] Failed to fetch previous session:', sessionError);
         }
         
-        const previousIdea = (prevSession?.payload as any)?.formData?.aboutBusiness?.idea 
-          || (prevSession?.payload as any)?.idea 
-          || '(No idea saved)';
+        const p = prevSession?.payload as any;
+        const previousIdea = (
+          p?.formData?.aboutBusiness?.idea ||
+          p?.formData?.idea ||
+          p?.context?.idea ||
+          p?.context?.idea_text ||
+          p?.idea_text ||
+          p?.idea ||
+          ''
+        ).toString().trim() || '(No idea saved)';
+        
+        console.log('[EmailSaveDialog] Extracted previous idea:', previousIdea.substring(0, 50));
         
         console.log('[EmailSaveDialog] Showing session choice dialog');
         setShowSessionChoice(true);
