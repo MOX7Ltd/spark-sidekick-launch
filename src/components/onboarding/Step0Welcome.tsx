@@ -69,13 +69,16 @@ export function Step0Welcome({ onContinue }: Step0WelcomeProps) {
         return;
       }
 
-      // Try to get some context about their previous session
-      const { data: sessionData } = await supabase
-        .from('onboarding_state')
-        .select('step, context')
-        .eq('session_id', preauth.session_id)
-        .maybeSingle();
+      // Try to get some context about their previous session using edge function to bypass RLS
+      const { data: stateData, error: stateError } = await supabase.functions.invoke('get-onboarding-state', {
+        body: { session_id: preauth.session_id }
+      });
 
+      if (stateError) {
+        console.error('Error fetching onboarding state:', stateError);
+      }
+
+      const sessionData = stateData?.state;
       const context = sessionData?.context as any;
       const businessIdea = context?.idea_text || context?.idea || context?.aboutYou?.idea || 'your business';
 
