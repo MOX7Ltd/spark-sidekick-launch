@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
+import { calculateCost, logAIUsage } from '../_shared/ai-tracking.ts';
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,6 +11,9 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  const startTime = performance.now();
+  const sessionId = req.headers.get('X-Session-Id') || 'unknown';
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -152,6 +159,25 @@ Generate 3-5 product concepts that are:
     }
 
     console.log('Successfully generated', result.concepts?.length || 0, 'concepts');
+
+    // Log AI cost tracking
+    if (aiData.usage) {
+      const tokensIn = aiData.usage.prompt_tokens || 0;
+      const tokensOut = aiData.usage.completion_tokens || 0;
+      const costUsd = calculateCost('google/gemini-2.5-flash', tokensIn, tokensOut);
+      const durationMs = Math.round(performance.now() - startTime);
+      await logAIUsage(supabaseUrl, supabaseServiceKey, {
+        sessionId,
+        functionName: 'generate-product-concepts',
+        model: 'google/gemini-2.5-flash',
+        tokensIn,
+        tokensOut,
+        costUsd,
+        durationMs,
+        requestType: 'product_concepts',
+        metadata: { idea, family },
+      });
+    }
 
     return new Response(
       JSON.stringify(result),

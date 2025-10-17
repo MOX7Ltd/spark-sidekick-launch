@@ -1,8 +1,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { checkIdempotency, storeIdempotentResponse, hashRequest, parseFeatureFlags } from '../_shared/idempotency.ts';
+import { calculateCost, logAIUsage } from '../_shared/ai-tracking.ts';
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -277,6 +280,9 @@ Constraints:
 Variation ${i + 1}: ${plan}`);
 
     // Generate 4 logos only
+    let totalTokensIn = 0;
+    let totalTokensOut = 0;
+
     const logoPromises = prompts.map(async (prompt) => {
 
       const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -304,6 +310,12 @@ Variation ${i + 1}: ${plan}`);
       }
 
       const data = await response.json();
+      
+      // Track tokens
+      if (data.usage) {
+        totalTokensIn += data.usage.prompt_tokens || 0;
+        totalTokensOut += data.usage.completion_tokens || 0;
+      }
       
       // Gemini returns base64 in images array
       if (data.choices?.[0]?.message?.images?.[0]?.image_url?.url) {
@@ -406,6 +418,22 @@ CRITICAL OVERRIDE: Absolutely no letters or words. Icon-only. Pure symbol.`;
     // Store for idempotency
     const requestHash = await hashRequest(requestBody);
     await storeIdempotentResponse(sessionId, idempotencyKey, 'logos', requestHash, responseData);
+    
+    // Log AI cost tracking
+    if (totalTokensIn > 0 || totalTokensOut > 0) {
+      const costUsd = calculateCost('google/gemini-2.5-flash-image-preview', totalTokensIn, totalTokensOut);
+      await logAIUsage(supabaseUrl, supabaseServiceKey, {
+        sessionId,
+        functionName: 'generate-logos',
+        model: 'google/gemini-2.5-flash-image-preview',
+        tokensIn: totalTokensIn,
+        tokensOut: totalTokensOut,
+        costUsd,
+        durationMs,
+        requestType: 'logo_generation',
+        metadata: { businessName, style: primaryStyle, vibes },
+      });
+    }
     
     return new Response(JSON.stringify(responseData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

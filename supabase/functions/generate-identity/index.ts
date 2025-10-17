@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { checkIdempotency, storeIdempotentResponse, hashRequest, parseFeatureFlags } from '../_shared/idempotency.ts';
 import { normalizeOnboardingInput, shouldIncludeName } from '../_shared/normalize.ts';
+import { calculateCost, logAIUsage } from '../_shared/ai-tracking.ts';
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -383,6 +384,9 @@ Output ONLY the bio text, no labels or formatting.
     // AI Generation
     const aiGatewayUrl = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 
+    let totalTokensIn = 0;
+    let totalTokensOut = 0;
+
     async function generateText(prompt: string, useHighTemp = false, useModel?: string) {
       const response = await fetch(aiGatewayUrl, {
         method: 'POST',
@@ -405,6 +409,13 @@ Output ONLY the bio text, no labels or formatting.
       }
 
       const data = await response.json();
+      
+      // Track token usage
+      if (data.usage) {
+        totalTokensIn += data.usage.prompt_tokens || 0;
+        totalTokensOut += data.usage.completion_tokens || 0;
+      }
+      
       return data.choices[0].message.content;
     }
     
@@ -554,6 +565,23 @@ Return JSON:
     // Store for idempotency
     const requestHash = await hashRequest(requestBody);
     await storeIdempotentResponse(sessionId, idempotencyKey, 'business-identity', requestHash, response);
+
+    // Log AI cost tracking
+    if (totalTokensIn > 0 || totalTokensOut > 0) {
+      const costUsd = calculateCost(NAMING_MODEL, totalTokensIn, totalTokensOut);
+      await logAIUsage(supabaseUrl, supabaseServiceKey, {
+        sessionId,
+        userId: undefined, // No auth for this endpoint
+        functionName: 'generate-identity',
+        model: NAMING_MODEL,
+        tokensIn: totalTokensIn,
+        tokensOut: totalTokensOut,
+        costUsd,
+        durationMs,
+        requestType: 'business_identity',
+        metadata: { regenerateNamesOnly, businessType },
+      });
+    }
 
     console.log('Successfully generated business identity');
 

@@ -3,8 +3,11 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { checkIdempotency, storeIdempotentResponse, hashRequest, parseFeatureFlags } from '../_shared/idempotency.ts';
 import { normalizeOnboardingInput } from '../_shared/normalize.ts';
+import { calculateCost, logAIUsage } from '../_shared/ai-tracking.ts';
 
 const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -272,6 +275,24 @@ Return a JSON object with this exact structure:
     // Store for idempotency
     const requestHash = await hashRequest(requestBody);
     await storeIdempotentResponse(sessionId, idempotencyKey, 'product-ideas', requestHash, responseData);
+    
+    // Log AI cost tracking
+    if (data.usage) {
+      const tokensIn = data.usage.prompt_tokens || 0;
+      const tokensOut = data.usage.completion_tokens || 0;
+      const costUsd = calculateCost('google/gemini-2.5-flash', tokensIn, tokensOut);
+      await logAIUsage(supabaseUrl, supabaseServiceKey, {
+        sessionId,
+        functionName: 'generate-product-ideas',
+        model: 'google/gemini-2.5-flash',
+        tokensIn,
+        tokensOut,
+        costUsd,
+        durationMs,
+        requestType: 'product_ideas',
+        metadata: { idea_text, max_ideas, smart_family_gen },
+      });
+    }
     
     return new Response(
       JSON.stringify(responseData),

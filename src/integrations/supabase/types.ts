@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_cost_tracking: {
+        Row: {
+          business_id: string | null
+          cost_usd: number
+          created_at: string | null
+          duration_ms: number | null
+          function_name: string
+          id: string
+          metadata: Json | null
+          model: string
+          request_type: string | null
+          session_id: string | null
+          tokens_in: number
+          tokens_out: number
+          user_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          cost_usd: number
+          created_at?: string | null
+          duration_ms?: number | null
+          function_name: string
+          id?: string
+          metadata?: Json | null
+          model: string
+          request_type?: string | null
+          session_id?: string | null
+          tokens_in: number
+          tokens_out: number
+          user_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          cost_usd?: number
+          created_at?: string | null
+          duration_ms?: number | null
+          function_name?: string
+          id?: string
+          metadata?: Json | null
+          model?: string
+          request_type?: string | null
+          session_id?: string | null
+          tokens_in?: number
+          tokens_out?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_cost_tracking_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_generation_items: {
         Row: {
           content: Json

@@ -1,8 +1,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { checkIdempotency, storeIdempotentResponse, hashRequest, parseFeatureFlags } from '../_shared/idempotency.ts';
+import { calculateCost, logAIUsage } from '../_shared/ai-tracking.ts';
 
 const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -106,6 +109,24 @@ Output format (JSON only):
 
     const requestHash = await hashRequest(requestBody);
     await storeIdempotentResponse(sessionId, idempotencyKey, "names", requestHash, responseData);
+
+    // Log AI cost tracking
+    if (data.usage) {
+      const tokensIn = data.usage.prompt_tokens || 0;
+      const tokensOut = data.usage.completion_tokens || 0;
+      const costUsd = calculateCost('google/gemini-2.5-flash', tokensIn, tokensOut);
+      await logAIUsage(supabaseUrl, supabaseServiceKey, {
+        sessionId,
+        functionName: 'generate-names',
+        model: 'google/gemini-2.5-flash',
+        tokensIn,
+        tokensOut,
+        costUsd,
+        durationMs,
+        requestType: 'name_generation',
+        metadata: { ideaText, tone, audience },
+      });
+    }
 
     return new Response(JSON.stringify(responseData), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

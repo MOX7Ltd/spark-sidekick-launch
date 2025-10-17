@@ -1,5 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { calculateCost, logAIUsage } from '../_shared/ai-tracking.ts';
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,6 +11,9 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  const startTime = performance.now();
+  const sessionId = req.headers.get('X-Session-Id') || 'unknown';
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -124,6 +131,25 @@ Suggest 3-5 optimal posting times for this week.`;
 
     const result = JSON.parse(toolCall.function.arguments);
     console.log('[social-post-tools] Result:', JSON.stringify(result).slice(0, 200));
+
+    // Log AI cost tracking
+    if (data.usage) {
+      const tokensIn = data.usage.prompt_tokens || 0;
+      const tokensOut = data.usage.completion_tokens || 0;
+      const costUsd = calculateCost('google/gemini-2.5-flash', tokensIn, tokensOut);
+      const durationMs = Math.round(performance.now() - startTime);
+      await logAIUsage(supabaseUrl, supabaseServiceKey, {
+        sessionId,
+        functionName: 'social-post-tools',
+        model: 'google/gemini-2.5-flash',
+        tokensIn,
+        tokensOut,
+        costUsd,
+        durationMs,
+        requestType: action,
+        metadata: { action, platform },
+      });
+    }
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
