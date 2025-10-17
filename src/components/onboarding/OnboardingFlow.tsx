@@ -27,9 +27,16 @@ import { generateBusinessIdentity, generateLogos, generateCampaign } from '@/lib
 interface OnboardingFlowProps {
   onComplete?: (data: OnboardingData) => void;
   initialStep?: number;
+  restoredSession?: {
+    formData: any;
+    step: number;
+    businessId: string | null;
+    context: any;
+    sessionId: string;
+  };
 }
 
-export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowProps) => {
+export const OnboardingFlow = ({ onComplete, initialStep = 1, restoredSession }: OnboardingFlowProps) => {
   // Use new persistent state hook
   const {
     sessionId,
@@ -72,8 +79,18 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
   
   // Email save dialog
   const [showEmailDialog, setShowEmailDialog] = useState(false);
-  
+
   const { toast } = useToast();
+
+  // If we have a restored session, switch the browser to that session ID
+  useEffect(() => {
+    if (restoredSession?.sessionId) {
+      localStorage.setItem('sidehive_session_id', restoredSession.sessionId);
+      const params = new URLSearchParams(window.location.search);
+      params.set('sid', restoredSession.sessionId);
+      window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+    }
+  }, [restoredSession]);
   const navigate = useNavigate();
   
   // Only auto-restore if we're past Step 1 (user is committed to this session)

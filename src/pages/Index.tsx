@@ -17,27 +17,35 @@ const Index = () => {
   const [completedData, setCompletedData] = useState<OnboardingData | null>(null);
   const [showProgressCheck, setShowProgressCheck] = useState(false);
   const [progressInfo, setProgressInfo] = useState<ProgressInfo | null>(null);
+  const [restoredSession, setRestoredSession] = useState<any>(null);
 
   const handleStartOnboarding = () => {
     // Show Step 0 welcome gate first
     setShowStep0(true);
   };
 
-  const handleStep0Continue = async () => {
+  const handleStep0Continue = async (sessionData?: any) => {
     // Step0Welcome has handled session restoration if needed
     // Now check for any remaining progress via the old system
     setShowStep0(false);
     
-    const { detectSavedProgress } = await import('@/lib/progressDetector');
-    const progress = await detectSavedProgress();
-    
-    if (progress.tier === 'none') {
-      // No progress found - start onboarding
+    if (sessionData) {
+      // User restored a session from server - skip progress check and pass data directly
+      setRestoredSession(sessionData);
       setShowOnboarding(true);
     } else {
-      // Show progress check dialog for session-based recovery
-      setProgressInfo(progress);
-      setShowProgressCheck(true);
+      // New user or "start fresh" - check for any browser-level progress
+      const { detectSavedProgress } = await import('@/lib/progressDetector');
+      const progress = await detectSavedProgress();
+      
+      if (progress.tier === 'none') {
+        // No progress found - start onboarding
+        setShowOnboarding(true);
+      } else {
+        // Show progress check dialog for session-based recovery
+        setProgressInfo(progress);
+        setShowProgressCheck(true);
+      }
     }
   };
 
@@ -116,7 +124,10 @@ const Index = () => {
       )}
 
       {/* Onboarding Flow */}
-      {showOnboarding && <OnboardingFlow onComplete={handleOnboardingComplete} />}
+      {showOnboarding && <OnboardingFlow 
+        onComplete={handleOnboardingComplete}
+        restoredSession={restoredSession}
+      />}
 
       {/* Success State */}
       {completedData && <Section className="text-center">

@@ -10,7 +10,13 @@ import { restoreOnboardingSession } from '@/lib/onboardingSync';
 import { clearOnboardingState } from '@/lib/telemetry';
 
 interface Step0WelcomeProps {
-  onContinue: () => void;
+  onContinue: (sessionData?: {
+    formData: any;
+    step: number;
+    businessId: string | null;
+    context: any;
+    sessionId: string;
+  }) => void;
 }
 
 type Stage = 'initial' | 'email-input' | 'session-found' | 'no-session';
@@ -104,31 +110,38 @@ export function Step0Welcome({ onContinue }: Step0WelcomeProps) {
 
   const handleContinuePrevious = async () => {
     if (!savedSession) return;
-
     setIsChecking(true);
     try {
+      // Restore the full session from Supabase
       const result = await restoreOnboardingSession(savedSession.session_id);
-      
-      if (result.success) {
+      if (result.success && result.data) {
+        const { state, business } = result.data;
+        
+        // Package the restored data to pass up to Index
+        const restoredData = {
+          formData: state?.context || {},
+          step: state?.step ? parseInt(state.step, 10) : 1,
+          businessId: business?.id || null,
+          context: state?.context || {},
+          sessionId: savedSession.session_id,
+        };
+        
         toast({
-          title: "Progress restored!",
-          description: "Continuing where you left off",
+          title: 'Welcome back!',
+          description: 'Continuing where you left off',
         });
-        onContinue();
+        
+        // Pass the restored data to parent
+        onContinue(restoredData);
       } else {
-        toast({
-          title: "Restore failed",
-          description: "We'll start fresh instead",
-          variant: "destructive",
-        });
-        await handleStartFresh();
+        throw new Error('Failed to restore session');
       }
     } catch (error) {
-      console.error('Error restoring session:', error);
+      console.error('Failed to restore session:', error);
       toast({
-        title: "Restore failed",
-        description: "We'll start fresh instead",
-        variant: "destructive",
+        title: 'Could not restore session',
+        description: 'Starting fresh instead',
+        variant: 'destructive',
       });
       await handleStartFresh();
     } finally {
@@ -316,7 +329,7 @@ export function Step0Welcome({ onContinue }: Step0WelcomeProps) {
           </CardHeader>
           <CardContent className="space-y-3">
             <Button
-              onClick={onContinue}
+              onClick={() => onContinue()}
               size="lg"
               variant="default"
               className="w-full"

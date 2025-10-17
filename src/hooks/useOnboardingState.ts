@@ -37,16 +37,38 @@ export interface UseOnboardingStateReturn {
   clearState: () => void;
 }
 
-export function useOnboardingState(initialStep: number = 0): UseOnboardingStateReturn {
+export function useOnboardingState(
+  initialStep: number = 0,
+  restoredData?: {
+    formData: any;
+    step: number;
+    businessId: string | null;
+    context: any;
+    sessionId: string;
+  }
+): UseOnboardingStateReturn {
   const { toast } = useToast();
-  const [sessionId] = useState(() => getSessionId());
-  const [formData, setFormData] = useState<OnboardingFormState>(() => getFormState() || {});
+  
+  // Initialize from restored data if available, otherwise from localStorage
+  const [sessionId] = useState(() => restoredData?.sessionId || getSessionId());
+  
+  const [formData, setFormData] = useState<OnboardingFormState>(() => 
+    restoredData?.formData || getFormState() || {}
+  );
+  
   const [currentStep, setStep] = useState<number>(() => {
+    if (restoredData?.step) return restoredData.step;
     const saved = getStepState();
     return saved ? parseInt(saved, 10) : initialStep;
   });
-  const [businessId, setBusinessIdState] = useState<string | null>(() => getDraftBusinessId());
-  const [context, setContextState] = useState<any>(() => getContext() || {});
+  
+  const [businessId, setBusinessIdState] = useState<string | null>(() => 
+    restoredData?.businessId || getDraftBusinessId()
+  );
+  
+  const [context, setContextState] = useState<any>(() => 
+    restoredData?.context || getContext() || {}
+  );
   const [isRestoring, setIsRestoring] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
