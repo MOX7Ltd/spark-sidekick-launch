@@ -77,7 +77,7 @@ export function Step0Welcome({ onContinue }: Step0WelcomeProps) {
         .maybeSingle();
 
       const context = sessionData?.context as any;
-      const businessIdea = context?.idea || context?.aboutYou?.idea || 'your business';
+      const businessIdea = context?.idea_text || context?.idea || context?.aboutYou?.idea || 'your business';
 
       setSavedSession({
         session_id: preauth.session_id,
