@@ -2,13 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { StepOne } from './StepOne';
 import { StepAboutYouMobile } from './StepAboutYouMobile';
-import { StepAboutBusiness } from './StepAboutBusiness';
+import { StepAboutYouVibe } from './StepAboutYouVibe';
 import { SocialPostPreview } from './SocialPostPreview';
 import { StepBusinessIdentity } from './StepBusinessIdentity';
 import { StarterPackReveal } from './StarterPackReveal';
 import { StarterPackRevealV2 } from './launch/StarterPackRevealV2';
 import { StarterPackPricingCard } from './launch/StarterPackPricingCard';
 import { ProgressJourney, getStepKey } from './ProgressJourney';
+import { SubProgressBar } from './SubProgressBar';
+import { EmailSaveDialog } from './EmailSaveDialog';
 import { useToast } from '@/hooks/use-toast';
 import { useOnboardingState } from '@/hooks/useOnboardingState';
 import { logFrontendEvent } from '@/lib/frontendEventLogger';
@@ -63,6 +65,14 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasCheckedForRecovery, setHasCheckedForRecovery] = useState(false);
+  
+  // Step 2 sub-step tracking (0-3 for Name, Why, Ready, Vibe)
+  const [step2SubStep, setStep2SubStep] = useState(0);
+  const [bioLocked, setBioLocked] = useState(formData.aboutYou?.bioLocked || false);
+  
+  // Email save dialog
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -214,8 +224,8 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
     setStep(2);
   };
 
-  // Stage 2: About You (Name, Why, Story)
-  const handleStepAboutYou = (aboutYou: { 
+  // Stage 2: About You (Name, Why, Story) - Now with sub-steps
+  const handleStepAboutYou = async (aboutYou: { 
     firstName: string; 
     lastName: string;
     expertise: string;
@@ -229,6 +239,7 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
       step: 'StepAboutYou',
       payload: { 
         action: 'submit_about_you',
+        subStep: step2SubStep,
         includeFirstName: aboutYou.includeFirstName,
         includeLastName: aboutYou.includeLastName,
         hasProfilePicture: !!aboutYou.profilePicture
@@ -248,44 +259,81 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
     // Update persistent form data
     updateFormData({ aboutYou });
     
-    setStep(3); // Go to business info (vibes + audiences)
+    // Auto-save after sub-step completion
+    await syncToServer();
+    
+    toast({
+      title: "✅ Saved",
+      description: "Your progress has been saved.",
+    });
+    
+    // Advance to next sub-step (Vibe & Audience)
+    setStep2SubStep(3);
+    setStep(3); // Go to vibe & audience step
   };
 
-  // Stage 3: About Your Business (Vibe & Style + Target Audience)
-  const handleAboutBusiness = (data: { vibes: string[]; audiences: string[]; businessIdentity?: any }) => {
+  // Stage 3: Vibe & Audience + Bio (final sub-step of Step 2)
+  const handleVibeAndBio = async (data: { 
+    vibes: string[]; 
+    audiences: string[]; 
+    bio: string;
+    bioLocked: boolean;
+    bioAttempts: number;
+    bioHistory: string[];
+  }) => {
     logFrontendEvent({
       eventType: 'user_action',
-      step: 'StepAboutBusiness',
+      step: 'StepAboutYouVibe',
       payload: { 
-        action: 'submit_business_info',
+        action: 'submit_vibe_and_bio',
         vibes: data.vibes,
         audiences: data.audiences,
-        hasBio: !!data.businessIdentity?.bio
+        bioLocked: data.bioLocked,
+        bioAttempts: data.bioAttempts
       }
     });
     
-    // Update context with vibes and audiences
+    // Update context with vibes, audiences, and bio
     onUpdateContext((ctx) => ({
       ...ctx,
       vibes: data.vibes,
       audiences: data.audiences,
       tone_adjectives: data.vibes,
       audience: data.audiences,
+      bio: data.bio,
     }));
     
-    // Save vibes, audiences, and potentially the bio if already generated
-    const updates: any = { vibes: data.vibes, audiences: data.audiences };
-    if (data.businessIdentity?.bio) {
-      updates.businessIdentity = {
-        ...formData.businessIdentity,
-        ...data.businessIdentity
-      };
+    // Update form data
+    updateFormData({ 
+      vibes: data.vibes, 
+      audiences: data.audiences,
+      aboutYou: {
+        ...formData.aboutYou,
+        bio: data.bio,
+        bioLocked: data.bioLocked,
+        bioAttempts: data.bioAttempts,
+        bioHistory: data.bioHistory,
+      }
+    });
+    
+    setBioLocked(data.bioLocked);
+    
+    // Auto-save
+    await syncToServer();
+    
+    toast({
+      title: "✅ Saved",
+      description: "Your vibe and bio have been saved.",
+    });
+    
+    // Check for email before continuing to Step 3
+    if (!formData.aboutYou?.email) {
+      setShowEmailDialog(true);
+      return;
     }
     
-    // Update persistent form data
-    updateFormData(updates);
-    
-    setStep(4); // Go to business identity (name + logo)
+    // Advance to Step 3 (Create Your Brand)
+    setStep(4);
   };
 
   // Stage 4: Business Identity (Name + Logo)
@@ -501,7 +549,16 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
       <div className="min-h-[80vh] py-6 md:py-8 overflow-x-hidden">
       {/* Progress Journey - Sticky navbar for main onboarding steps (1-4) */}
       {currentStep <= 4 && (
-        <ProgressJourney current={getStepKey(currentStep)} />
+        <ProgressJourney current={getStepKey(currentStep, { bioLocked })} />
+      )}
+      
+      {/* Sub-progress for Step 2 (About You) */}
+      {currentStep >= 2 && currentStep <= 3 && (
+        <SubProgressBar
+          currentSubStep={step2SubStep}
+          totalSubSteps={4}
+          labels={['Name', 'Why', 'Ready', 'Vibe & Audience']}
+        />
       )}
       
       <div className="max-w-screen-sm mx-auto px-3 sm:px-4 w-full">
@@ -527,17 +584,21 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
             />
           )}
 
-          {/* Stage 3: About Your Business (Vibe + Audience) */}
+          {/* Stage 3: Vibe & Audience + Bio (Step 2.4) */}
           {currentStep === 3 && (
-            <StepAboutBusiness 
-              onNext={handleAboutBusiness}
+            <StepAboutYouVibe 
+              onNext={handleVibeAndBio}
               onBack={goBack}
               initialVibes={formData.vibes}
               initialAudiences={formData.audiences}
+              initialBio={formData.aboutYou?.bio}
+              initialBioLocked={formData.aboutYou?.bioLocked}
+              initialBioAttempts={formData.aboutYou?.bioAttempts || 0}
+              initialBioHistory={formData.aboutYou?.bioHistory || []}
               idea={formData.idea || ''}
               aboutYou={formData.aboutYou}
-              businessIdentity={formData.businessIdentity}
               isLoading={false}
+              onAutoSave={syncToServer}
             />
           )}
 
@@ -599,10 +660,39 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1 }: OnboardingFlowPr
       </div>
       
       <DebugPanel info={{ 
-        step: ['', 'StepOne', 'StepAboutYou', 'StepAboutBusiness', 'StepBusinessIdentity', 'StarterPackReveal', 'SocialPostPreview', 'LaunchPricing'][currentStep],
+        step: ['', 'StepOne', 'StepAboutYou', 'StepAboutYouVibe', 'StepBusinessIdentity', 'StarterPackReveal', 'SocialPostPreview', 'LaunchPricing'][currentStep],
         brandContext: context
       }} />
     </div>
+    
+    {/* Email Save Dialog */}
+    <EmailSaveDialog
+      open={showEmailDialog}
+      onClose={() => setShowEmailDialog(false)}
+      onSaved={(email) => {
+        updateFormData({ 
+          aboutYou: { 
+            ...formData.aboutYou, 
+            email 
+          } 
+        });
+        setShowEmailDialog(false);
+        setStep(4); // Continue to Step 3
+      }}
+      onSkip={() => {
+        setShowEmailDialog(false);
+        setStep(4); // Continue anyway
+      }}
+      onFormDataUpdate={(data) => {
+        updateFormData({
+          aboutYou: {
+            ...formData.aboutYou,
+            ...data.aboutYou
+          }
+        });
+      }}
+      currentIdea={formData.idea}
+    />
     </>
   );
 };

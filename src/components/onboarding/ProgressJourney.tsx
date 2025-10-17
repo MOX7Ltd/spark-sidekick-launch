@@ -54,9 +54,10 @@ export function ProgressJourney({ current }: ProgressJourneyProps) {
 }
 
 // Helper to map step numbers to keys
-export function getStepKey(stepNumber: number): StepKey {
+export function getStepKey(stepNumber: number, context?: { bioLocked?: boolean }): StepKey {
   if (stepNumber <= 1) return 'idea';
-  if (stepNumber === 2) return 'identity';
+  // Step 2 encompasses all "About You" sub-steps until bio is locked
+  if (stepNumber === 2 || (stepNumber === 3 && !context?.bioLocked)) return 'identity';
   if (stepNumber <= 4) return 'brand';
   return 'launch';
 }
