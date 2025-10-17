@@ -61,52 +61,80 @@ export function EmailSaveDialog({ open, onClose, onSaved, onSkip, onFormDataUpda
   };
 
   const handleSave = async () => {
-    setIsLoading(true);
-    try {
-      const currentSessionId = getSessionId();
-      
-      if (email && email.includes('@')) {
-        // Check for existing email with different session
-        const { data: existing } = await supabase
-          .from('preauth_profiles')
-          .select('session_id, last_seen_at')
-          .eq('email', email.toLowerCase())
-          .maybeSingle();
-        
-        if (existing && existing.session_id !== currentSessionId) {
-          // Fetch previous session's idea
-          const { data: prevSession } = await supabase
-            .from('onboarding_sessions')
-            .select('payload')
-            .eq('session_id', existing.session_id)
-            .maybeSingle();
-          
-          const previousIdea = (prevSession?.payload as any)?.formData?.aboutBusiness?.idea || 
-                               (prevSession?.payload as any)?.idea || 
-                               '(No idea saved)';
-          
-          // Show choice dialog
-          setShowSessionChoice(true);
-          setPreviousSessionData({
-            sessionId: existing.session_id,
-            idea: previousIdea,
-            lastSeen: existing.last_seen_at || 'Unknown'
-          });
-          setIsLoading(false);
-          return; // Wait for user choice
-        }
-        
-        // No conflict - proceed normally
-        await saveEmailAndContinue();
-      }
-    } catch (error) {
-      console.error('Failed to save email:', error);
+    if (!email || !email.includes('@')) {
       toast({
-        title: 'Could not save',
-        description: 'No worries—your progress is still saved locally.',
+        title: 'Invalid email',
+        description: 'Please enter a valid email address.',
         variant: 'destructive',
       });
-    } finally {
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const currentSessionId = getSessionId();
+      console.log('[EmailSaveDialog] Checking for collision with email:', email, 'sessionId:', currentSessionId);
+      
+      // Check for existing email with different session
+      const { data: existing, error: selectError } = await supabase
+        .from('preauth_profiles')
+        .select('session_id, last_seen_at')
+        .eq('email', email.toLowerCase())
+        .maybeSingle();
+
+      if (selectError) {
+        console.error('[EmailSaveDialog] Failed to check for existing email:', selectError);
+        toast({
+          title: 'Could not verify email',
+          description: 'Please try again.',
+          variant: 'destructive',
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('[EmailSaveDialog] Collision check result:', existing ? `Found session ${existing.session_id}` : 'No collision');
+      
+      if (existing && existing.session_id !== currentSessionId) {
+        console.log('[EmailSaveDialog] Email collision detected - fetching previous session idea');
+        
+        // Fetch previous session's idea
+        const { data: prevSession, error: sessionError } = await supabase
+          .from('onboarding_sessions')
+          .select('payload')
+          .eq('session_id', existing.session_id)
+          .maybeSingle();
+
+        if (sessionError) {
+          console.error('[EmailSaveDialog] Failed to fetch previous session:', sessionError);
+        }
+        
+        const previousIdea = (prevSession?.payload as any)?.formData?.aboutBusiness?.idea 
+          || (prevSession?.payload as any)?.idea 
+          || '(No idea saved)';
+        
+        console.log('[EmailSaveDialog] Showing session choice dialog');
+        setShowSessionChoice(true);
+        setPreviousSessionData({
+          sessionId: existing.session_id,
+          idea: previousIdea,
+          lastSeen: existing.last_seen_at || 'Unknown'
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // No conflict - proceed with save
+      console.log('[EmailSaveDialog] No collision - proceeding with save');
+      await saveEmailAndContinue();
+    } catch (error) {
+      console.error('[EmailSaveDialog] Error saving email:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save email. Please try again.',
+        variant: 'destructive',
+      });
       setIsLoading(false);
     }
   };
