@@ -76,8 +76,36 @@ export function Step0Welcome({ onContinue }: Step0WelcomeProps) {
         .eq('session_id', preauth.session_id)
         .maybeSingle();
 
+      console.log('[Step0Welcome] Retrieved session data:', { 
+        sessionData, 
+        context: sessionData?.context 
+      });
+
       const context = sessionData?.context as any;
-      const businessIdea = context?.idea || context?.aboutYou?.idea || 'your business';
+      
+      // Try multiple paths to find the business idea
+      let businessIdea = 'your business';
+      
+      if (context) {
+        // Direct idea field (Step 1)
+        if (context.idea && typeof context.idea === 'string') {
+          businessIdea = context.idea;
+        }
+        // Nested in idea object
+        else if (context.idea?.text) {
+          businessIdea = context.idea.text;
+        }
+        // Nested in aboutYou
+        else if (context.aboutYou?.idea) {
+          businessIdea = context.aboutYou.idea;
+        }
+        // Check idea_text as alternative
+        else if (context.idea_text) {
+          businessIdea = context.idea_text;
+        }
+      }
+      
+      console.log('[Step0Welcome] Extracted business idea:', businessIdea);
 
       setSavedSession({
         session_id: preauth.session_id,
