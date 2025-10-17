@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 import { ProgressCheckDialog } from '@/components/onboarding/ProgressCheckDialog';
+import { Step0Welcome } from '@/components/onboarding/Step0Welcome';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,20 +12,30 @@ import { Zap, Target, Rocket, DollarSign, CheckCircle, ArrowRight, Brain, Sparkl
 import type { OnboardingData } from '@/types/onboarding';
 import type { ProgressInfo } from '@/lib/progressDetector';
 const Index = () => {
+  const [showStep0, setShowStep0] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [completedData, setCompletedData] = useState<OnboardingData | null>(null);
   const [showProgressCheck, setShowProgressCheck] = useState(false);
   const [progressInfo, setProgressInfo] = useState<ProgressInfo | null>(null);
 
-  const handleStartOnboarding = async () => {
+  const handleStartOnboarding = () => {
+    // Show Step 0 welcome gate first
+    setShowStep0(true);
+  };
+
+  const handleStep0Continue = async () => {
+    // Step0Welcome has handled session restoration if needed
+    // Now check for any remaining progress via the old system
+    setShowStep0(false);
+    
     const { detectSavedProgress } = await import('@/lib/progressDetector');
     const progress = await detectSavedProgress();
     
     if (progress.tier === 'none') {
-      // No progress found - start fresh immediately
+      // No progress found - start onboarding
       setShowOnboarding(true);
     } else {
-      // Show progress check dialog
+      // Show progress check dialog for session-based recovery
       setProgressInfo(progress);
       setShowProgressCheck(true);
     }
@@ -51,8 +62,13 @@ const Index = () => {
     setCompletedData(null);
   };
   return <div className="min-h-screen bg-gradient-subtle">
+      {/* Step 0 Welcome Gate */}
+      {showStep0 && (
+        <Step0Welcome onContinue={handleStep0Continue} />
+      )}
+
       {/* Hero Section */}
-      {!showOnboarding && !completedData && <Section className="pt-8 md:pt-12">
+      {!showStep0 && !showOnboarding && !completedData && <Section className="pt-8 md:pt-12">
           <div className="text-center space-y-6 max-w-4xl mx-auto">
             {/* Logo prominence */}
             <div className="inline-block">
@@ -116,7 +132,7 @@ const Index = () => {
         </Section>}
 
       {/* Features Section - Only show when not in onboarding */}
-      {!showOnboarding && !completedData && <Section id="features" className="bg-background">
+      {!showStep0 && !showOnboarding && !completedData && <Section id="features" className="bg-background">
           <div className="text-center space-y-4 mb-12">
             <h2 className="text-2xl md:text-3xl font-bold">
               Built for socials, made for results ⚡
@@ -202,7 +218,7 @@ const Index = () => {
           </Section>}
 
       {/* Who is SideHive for? Section */}
-      {!showOnboarding && !completedData && <Section className="bg-muted/30">
+      {!showStep0 && !showOnboarding && !completedData && <Section className="bg-muted/30">
           <div className="text-center space-y-4 mb-12">
             <h2 className="text-2xl md:text-3xl font-bold">
               Who SideHive is for
@@ -252,7 +268,7 @@ const Index = () => {
           </Section>}
 
       {/* Pricing Section */}
-      {!showOnboarding && !completedData && <Section id="pricing">
+      {!showStep0 && !showOnboarding && !completedData && <Section id="pricing">
           <div className="text-center space-y-4 mb-12">
             <h2 className="text-2xl md:text-3xl font-bold">
               Simple, outcome-driven pricing
