@@ -86,7 +86,19 @@ export function Step0Welcome({ onContinue }: Step0WelcomeProps) {
 
       const sessionData = stateData?.state;
       const context = sessionData?.context as any;
-      const businessIdea = context?.idea_text || context?.idea || context?.aboutYou?.idea || 'your business';
+      
+      // Try multiple possible locations where the idea might be stored
+      const businessIdea = 
+        context?.idea_text || 
+        context?.idea || 
+        context?.aboutBusiness?.idea ||
+        context?.formData?.idea ||
+        context?.formData?.aboutBusiness?.idea ||
+        stateData?.session_snapshot?.formData?.idea ||
+        stateData?.session_snapshot?.context?.idea_text ||
+        'your business';
+      
+      console.log('[Step0Welcome] Found business idea:', businessIdea.slice(0, 80));
 
       setSavedSession({
         session_id: preauth.session_id,
