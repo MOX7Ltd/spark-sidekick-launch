@@ -125,14 +125,11 @@ export const StepAboutYouVibe = ({
           payload: { action: 'bio_generated', attempt: bioAttempts + 1, bioLength: response.bio.length }
         });
 
-        // Auto-lock on 3rd attempt
-        if (bioAttempts + 1 >= 3) {
-          setBioLocked(true);
-          toast({
-            title: "Bio locked",
-            description: "You can refine it later in your Hub.",
-          });
-        }
+        // Don't auto-lock on 3rd attempt - let user choose
+        toast({
+          title: bioAttempts + 1 === 3 ? "Final attempt generated" : "Bio generated",
+          description: bioAttempts + 1 === 3 ? "Review and choose to keep or undo." : "Like it or try again.",
+        });
       }
     } catch (error) {
       console.error('Failed to generate bio:', error);
@@ -190,7 +187,12 @@ export const StepAboutYouVibe = ({
       setGeneratedBio(previousBio);
       setBioHistory(prev => prev.slice(0, -1));
       setBioAttempts(prev => prev - 1);
+      setBioLocked(false); // Unlock when undoing
       setCurrentFeedback(null);
+      toast({
+        title: "Reverted to previous bio",
+        description: "You can keep this one or try again.",
+      });
     }
   };
 
@@ -237,7 +239,8 @@ export const StepAboutYouVibe = ({
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     
-    if (!bioLocked) {
+    // On 3rd attempt, allow continuing even without explicit lock
+    if (!bioLocked && bioAttempts < 3) {
       toast({
         title: "Please confirm your bio",
         description: "Give it a thumbs up or down to continue.",
@@ -246,11 +249,16 @@ export const StepAboutYouVibe = ({
       return;
     }
 
+    // Auto-lock on continue if on 3rd attempt
+    if (bioAttempts >= 3 && !bioLocked) {
+      setBioLocked(true);
+    }
+
     onNext({ 
       vibes: selectedVibes, 
       audiences: selectedAudiences,
       bio: generatedBio,
-      bioLocked,
+      bioLocked: bioLocked || bioAttempts >= 3,
       bioAttempts,
       bioHistory
     });
@@ -262,7 +270,7 @@ export const StepAboutYouVibe = ({
 
   // Determine button state
   const showAttempt1Buttons = bioAttempts === 1 && !bioLocked;
-  const showAttempt2Buttons = bioAttempts === 2 && !bioLocked;
+  const showAttempt2And3Buttons = (bioAttempts === 2 || bioAttempts === 3) && !bioLocked;
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6 md:space-y-8 animate-fade-in pb-8 px-4">
@@ -407,12 +415,22 @@ export const StepAboutYouVibe = ({
           </Alert>
         )}
 
-        {/* Guidance for attempt 3 (locked) */}
-        {bioAttempts >= 3 && bioLocked && (
+        {/* Guidance for attempt 3 */}
+        {bioAttempts === 3 && !bioLocked && (
+          <Alert className="animate-fade-in border-amber-500/50 bg-amber-500/5">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-amber-900 dark:text-amber-100">
+              Final attempt — keep it, undo to a previous version, or continue as-is.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Confirmation when locked */}
+        {bioLocked && (
           <Alert className="animate-fade-in border-primary/50 bg-primary/5">
             <Check className="h-4 w-4 text-primary" />
             <AlertDescription className="text-primary">
-              We'll keep this one for now — you can refine it later in your Hub.
+              Bio confirmed! You can refine it later in your Hub.
             </AlertDescription>
           </Alert>
         )}
@@ -474,7 +492,7 @@ export const StepAboutYouVibe = ({
                       </>
                     )}
                     
-                    {showAttempt2Buttons && (
+                    {showAttempt2And3Buttons && (
                       <>
                         <Button
                           type="button"
@@ -499,7 +517,7 @@ export const StepAboutYouVibe = ({
                           variant="ghost"
                           size="sm"
                           onClick={handleReject}
-                          disabled={isGenerating}
+                          disabled={isGenerating || bioAttempts >= 3}
                         >
                           Reject
                         </Button>
@@ -509,33 +527,42 @@ export const StepAboutYouVibe = ({
                 )}
               </div>
 
-              <p className="text-sm md:text-base leading-relaxed mb-4 text-foreground">{generatedBio}</p>
-
-              {(selectedVibes.length > 0 || selectedAudiences.length > 0) && (
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {selectedVibes.map(vibe => (
-                    <Badge key={vibe} variant="secondary" className="text-xs">
-                      {vibeOptions.find(v => v.id === vibe)?.label || vibe}
-                    </Badge>
-                  ))}
-                  {selectedAudiences.map(audience => (
-                    <Badge key={audience} variant="outline" className="text-xs">
-                      {audienceOptions.find(a => a.id === audience)?.label || audience}
-                    </Badge>
-                  ))}
+              {isGenerating ? (
+                <div className="flex items-center justify-center py-8">
+                  <Sparkles className="h-6 w-6 animate-pulse text-primary" />
+                  <span className="ml-2 text-sm text-muted-foreground">Generating your bio...</span>
                 </div>
-              )}
+              ) : (
+                <>
+                  <p className="text-sm md:text-base leading-relaxed mb-4 text-foreground">{generatedBio}</p>
 
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">
-                  ✨ This AI-generated bio will appear on your shopfront.
-                </p>
-                {!bioLocked && bioAttempts > 0 && (
-                  <div className="text-xs text-muted-foreground">
-                    Attempt {bioAttempts} of 3
+                  {(selectedVibes.length > 0 || selectedAudiences.length > 0) && (
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {selectedVibes.map(vibe => (
+                        <Badge key={vibe} variant="secondary" className="text-xs">
+                          {vibeOptions.find(v => v.id === vibe)?.label || vibe}
+                        </Badge>
+                      ))}
+                      {selectedAudiences.map(audience => (
+                        <Badge key={audience} variant="outline" className="text-xs">
+                          {audienceOptions.find(a => a.id === audience)?.label || audience}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      ✨ This AI-generated bio will appear on your shopfront.
+                    </p>
+                    {!bioLocked && bioAttempts > 0 && (
+                      <div className="text-xs text-muted-foreground">
+                        Attempt {bioAttempts} of 3
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </>
+              )}
             </CardContent>
           </Card>
         )}
@@ -578,10 +605,10 @@ export const StepAboutYouVibe = ({
             <Button 
               type="submit"
               size="default"
-              disabled={!bioLocked || isLoading || isGenerating}
+              disabled={(!bioLocked && bioAttempts < 3) || isLoading || isGenerating}
               className="w-full"
             >
-              Continue
+              Continue to Step 2: Your Brand →
             </Button>
           )}
         </div>
