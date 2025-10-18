@@ -94,8 +94,20 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1, restoredSession }:
   const navigate = useNavigate();
   
   // Only auto-restore if we're past Step 1 (user is committed to this session)
+  // BUT skip if we already have restoredSession data
   useEffect(() => {
     const autoRestoreIfCommitted = async () => {
+      // Skip auto-restore if we already received restored data via prop
+      if (restoredSession) {
+        setHasCheckedForRecovery(true);
+        // Merge restored context into local context
+        if (restoredSession.context) {
+          setContext(prev => ({ ...prev, ...restoredSession.context }));
+        }
+        return;
+      }
+      
+      // Original auto-restore logic for browser-local recovery
       if (currentStep > 0 && !hasCheckedForRecovery) {
         setHasCheckedForRecovery(true);
         const restored = await restoreState();
@@ -106,7 +118,7 @@ export const OnboardingFlow = ({ onComplete, initialStep = 1, restoredSession }:
     };
     
     autoRestoreIfCommitted();
-  }, [currentStep, hasCheckedForRecovery, restoreState, savedContext]);
+  }, [currentStep, hasCheckedForRecovery, restoreState, savedContext, restoredSession]);
 
   // Context updater callback - now also syncs to persistent storage
   const onUpdateContext = useCallback(

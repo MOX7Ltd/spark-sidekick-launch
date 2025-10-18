@@ -86,7 +86,19 @@ export function Step0Welcome({ onContinue }: Step0WelcomeProps) {
 
       const sessionData = stateData?.state;
       const context = sessionData?.context as any;
-      const businessIdea = context?.idea_text || context?.idea || context?.aboutYou?.idea || 'your business';
+      
+      // Try multiple possible locations where the idea might be stored
+      const businessIdea = 
+        context?.idea_text || 
+        context?.idea || 
+        context?.aboutBusiness?.idea ||
+        context?.formData?.idea ||
+        context?.formData?.aboutBusiness?.idea ||
+        stateData?.session_snapshot?.formData?.idea ||
+        stateData?.session_snapshot?.context?.idea_text ||
+        'your business';
+      
+      console.log('[Step0Welcome] Found business idea:', businessIdea.slice(0, 80));
 
       setSavedSession({
         session_id: preauth.session_id,
@@ -116,13 +128,43 @@ export function Step0Welcome({ onContinue }: Step0WelcomeProps) {
       const result = await restoreOnboardingSession(savedSession.session_id);
       if (result.success && result.data) {
         const { state, business } = result.data;
+        const context = state?.context as any;
+        
+        // Map the context structure to formData structure
+        const mappedFormData = {
+          // Map idea_text to idea (the key expected by OnboardingFormState)
+          idea: context?.idea_text || context?.idea || '',
+          
+          // Map aboutYou fields
+          aboutYou: {
+            firstName: context?.user_first_name || '',
+            lastName: context?.user_last_name || '',
+            name: [context?.user_first_name, context?.user_last_name].filter(Boolean).join(' '),
+            email: context?.email || '',
+            expertise: context?.expertise || context?.bio || '',
+            motivation: context?.motivation || '',
+            includeFirstName: !!context?.personal_brand || !!context?.user_first_name,
+            includeLastName: !!context?.personal_brand || !!context?.user_last_name,
+            bio: context?.bio,
+            bioLocked: context?.bioLocked ?? false,
+            bioAttempts: context?.bioAttempts ?? 0,
+            bioHistory: context?.bioHistory ?? [],
+          },
+          
+          // Map other fields
+          vibes: context?.tone_adjectives || context?.vibes || [],
+          audiences: context?.audience || context?.audiences || [],
+          businessIdentity: context?.businessIdentity || context?.business_identity || null,
+          products: context?.products || [],
+          generatedPosts: context?.generatedPosts || context?.generated_posts || [],
+        };
         
         // Package the restored data to pass up to Index
         const restoredData = {
-          formData: state?.context || {},
+          formData: mappedFormData,
           step: state?.step ? parseInt(state.step, 10) : 1,
           businessId: business?.id || null,
-          context: state?.context || {},
+          context: context, // Keep original context for context-based operations
           sessionId: savedSession.session_id,
         };
         
